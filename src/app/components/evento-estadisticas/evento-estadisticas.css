@@ -1,0 +1,32 @@
+.card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.progress {
+  border-radius: 10px;
+}
+
+.progress-bar {
+  border-radius: 10px;
+}
+
+.nav-tabs .nav-link {
+  cursor: pointer;
+}
+
+.nav-tabs .nav-link:hover {
+  border-color: transparent;
+  background-color: #f8f9fa;
+}
+
+.display-4 {
+  font-weight: 700;
+}
+
+.table > tbody > tr > td {
+  vertical-align: middle;
+}

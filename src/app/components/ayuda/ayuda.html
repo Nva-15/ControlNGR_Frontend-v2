@@ -1,0 +1,163 @@
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>        
+        <h2 class="d-inline-block mb-0">
+          <i class="bi bi-question-circle me-2"></i>
+          Ayuda y Soporte
+        </h2>
+      </div>
+    </div>
+  
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <!-- Información de Contacto -->
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="bi bi-info-circle me-2"></i>
+              Información de Contacto
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h6><i class="bi bi-envelope me-2 text-primary"></i>Correo Electrónico</h6>
+                <p class="text-muted">proyecto.24web@gmail.com</p>
+              </div>
+              <div class="col-md-6">
+                <h6><i class="bi bi-clock me-2 text-primary"></i>Horario de Atención</h6>
+                <p class="text-muted">Lunes a Viernes: 9:00 AM - 6:00 PM</p>
+              </div>
+            </div>
+            <div class="alert alert-info mt-3">
+              <i class="bi bi-lightbulb me-2"></i>
+              <strong>Tip:</strong> Por favor proporciona todos los detalles posibles sobre tu consulta para poder ayudarte mejor.
+            </div>
+          </div>
+        </div>
+  
+        <!-- Formulario de Contacto -->
+        <div class="card">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">
+              <i class="bi bi-chat-dots me-2"></i>
+              Formulario de Contacto
+            </h5>
+          </div>
+          <div class="card-body">
+            <!-- Mensajes -->
+            <div *ngIf="mensajeResultado" 
+                 [class]="mensajeResultado.tipo === 'success' ? 'alert alert-success alert-dismissible fade show' : 'alert alert-danger alert-dismissible fade show'" 
+                 role="alert">
+              <i [class]="mensajeResultado.tipo === 'success' ? 'bi bi-check-circle me-2' : 'bi bi-exclamation-triangle me-2'"></i>
+              {{ mensajeResultado.texto }}
+              <button type="button" class="btn-close" (click)="mensajeResultado = null"></button>
+            </div>
+  
+            <form [formGroup]="contactoForm" (ngSubmit)="onSubmit()">
+              <div class="row">
+                <!-- Nombre -->
+                <div class="col-md-6 mb-3">
+                  <label for="nombre" class="form-label">Nombre Completo *</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [class.is-invalid]="nombre?.invalid && nombre?.touched"
+                    [class.is-valid]="nombre?.valid && nombre?.touched"
+                    id="nombre"
+                    formControlName="nombre"
+                    placeholder="Ingresa tu nombre completo">
+                  <div *ngIf="nombre?.invalid && nombre?.touched" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    {{ getMensajeError('nombre') }}
+                  </div>
+                </div>
+  
+                <!-- Correo -->
+                <div class="col-md-6 mb-3">
+                  <label for="correo" class="form-label">Correo Electrónico *</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    [class.is-invalid]="correo?.invalid && correo?.touched"
+                    [class.is-valid]="correo?.valid && correo?.touched"
+                    id="correo"
+                    formControlName="correo"
+                    placeholder="tu.correo@ejemplo.com">
+                  <div *ngIf="correo?.invalid && correo?.touched" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    {{ getMensajeError('correo') }}
+                  </div>
+                </div>
+              </div>
+  
+              <div class="row">
+                <!-- Celular -->
+                <div class="col-md-6 mb-3">
+                  <label for="celular" class="form-label">Celular *</label>
+                  <div class="input-group">
+                    <span class="input-group-text">+51</span>
+                    <input
+                      type="tel"
+                      class="form-control"
+                      [class.is-invalid]="celular?.invalid && celular?.touched"
+                      [class.is-valid]="celular?.valid && celular?.touched"
+                      id="celular"
+                      formControlName="celular"
+                      placeholder="987654321"
+                      maxlength="9">
+                  </div>
+                  <div *ngIf="celular?.invalid && celular?.touched" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    {{ getMensajeError('celular') }}
+                  </div>
+                  <div class="form-text">Ingresa tu número de celular (9 dígitos, sin el +51)</div>
+                </div>
+              </div>
+  
+              <!-- Descripción -->
+              <div class="mb-3">
+                <label for="descripcion" class="form-label">Descripción del Problema *</label>
+                <textarea
+                  class="form-control"
+                  [class.is-invalid]="descripcion?.invalid && descripcion?.touched"
+                  [class.is-valid]="descripcion?.valid && descripcion?.touched"
+                  id="descripcion"
+                  formControlName="descripcion"
+                  rows="5"
+                  placeholder="Describe detalladamente el problema o consulta que tienes. Incluye pasos para reproducir el error si es aplicable..."></textarea>
+                <div *ngIf="descripcion?.invalid && descripcion?.touched" class="invalid-feedback d-block">
+                  <i class="bi bi-exclamation-triangle me-1"></i>
+                  {{ getMensajeError('descripcion') }}
+                </div>
+                <div class="form-text">
+                  Mínimo 10 caracteres. Sé lo más específico posible para poder ayudarte mejor.
+                </div>
+              </div>
+  
+              <!-- Botones -->
+              <div class="d-flex justify-content-between align-items-center mt-4">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  (click)="limpiarFormulario()">
+                  <i class="bi bi-x-circle me-2"></i>
+                  Limpiar Formulario
+                </button>
+  
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  [disabled]="contactoForm.invalid || isLoading">
+                  <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                  <i *ngIf="!isLoading" class="bi bi-send me-2"></i>
+                  {{ isLoading ? 'Enviando...' : 'Enviar Mensaje' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

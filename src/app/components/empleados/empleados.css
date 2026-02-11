@@ -1,0 +1,35 @@
+/* Solo estilos básicos para imagen de perfil */
+.employee-photo {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+}
+
+.image-preview {
+    width: 180px;
+    height: 180px;
+    object-fit: cover;
+}
+
+.status-indicators {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Para el estado activo/inactivo en la tabla */
+.status-active {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #842029;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}

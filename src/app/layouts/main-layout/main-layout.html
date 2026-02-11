@@ -1,0 +1,222 @@
+<div class="container-fluid vh-100">
+  <div class="row h-100">
+    
+    <nav class="col-md-3 col-lg-2 d-none d-md-flex flex-column bg-ngr sidebar p-0">
+      
+      <div class="text-center pt-4 pb-3">
+        <img src="/img/Logo.PNG"
+             alt="Control NGR"
+             class="img-fluid mb-2"
+             width="120"
+             height="80"
+             style="max-height: 80px; object-fit: contain;">
+        <small class="text-white-50 d-block">Sistema de Asistencia</small>
+      </div>
+
+      <hr class="text-white-50 my-0 mx-3">
+
+      <div class="flex-grow-1 overflow-auto py-3">
+        <ul class="nav flex-column px-2">
+          
+          <li class="nav-item">
+            <a class="nav-link text-white" routerLink="/dashboard" routerLinkActive="active">
+              <i class="bi bi-house-door me-2"></i> Dashboard
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link text-white" routerLink="/asistencia" routerLinkActive="active">
+              <i class="bi bi-clock me-2"></i> Asistencia
+            </a>
+          </li>
+          
+          <li class="nav-item">
+            <a class="nav-link text-white" routerLink="/horarios" routerLinkActive="active">
+              <i class="bi bi-calendar-week me-2"></i> Horarios
+            </a>
+          </li>
+          
+          <li class="nav-item">
+            <a class="nav-link text-white d-flex align-items-center" routerLink="/solicitudes" routerLinkActive="active">
+              <i class="bi bi-send-check me-2"></i> Solicitudes
+              <span class="badge-sidebar bg-warning text-dark ms-auto" *ngIf="getBadgeSolicitudes() > 0">
+                {{ getBadgeSolicitudes() }}
+              </span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link text-white" routerLink="/organigrama" routerLinkActive="active">
+              <i class="bi bi-diagram-3 me-2"></i> Organigrama
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link text-white d-flex align-items-center" routerLink="/eventos" routerLinkActive="active">
+              <i class="bi bi-calendar-check me-2"></i> Mis Eventos
+              <span class="badge-sidebar bg-info ms-auto" *ngIf="getBadgeEventos() > 0">
+                {{ getBadgeEventos() }}
+              </span>
+            </a>
+          </li>
+
+          <ng-container *ngIf="isAdmin() || isSupervisor()">
+            <li class="nav-item mt-4 mb-2 ps-3">
+              <span class="text-warning small fw-bold text-uppercase ls-1">Administración</span>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link text-white" routerLink="/empleados" routerLinkActive="active">
+                <i class="bi bi-people me-2"></i> Empleados
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link text-white" routerLink="/reportes" routerLinkActive="active">
+                <i class="bi bi-file-earmark-bar-graph me-2"></i> Reportes
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link text-white" routerLink="/eventos" routerLinkActive="active"
+                 [queryParams]="{modo: 'admin'}">
+                <i class="bi bi-calendar-event me-2"></i> Gestión Eventos
+              </a>
+            </li>
+          </ng-container>
+
+        </ul>
+      </div>
+
+      <div class="p-3 bg-primary-dark border-top border-white-50">
+        <div class="d-flex align-items-center mb-2">
+           <img [src]="fotoUrl"
+               (error)="onImageError($event)"
+               class="rounded-circle border border-white me-2 bg-white"
+               width="40"
+               height="40"
+               loading="eager"
+               decoding="async"
+               style="object-fit: cover;">
+               
+           <div class="overflow-hidden">
+             <div class="text-white fw-bold text-truncate" style="font-size: 0.9rem;">
+               {{ currentEmpleado?.nombre?.split(' ')[0] }}
+             </div>
+             <div class="text-white-50 small" style="font-size: 0.75rem;">
+               {{ currentEmpleado?.rol | uppercase }}
+             </div>
+           </div>
+        </div>
+        <button class="btn btn-outline-light btn-sm w-100" (click)="logout()">
+          <i class="bi bi-box-arrow-right me-1"></i> Salir
+        </button>
+      </div>
+
+    </nav>
+
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-0 bg-light h-100 overflow-auto">
+      
+      <!-- Header mobile con hamburguesa -->
+      <div class="d-md-none bg-ngr-header p-3 text-white d-flex justify-content-between align-items-center sticky-top shadow-sm" style="z-index: 1050;">
+        <img src="/img/Logo.PNG"
+             alt="Control NGR"
+             width="52"
+             height="35"
+             class="d-inline-block"
+             style="object-fit: contain;">
+        <button class="btn btn-outline-light btn-sm border-0" (click)="toggleMenuMobil()" style="font-size: 1.4rem; line-height: 1;">
+          <i class="bi" [class.bi-list]="!menuMobilAbierto" [class.bi-x-lg]="menuMobilAbierto"></i>
+        </button>
+      </div>
+
+      <!-- Menu mobile desplegable -->
+      <div class="d-md-none menu-mobil-overlay"
+           *ngIf="menuMobilAbierto"
+           (click)="cerrarMenuMobil()">
+      </div>
+      <div class="d-md-none menu-mobil-panel" [class.menu-mobil-abierto]="menuMobilAbierto">
+        <!-- Info usuario -->
+        <div class="d-flex align-items-center p-3 border-bottom" style="background: rgba(0,0,0,0.1);">
+          <img [src]="fotoUrl"
+               (error)="onImageError($event)"
+               class="rounded-circle border border-white me-2"
+               width="36" height="36"
+               style="object-fit: cover;">
+          <div class="overflow-hidden">
+            <div class="text-white fw-bold text-truncate" style="font-size: 0.9rem;">{{ currentEmpleado?.nombre?.split(' ')[0] }}</div>
+            <div class="text-white-50 small">{{ currentEmpleado?.rol | uppercase }}</div>
+          </div>
+        </div>
+
+        <!-- Links -->
+        <ul class="nav flex-column py-2 px-2">
+          <li class="nav-item">
+            <a class="nav-link text-white" routerLink="/dashboard" routerLinkActive="active" (click)="cerrarMenuMobil()">
+              <i class="bi bi-house-door me-2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" routerLink="/horarios" routerLinkActive="active" (click)="cerrarMenuMobil()">
+              <i class="bi bi-calendar-week me-2"></i> Horarios
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white d-flex align-items-center" routerLink="/solicitudes" routerLinkActive="active" (click)="cerrarMenuMobil()">
+              <i class="bi bi-send-check me-2"></i> Solicitudes
+              <span class="badge-sidebar bg-warning text-dark ms-auto" *ngIf="getBadgeSolicitudes() > 0">
+                {{ getBadgeSolicitudes() }}
+              </span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white" routerLink="/organigrama" routerLinkActive="active" (click)="cerrarMenuMobil()">
+              <i class="bi bi-diagram-3 me-2"></i> Organigrama
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white d-flex align-items-center" routerLink="/eventos" routerLinkActive="active" (click)="cerrarMenuMobil()">
+              <i class="bi bi-calendar-check me-2"></i> Mis Eventos
+              <span class="badge-sidebar bg-info ms-auto" *ngIf="getBadgeEventos() > 0">
+                {{ getBadgeEventos() }}
+              </span>
+            </a>
+          </li>
+
+          <ng-container *ngIf="isAdmin() || isSupervisor()">
+            <li class="nav-item mt-3 mb-1 ps-3">
+              <span class="text-warning small fw-bold text-uppercase" style="letter-spacing: 1px;">Administracion</span>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" routerLink="/empleados" routerLinkActive="active" (click)="cerrarMenuMobil()">
+                <i class="bi bi-people me-2"></i> Empleados
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" routerLink="/reportes" routerLinkActive="active" (click)="cerrarMenuMobil()">
+                <i class="bi bi-file-earmark-bar-graph me-2"></i> Reportes
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" routerLink="/eventos" routerLinkActive="active"
+                 [queryParams]="{modo: 'admin'}" (click)="cerrarMenuMobil()">
+                <i class="bi bi-calendar-event me-2"></i> Gestion Eventos
+              </a>
+            </li>
+          </ng-container>
+        </ul>
+
+        <!-- Cerrar sesion -->
+        <div class="p-3 mt-auto border-top" style="background: rgba(0,0,0,0.15);">
+          <button class="btn btn-outline-light btn-sm w-100" (click)="logout()">
+            <i class="bi bi-box-arrow-right me-1"></i> Cerrar Sesion
+          </button>
+        </div>
+      </div>
+      
+      <div class="p-4">
+        <router-outlet></router-outlet>
+      </div>
+    </main>
+  </div>
+</div>

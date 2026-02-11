@@ -1,0 +1,750 @@
+<div class="container-fluid">
+  
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-ngr shadow fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="#">
+        <img src="/img/Logo.PNG"
+             alt="Control NGR"
+             width="90"
+             height="55"
+             class="d-inline-block align-middle"
+             style="object-fit: contain;">
+      </a>
+      
+      <div class="navbar-nav ms-auto">
+        <div class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
+            <img [src]="fotoUrl"
+                 width="30" height="30"
+                 class="rounded-circle me-2 border"
+                 alt="Perfil"
+                 loading="eager"
+                 decoding="async"
+                 (error)="onImageError($event)"
+                 style="object-fit: cover;">
+            {{ currentEmpleado?.nombre?.split(' ')[0] }} 
+            <span class="badge bg-light text-dark ms-1">{{ currentEmpleado?.rol | uppercase }}</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end shadow">
+            <li>
+              <a class="dropdown-item text-danger" href="javascript:void(0)" (click)="logout()">
+                <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-3">
+          <div>
+            <h2 class="text-primary mb-1">Bienvenido, {{ currentEmpleado?.nombre }}</h2>
+            <p class="text-muted mb-0">
+              <i class="bi bi-calendar-date me-1"></i>
+              <span>{{ getFechaEnEspanol().split(' - ')[0] }}</span>
+              <i class="bi bi-clock ms-2 me-1"></i>
+              <span>{{ getFechaEnEspanol().split(' - ')[1] }}</span>
+            </p>
+          </div>
+          <div class="d-none d-md-block">
+            <div class="badge bg-light text-dark fs-6 p-2 border">
+              <i class="bi bi-person-badge me-1"></i>
+              {{ currentEmpleado?.cargo || 'Empleado' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-5 align-items-start">
+      
+      <div class="col-md-6 col-lg-3 order-2 order-lg-1">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0 fs-6"><i class="bi bi-clock-fill me-2"></i>Asistencia</h5>
+          </div>
+          <div class="card-body">
+            
+            <div *ngIf="isLoading" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status"></div>
+            </div>
+
+            <div *ngIf="!isLoading">
+              <div class="text-center mb-3">
+                <span class="badge bg-{{getBadgeColor()}} fs-6 mb-2">{{ getEstadoAsistencia() }}</span>
+                <div class="row g-1">
+                  <div class="col-6 border-end">
+                    <small class="text-muted d-block" style="font-size:0.75rem">Entrada</small>
+                    <h5 class="fw-bold mb-0">{{ getHoraFormateada(asistenciaHoy?.horaEntrada) }}</h5>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted d-block" style="font-size:0.75rem">Salida</small>
+                    <h5 class="fw-bold mb-0">{{ getHoraFormateada(asistenciaHoy?.horaSalida) }}</h5>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-grid gap-2">
+                <button class="btn btn-success py-2" (click)="tipoMarcaje='entrada'; marcarAsistencia()" [disabled]="!puedeMarcarEntrada()">
+                  <i class="bi bi-box-arrow-in-right me-1"></i> Entrada
+                </button>
+                <button class="btn btn-danger py-2" (click)="tipoMarcaje='salida'; marcarAsistencia()" [disabled]="!puedeMarcarSalida()">
+                  <i class="bi bi-box-arrow-right me-1"></i> Salida
+                </button>
+              </div>
+
+              <div class="mt-3">
+                <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="observaciones" placeholder="Observaciones..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-12 col-lg-6 order-1 order-lg-2">
+        <div class="card h-100 shadow-lg border-primary border-opacity-25 card-protagonist">
+          <div class="card-header bg-info text-white py-3 text-center">
+            <h4 class="mb-0"><i class="bi bi-person-circle me-2"></i>Mi Información</h4>
+          </div>
+          <div class="card-body p-4">
+            
+            <div class="d-flex flex-column flex-sm-row align-items-center justify-content-center gap-4">
+              <div class="position-relative">
+                <img [src]="fotoUrl"
+                     class="rounded-circle border border-4 border-white shadow profile-img-responsive"
+                     alt="Foto"
+                     width="150"
+                     height="150"
+                     loading="lazy"
+                     decoding="async"
+                     (error)="onImageError($event)"
+                     style="object-fit: cover;">
+                <span class="position-absolute bottom-0 end-0 p-2 bg-success border border-light rounded-circle"></span>
+              </div>
+
+              <div class="text-center text-sm-start flex-grow-1">
+                <h3 class="fw-bold text-primary mb-1">{{ currentEmpleado?.nombre }}</h3>
+                <p class="text-muted fs-5 mb-3">{{ currentEmpleado?.cargo }}</p>
+                
+                <div class="row g-3 justify-content-center justify-content-sm-start">
+                  <div class="col-auto text-center text-sm-start">
+                    <small class="text-uppercase text-muted fw-bold d-block" style="font-size: 0.7rem;">DNI</small>
+                    <span class="fs-6 fw-medium">{{ currentEmpleado?.dni }}</span>
+                  </div>
+                  <div class="col-auto text-center text-sm-start border-start ps-3">
+                    <small class="text-uppercase text-muted fw-bold d-block" style="font-size: 0.7rem;">Usuario</small>
+                    <span class="fs-6 fw-medium">{{ currentEmpleado?.username }}</span>
+                  </div>
+                  <div class="col-auto text-center text-sm-start border-start ps-3">
+                    <small class="text-uppercase text-muted fw-bold d-block" style="font-size: 0.7rem;">Nivel</small>
+                    <span class="badge bg-light text-dark border">{{ currentEmpleado?.nivel }}</span>
+                  </div>
+                </div>
+
+                <div class="mt-4">
+                  <button class="btn btn-outline-info w-100 rounded-pill" (click)="abrirModalPerfil()">
+                    <i class="bi bi-pencil-square me-2"></i>Actualizar Datos
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-3 order-3 order-lg-3">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0 fs-6"><i class="bi bi-lightning-charge me-2"></i>Acciones</h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+              
+              <a routerLink="/horarios" class="list-group-item list-group-item-action border-0 py-3 d-flex align-items-center">
+                <i class="bi bi-calendar-week text-primary fs-4 me-3"></i>
+                <div class="lh-1">
+                  <h6 class="mb-0">Horario</h6>
+                  <small class="text-muted" style="font-size:0.75rem">Turno semanal</small>
+                </div>
+              </a>
+              
+              <a href="javascript:void(0)" (click)="irASolicitudes()" class="list-group-item list-group-item-action border-0 py-3 d-flex align-items-center">
+                <i class="bi bi-send-check text-warning fs-4 me-3"></i>
+                <div class="lh-1">
+                  <h6 class="mb-0">Solicitud</h6>
+                  <small class="text-muted" style="font-size:0.75rem">Permisos/Vac.</small>
+                </div>
+              </a>
+              
+              <a routerLink="/reportes" class="list-group-item list-group-item-action border-0 py-3 d-flex align-items-center">
+                <i class="bi bi-graph-up text-info fs-4 me-3"></i>
+                <div class="lh-1">
+                  <h6 class="mb-0">Reportes</h6>
+                  <small class="text-muted" style="font-size:0.75rem">Mis registros</small>
+                </div>
+              </a>
+
+              <a routerLink="/organigrama" class="list-group-item list-group-item-action border-0 py-3 d-flex align-items-center">
+                <i class="bi bi-diagram-3 text-success fs-4 me-3"></i>
+                <div class="lh-1">
+                  <h6 class="mb-0">Organigrama</h6>
+                  <small class="text-muted" style="font-size:0.75rem">Estructura empresa</small>
+                </div>
+              </a>
+
+              <a *ngIf="isAdmin() || isSupervisor()"
+                 routerLink="/empleados"
+                 class="list-group-item list-group-item-action border-0 py-3 d-flex align-items-center bg-danger bg-opacity-10">
+                <i class="bi bi-people text-danger fs-4 me-3"></i>
+                <div class="lh-1">
+                  <h6 class="mb-0 text-danger">Empleados</h6>
+                  <small class="text-danger-50" style="font-size:0.75rem">Gestion Admin</small>
+                </div>
+              </a>
+
+              <a routerLink="/eventos"
+                 class="list-group-item list-group-item-action border-0 py-3 d-flex align-items-center"
+                 [class.bg-warning]="eventosActivos.length > 0"
+                 [class.bg-opacity-10]="eventosActivos.length > 0">
+                <i class="bi bi-calendar-check fs-4 me-3"
+                   [class.text-warning]="eventosActivos.length > 0"
+                   [class.text-secondary]="eventosActivos.length === 0"></i>
+                <div class="lh-1 flex-grow-1">
+                  <h6 class="mb-0">Mis Eventos</h6>
+                  <small class="text-muted" style="font-size:0.75rem">Pendientes/Respondidos</small>
+                </div>
+                <span *ngIf="eventosActivos.length > 0" class="badge bg-warning text-dark">
+                  {{ eventosActivos.length }}
+                </span>
+              </a>
+
+              <a *ngIf="isAdmin() || isSupervisor()"
+                 routerLink="/eventos"
+                 [queryParams]="{modo: 'admin'}"
+                 class="list-group-item list-group-item-action border-0 py-3 d-flex align-items-center bg-primary bg-opacity-10">
+                <i class="bi bi-calendar-event text-primary fs-4 me-3"></i>
+                <div class="lh-1">
+                  <h6 class="mb-0 text-primary">Gestión Eventos</h6>
+                  <small class="text-muted" style="font-size:0.75rem">Administración</small>
+                </div>
+              </a>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> 
+
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="bi bi-calendar-day me-2"></i>Estado del Día</h6>
+          </div>
+          <div class="card-body">
+            <div class="row text-center mb-3">
+              <div class="col-4 border-end">
+                <h3 class="text-primary mb-0">{{ fechaActual | date:'dd' }}</h3>
+                <small class="text-muted">Día</small>
+              </div>
+              <div class="col-4 border-end">
+                <h3 class="text-info mb-0">{{ fechaActual | date:'MM' }}</h3>
+                <small class="text-muted">Mes</small>
+              </div>
+              <div class="col-4">
+                <h3 class="text-success mb-0">{{ fechaActual | date:'yyyy' }}</h3>
+                <small class="text-muted">Año</small>
+              </div>
+            </div>
+            <div class="bg-light p-3 rounded text-center border">
+              <h6 class="mb-2 fw-bold">Resumen de Hoy</h6>
+              <p class="mb-0 text-dark" *ngIf="asistenciaHoy?.observaciones">
+                <i class="bi bi-chat-quote me-1"></i>{{ asistenciaHoy?.observaciones }}
+              </p>
+              <p class="text-muted small mb-0" *ngIf="!asistenciaHoy?.observaciones">
+                <i class="bi bi-dash-circle me-1"></i>No hay observaciones para hoy
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-bell me-2"></i>Eventos Activos</h6>
+            <span class="badge bg-primary" *ngIf="eventosActivos.length > 0">{{ eventosActivos.length }}</span>
+          </div>
+          <div class="card-body p-0">
+            <!-- Loading -->
+            <div *ngIf="isLoadingEventos" class="text-center py-4">
+              <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+              <small class="text-muted ms-2">Cargando eventos...</small>
+            </div>
+
+            <!-- Sin eventos -->
+            <div *ngIf="!isLoadingEventos && eventosActivos.length === 0" class="text-center py-4">
+              <i class="bi bi-calendar-x text-muted" style="font-size: 2rem;"></i>
+              <p class="text-muted mt-2 mb-0">No hay eventos activos</p>
+            </div>
+
+            <!-- Lista de eventos -->
+            <div class="list-group list-group-flush" *ngIf="!isLoadingEventos && eventosActivos.length > 0">
+              <a *ngFor="let evento of eventosActivos.slice(0, 4)"
+                 href="javascript:void(0)"
+                 (click)="abrirEvento(evento)"
+                 class="list-group-item list-group-item-action px-3 py-3">
+                <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                  <div class="d-flex align-items-center">
+                    <i class="bi {{ getTipoEventoIcon(evento.tipoEvento) }} text-{{ getTipoEventoColor(evento.tipoEvento) }} me-2"></i>
+                    <h6 class="mb-0 fw-bold">{{ evento.titulo }}</h6>
+                  </div>
+                  <div>
+                    <span *ngIf="evento.yaRespondio" class="badge bg-success me-1" title="Ya respondiste">
+                      <i class="bi bi-check-lg"></i>
+                    </span>
+                    <span class="badge bg-{{ getTipoEventoColor(evento.tipoEvento) }} bg-opacity-10 text-{{ getTipoEventoColor(evento.tipoEvento) }}">
+                      {{ getTipoEventoLabel(evento.tipoEvento) }}
+                    </span>
+                  </div>
+                </div>
+                <small class="text-muted d-block text-truncate">{{ evento.descripcion }}</small>
+                <small class="text-muted" *ngIf="evento.fechaFin">
+                  <i class="bi bi-clock me-1"></i>Hasta: {{ getFechaEventoFormateada(evento.fechaFin) }}
+                </small>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+    <!-- Horario Semanal del empleado -->
+    <div class="row g-4 mt-2" *ngIf="currentEmpleado?.rol !== 'admin'">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 text-primary">
+              <i class="bi bi-calendar-week me-2"></i>Mi Horario Semanal
+            </h6>
+            <a routerLink="/horarios" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-eye me-1"></i>Ver todos
+            </a>
+          </div>
+          <div class="card-body">
+            <!-- Loading -->
+            <div *ngIf="isLoadingHorario" class="text-center py-3">
+              <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+              <small class="text-muted ms-2">Cargando horario...</small>
+            </div>
+
+            <!-- Sin horario asignado -->
+            <div *ngIf="!isLoadingHorario && !tieneHorarioAsignado()" class="text-center py-3">
+              <i class="bi bi-calendar-x text-muted" style="font-size: 2rem;"></i>
+              <p class="text-muted mt-2 mb-0">No tienes horario asignado</p>
+            </div>
+
+            <!-- Tabla de horario -->
+            <div *ngIf="!isLoadingHorario && tieneHorarioAsignado()" class="table-responsive">
+              <table class="table table-bordered table-sm mb-0 text-center">
+                <thead class="table-light">
+                  <tr>
+                    <th *ngFor="let dia of diasSemana" class="fw-bold" style="font-size: 0.8rem;">
+                      {{ diasLabels[dia] }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td *ngFor="let dia of diasSemana" style="font-size: 0.8rem; vertical-align: middle;">
+                      <ng-container *ngIf="getHorarioDia(dia) as horario">
+                        <div *ngIf="horario.tipoDia === 'normal' || !horario.tipoDia">
+                          <div class="text-success fw-bold">{{ horario.horaEntrada }}</div>
+                          <div class="text-danger fw-bold">{{ horario.horaSalida }}</div>
+                          <div *ngIf="horario.horaAlmuerzoInicio" class="text-muted" style="font-size: 0.7rem;">
+                            <i class="bi bi-cup-hot"></i> {{ horario.horaAlmuerzoInicio }}-{{ horario.horaAlmuerzoFin }}
+                          </div>
+                        </div>
+                        <div *ngIf="horario.tipoDia && horario.tipoDia !== 'normal'">
+                          <span class="badge"
+                                [class.bg-secondary]="horario.tipoDia === 'descanso'"
+                                [class.bg-info]="horario.tipoDia === 'compensado'"
+                                [class.bg-warning]="horario.tipoDia === 'vacaciones'"
+                                [class.text-dark]="horario.tipoDia === 'vacaciones'"
+                                style="font-size: 0.7rem;">
+                            {{ getTipoDiaLabel(horario.tipoDia) }}
+                          </span>
+                        </div>
+                      </ng-container>
+                      <span *ngIf="!getHorarioDia(dia)" class="text-muted" style="font-size: 0.75rem;">--</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <footer class="mt-5 py-3 bg-light border-top">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6">
+          <small class="text-muted"><i class="bi bi-shield-check me-1"></i> Sistema Control NGR v1.0</small>
+        </div>
+        <div class="col-md-6 text-end">
+          <small class="text-muted">{{ currentEmpleado?.username }} | {{ fechaActual | date:'shortTime' }}</small>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal de Actualización de Perfil -->
+  <div class="modal fade show"
+       [class.d-block]="mostrarModalPerfil"
+       [style.display]="mostrarModalPerfil ? 'block' : 'none'"
+       tabindex="-1"
+       *ngIf="mostrarModalPerfil">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+
+        <!-- Header -->
+        <div class="modal-header text-white" style="background: linear-gradient(135deg, #3D3532 0%, #2A2421 100%);">
+          <h5 class="modal-title">
+            <i class="bi bi-person-gear me-2"></i>Mi Perfil
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="cerrarModalPerfil()" [disabled]="isUpdating"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body">
+
+          <!-- Mensajes -->
+          <div *ngIf="mensajeModal" class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>{{ mensajeModal }}
+            <button type="button" class="btn-close" (click)="mensajeModal = ''"></button>
+          </div>
+          <div *ngIf="mensajeErrorModal" class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>{{ mensajeErrorModal }}
+            <button type="button" class="btn-close" (click)="mensajeErrorModal = ''"></button>
+          </div>
+
+          <!-- Foto y Datos Básicos -->
+          <div class="text-center mb-4">
+            <img [src]="fotoPreviewModal || fotoUrl"
+                 class="rounded-circle border border-3 shadow mb-3"
+                 width="120"
+                 height="120"
+                 loading="lazy"
+                 decoding="async"
+                 (error)="onImageError($event)"
+                 alt="Foto de perfil"
+                 style="object-fit: cover;">
+            <h4 class="mb-1">{{ currentEmpleado?.nombre }}</h4>
+            <span class="badge bg-secondary">{{ getRolDisplay(currentEmpleado?.rol) }}</span>
+          </div>
+
+          <!-- Información de Solo Lectura -->
+          <div class="card mb-4">
+            <div class="card-header bg-light">
+              <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información Personal</h6>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label text-muted small mb-0">DNI</label>
+                  <p class="fw-bold mb-2">{{ currentEmpleado?.dni }}</p>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-muted small mb-0">Usuario</label>
+                  <p class="fw-bold mb-2">{{ currentEmpleado?.username }}</p>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-muted small mb-0">Cargo</label>
+                  <p class="fw-bold mb-2">{{ currentEmpleado?.cargo || 'Sin cargo' }}</p>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-muted small mb-0">Nivel</label>
+                  <p class="fw-bold mb-2">{{ getNivelDisplay(currentEmpleado?.nivel) }}</p>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-muted small mb-0">Email</label>
+                  <p class="fw-bold mb-2">{{ currentEmpleado?.email || 'Sin email' }}</p>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-muted small mb-0">Fecha Ingreso</label>
+                  <p class="fw-bold mb-2">{{ currentEmpleado?.ingreso | date:'dd/MM/yyyy' }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección Editar Descripción y Hobby -->
+          <div class="card mb-4">
+            <div class="card-header bg-info bg-opacity-10">
+              <h6 class="mb-0 text-info"><i class="bi bi-pencil me-2"></i>Datos Personales</h6>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Hobby / Pasatiempo</label>
+                <input type="text"
+                       class="form-control"
+                       [(ngModel)]="hobbyEdit"
+                       placeholder="Ej: Fútbol, Música, Lectura..."
+                       maxlength="255">
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Descripción</label>
+                <textarea class="form-control"
+                          rows="3"
+                          [(ngModel)]="descripcionEdit"
+                          placeholder="Escribe una breve descripción sobre ti..."
+                          maxlength="500"></textarea>
+                <small class="text-muted">{{ descripcionEdit.length }}/500 caracteres</small>
+              </div>
+              <div class="text-end">
+                <button class="btn btn-info"
+                        (click)="guardarDatosPersonales()"
+                        [disabled]="isUpdating">
+                  <span *ngIf="isUpdating" class="spinner-border spinner-border-sm me-1"></span>
+                  <i class="bi bi-check-lg me-1" *ngIf="!isUpdating"></i>Guardar Cambios
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección Cambiar Foto -->
+          <div class="card mb-4">
+            <div class="card-header bg-success bg-opacity-10">
+              <h6 class="mb-0 text-success"><i class="bi bi-camera me-2"></i>Cambiar Foto</h6>
+            </div>
+            <div class="card-body">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <input type="file"
+                         class="form-control mb-2"
+                         accept="image/jpeg,image/png,image/gif,image/bmp,.jpg,.jpeg,.png,.gif,.bmp"
+                         (change)="onFileSelectedModal($event)"
+                         #fileInputModal>
+                  <small class="text-muted">Formatos: JPG, PNG, GIF, BMP (máx. 5MB). <strong>WebP no soportado</strong></small>
+                </div>
+                <div class="col-md-4 text-end">
+                  <button class="btn btn-outline-secondary btn-sm me-2"
+                          (click)="cancelarFotoModal()"
+                          *ngIf="fotoFileModal"
+                          [disabled]="isUpdating">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                  <button class="btn btn-success btn-sm"
+                          (click)="guardarFoto()"
+                          [disabled]="!fotoFileModal || isUpdating">
+                    <span *ngIf="isUpdating" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="bi bi-upload me-1" *ngIf="!isUpdating"></i>Subir
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección Cambiar Contraseña -->
+          <div class="card">
+            <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
+              <h6 class="mb-0 text-warning"><i class="bi bi-key me-2"></i>Cambiar Contraseña</h6>
+              <button class="btn btn-sm"
+                      [class.btn-outline-warning]="!mostrarSeccionPassword"
+                      [class.btn-warning]="mostrarSeccionPassword"
+                      (click)="mostrarSeccionPassword = !mostrarSeccionPassword">
+                <i class="bi" [class.bi-chevron-down]="!mostrarSeccionPassword" [class.bi-chevron-up]="mostrarSeccionPassword"></i>
+              </button>
+            </div>
+            <div class="card-body" *ngIf="mostrarSeccionPassword">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label">Contraseña Actual</label>
+                  <input type="password"
+                         class="form-control"
+                         [(ngModel)]="passwordActual"
+                         placeholder="Ingrese su contraseña actual">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Nueva Contraseña</label>
+                  <input type="password"
+                         class="form-control"
+                         [(ngModel)]="passwordNueva"
+                         placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Confirmar Contraseña</label>
+                  <input type="password"
+                         class="form-control"
+                         [(ngModel)]="passwordConfirmar"
+                         placeholder="Repita la nueva contraseña"
+                         [class.is-invalid]="passwordConfirmar && passwordNueva !== passwordConfirmar">
+                  <div class="invalid-feedback">Las contraseñas no coinciden</div>
+                </div>
+                <div class="col-12 text-end">
+                  <button class="btn btn-warning"
+                          (click)="cambiarPassword()"
+                          [disabled]="isUpdating || !passwordActual || !passwordNueva || !passwordConfirmar">
+                    <span *ngIf="isUpdating" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="bi bi-shield-check me-1" *ngIf="!isUpdating"></i>Cambiar Contraseña
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModalPerfil()" [disabled]="isUpdating">
+            <i class="bi bi-x-circle me-1"></i>Cerrar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- Backdrop del Modal Perfil -->
+  <div class="modal-backdrop fade show" *ngIf="mostrarModalPerfil"></div>
+
+  <!-- Modal de Evento -->
+  <div class="modal fade show"
+       [class.d-block]="mostrarModalEvento"
+       [style.display]="mostrarModalEvento ? 'block' : 'none'"
+       tabindex="-1"
+       *ngIf="mostrarModalEvento && eventoSeleccionado">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+
+        <!-- Header -->
+        <div class="modal-header bg-{{ getTipoEventoColor(eventoSeleccionado.tipoEvento) }} text-white">
+          <h5 class="modal-title">
+            <i class="bi {{ getTipoEventoIcon(eventoSeleccionado.tipoEvento) }} me-2"></i>
+            {{ eventoSeleccionado.titulo }}
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="cerrarModalEvento()" [disabled]="respuestaEnviando"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body">
+          <!-- Descripcion -->
+          <div class="mb-3">
+            <p class="mb-2">{{ eventoSeleccionado.descripcion }}</p>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge bg-light text-dark">
+                <i class="bi bi-tag me-1"></i>{{ getTipoEventoLabel(eventoSeleccionado.tipoEvento) }}
+              </span>
+              <span class="badge bg-light text-dark" *ngIf="eventoSeleccionado.fechaFin">
+                <i class="bi bi-clock me-1"></i>Hasta: {{ getFechaEventoFormateada(eventoSeleccionado.fechaFin) }}
+              </span>
+              <span class="badge bg-success" *ngIf="eventoSeleccionado.yaRespondio">
+                <i class="bi bi-check-lg me-1"></i>Ya respondiste
+              </span>
+            </div>
+          </div>
+
+          <!-- Respuestas segun tipo -->
+          <div *ngIf="!eventoSeleccionado.yaRespondio">
+
+            <!-- SI/NO -->
+            <div *ngIf="eventoSeleccionado.tipoEvento === 'SI_NO'" class="d-grid gap-2">
+              <h6 class="text-center mb-3">Tu respuesta:</h6>
+              <div class="row g-2">
+                <div class="col-6">
+                  <button class="btn btn-success w-100 py-3"
+                          (click)="responderSiNo(eventoSeleccionado, true)"
+                          [disabled]="respuestaEnviando">
+                    <span *ngIf="respuestaEnviando" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="bi bi-hand-thumbs-up me-2" *ngIf="!respuestaEnviando"></i>SI
+                  </button>
+                </div>
+                <div class="col-6">
+                  <button class="btn btn-danger w-100 py-3"
+                          (click)="responderSiNo(eventoSeleccionado, false)"
+                          [disabled]="respuestaEnviando">
+                    <span *ngIf="respuestaEnviando" class="spinner-border spinner-border-sm me-1"></span>
+                    <i class="bi bi-hand-thumbs-down me-2" *ngIf="!respuestaEnviando"></i>NO
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ASISTENCIA -->
+            <div *ngIf="eventoSeleccionado.tipoEvento === 'ASISTENCIA'" class="d-grid gap-2">
+              <h6 class="text-center mb-3">Confirma tu asistencia:</h6>
+              <button class="btn btn-success py-2"
+                      (click)="responderAsistencia(eventoSeleccionado, 'CONFIRMADO')"
+                      [disabled]="respuestaEnviando">
+                <span *ngIf="respuestaEnviando" class="spinner-border spinner-border-sm me-1"></span>
+                <i class="bi bi-check-circle me-2" *ngIf="!respuestaEnviando"></i>Confirmar Asistencia
+              </button>
+              <button class="btn btn-outline-danger py-2"
+                      (click)="responderAsistencia(eventoSeleccionado, 'NO_ASISTIRE')"
+                      [disabled]="respuestaEnviando">
+                <i class="bi bi-x-circle me-2"></i>No Asistire
+              </button>
+              <button class="btn btn-outline-secondary py-2"
+                      (click)="responderAsistencia(eventoSeleccionado, 'PENDIENTE')"
+                      [disabled]="respuestaEnviando">
+                <i class="bi bi-question-circle me-2"></i>Aun no lo se
+              </button>
+            </div>
+
+            <!-- ENCUESTA -->
+            <div *ngIf="eventoSeleccionado.tipoEvento === 'ENCUESTA'" class="d-grid gap-2">
+              <h6 class="text-center mb-3">Selecciona una opcion:</h6>
+              <button *ngFor="let opcion of eventoSeleccionado.opciones"
+                      class="btn btn-outline-primary py-2 text-start"
+                      (click)="responderEncuesta(eventoSeleccionado, opcion.id!)"
+                      [disabled]="respuestaEnviando">
+                <span *ngIf="respuestaEnviando" class="spinner-border spinner-border-sm me-1"></span>
+                <i class="bi bi-circle me-2" *ngIf="!respuestaEnviando"></i>
+                {{ opcion.textoOpcion }}
+              </button>
+            </div>
+
+            <!-- INFORMATIVO -->
+            <div *ngIf="eventoSeleccionado.tipoEvento === 'INFORMATIVO'" class="text-center">
+              <i class="bi bi-info-circle text-info" style="font-size: 3rem;"></i>
+              <p class="mt-2 text-muted">Este es un evento informativo.</p>
+            </div>
+
+          </div>
+
+          <!-- Ya respondio -->
+          <div *ngIf="eventoSeleccionado.yaRespondio" class="text-center py-3">
+            <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+            <p class="mt-2 mb-0">Ya has registrado tu respuesta a este evento.</p>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer">
+          <button type="button"
+                  class="btn btn-secondary"
+                  (click)="eventoSeleccionado.tipoEvento === 'INFORMATIVO' && !eventoSeleccionado.yaRespondio ? marcarEventoVisto(eventoSeleccionado) : cerrarModalEvento()"
+                  [disabled]="respuestaEnviando">
+            <i class="bi bi-x-circle me-1"></i>
+            {{ eventoSeleccionado.tipoEvento === 'INFORMATIVO' && !eventoSeleccionado.yaRespondio ? 'Entendido' : 'Cerrar' }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- Backdrop del Modal Evento -->
+  <div class="modal-backdrop fade show" *ngIf="mostrarModalEvento"></div>
+
+</div>

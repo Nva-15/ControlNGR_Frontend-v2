@@ -1,0 +1,130 @@
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden; /* Evita doble scroll */
+}
+
+/* Sidebar Fijo */
+.sidebar {
+  height: 100vh;
+  z-index: 100;
+  box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+}
+
+/* Colores personalizados del logo */
+.bg-ngr {
+  background: linear-gradient(180deg, #3D3532 0%, #2A2421 100%);
+}
+
+.bg-ngr-header {
+  background-color: #3D3532;
+}
+
+/* Enlaces */
+.nav-link {
+  padding: 0.8rem 1rem;
+  margin-bottom: 2px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  border-left: 4px solid transparent; /* Preparado para active */
+}
+
+.nav-link:hover {
+  background-color: rgba(255,255,255,0.1);
+  transform: translateX(4px);
+}
+
+/* Estado Activo (Página Actual) */
+.nav-link.active {
+  background-color: rgba(255,255,255,0.15);
+  font-weight: 600;
+  border-left-color: #ffc107; /* Amarillo */
+}
+
+.bg-primary-dark {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.ls-1 {
+  letter-spacing: 1px;
+}
+
+/* Contenido Principal */
+main {
+  height: 100vh;
+}
+
+/* ========== MENU MOBILE HAMBURGUESA ========== */
+
+/* Overlay oscuro detras del panel */
+.menu-mobil-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1060;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Panel lateral deslizable */
+.menu-mobil-panel {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100vh;
+  background: linear-gradient(180deg, #3D3532 0%, #2A2421 100%);
+  z-index: 1070;
+  display: flex;
+  flex-direction: column;
+  transition: left 0.3s ease;
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.3);
+  overflow-y: auto;
+}
+
+.menu-mobil-panel.menu-mobil-abierto {
+  left: 0;
+}
+
+/* Links dentro del menu mobile */
+.menu-mobil-panel .nav-link {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.menu-mobil-panel .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-mobil-panel .nav-link.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+  border-left-color: #ffc107;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ========== BADGES SIDEBAR ========== */
+
+.badge-sidebar {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.3;
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}

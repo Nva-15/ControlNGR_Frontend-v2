@@ -1,0 +1,480 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <button class="btn btn-outline-secondary me-2" (click)="volver()">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      <h4 class="d-inline-block mb-0">
+        <i class="bi" [class.bi-calendar-event]="esVistaGestion()" [class.bi-calendar-check]="!esVistaGestion()" class="me-2"></i>
+        {{ esVistaGestion() ? 'Gestión de Eventos' : 'Mis Eventos' }}
+      </h4>
+    </div>
+    <button class="btn btn-primary" (click)="abrirModalCrear()" *ngIf="esVistaGestion()">
+      <i class="bi bi-plus-lg me-1"></i>Nuevo Evento
+    </button>
+  </div>
+
+  <!-- ==================== VISTA GESTIÓN (Admin/Supervisor) ==================== -->
+  <ng-container *ngIf="esVistaGestion()">
+    <!-- Filtros para admin -->
+    <div class="card mb-4">
+      <div class="card-body py-2">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <!-- Filtro por estado -->
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm"
+                    [class.btn-primary]="filtroEstado === 'todos'"
+                    [class.btn-outline-secondary]="filtroEstado !== 'todos'"
+                    (click)="cambiarFiltroEstado('todos')">
+              Todos ({{ eventosFiltrados.length }})
+            </button>
+            <button class="btn btn-sm"
+                    [class.btn-success]="filtroEstado === 'ACTIVO'"
+                    [class.btn-outline-success]="filtroEstado !== 'ACTIVO'"
+                    (click)="cambiarFiltroEstado('ACTIVO')">
+              Activos
+            </button>
+            <button class="btn btn-sm"
+                    [class.btn-secondary]="filtroEstado === 'BORRADOR'"
+                    [class.btn-outline-secondary]="filtroEstado !== 'BORRADOR'"
+                    (click)="cambiarFiltroEstado('BORRADOR')">
+              Borradores
+            </button>
+            <button class="btn btn-sm"
+                    [class.btn-primary]="filtroEstado === 'FINALIZADO'"
+                    [class.btn-outline-primary]="filtroEstado !== 'FINALIZADO'"
+                    (click)="cambiarFiltroEstado('FINALIZADO')">
+              Finalizados
+            </button>
+          </div>
+          <!-- Filtro por fecha -->
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-calendar3 text-muted"></i>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroDiasAdmin" style="width: auto;">
+              <option *ngFor="let opcion of opcionesDiasAdmin" [ngValue]="opcion.value">
+                {{ opcion.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="text-muted mt-2">Cargando eventos...</p>
+    </div>
+
+    <!-- Sin eventos (admin) -->
+    <div *ngIf="!isLoading && eventosFiltrados.length === 0" class="text-center py-5">
+      <i class="bi bi-calendar-x text-muted" style="font-size: 4rem;"></i>
+      <h5 class="text-muted mt-3">No hay eventos</h5>
+      <p class="text-muted">Crea un nuevo evento para comenzar</p>
+    </div>
+
+    <!-- Lista de eventos (admin) -->
+    <div class="row g-3" *ngIf="!isLoading && eventosFiltrados.length > 0">
+      <div class="col-md-6 col-lg-4" *ngFor="let evento of eventosFiltrados">
+        <div class="card h-100 shadow-sm">
+          <div class="card-header d-flex justify-content-between align-items-center py-2"
+               [class.bg-success]="evento.estado === 'ACTIVO'"
+               [class.bg-secondary]="evento.estado === 'BORRADOR'"
+               [class.bg-primary]="evento.estado === 'FINALIZADO'"
+               [class.bg-danger]="evento.estado === 'CANCELADO'"
+               [class.text-white]="true">
+            <span>
+              <i class="bi {{ getTipoEventoIcon(evento.tipoEvento) }} me-1"></i>
+              {{ getTipoEventoLabel(evento.tipoEvento) }}
+            </span>
+            <span class="badge bg-light text-dark">{{ getEstadoLabel(evento.estado) }}</span>
+          </div>
+          <div class="card-body">
+            <h5 class="card-title">{{ evento.titulo }}</h5>
+            <p class="card-text text-muted small text-truncate">{{ evento.descripcion }}</p>
+
+            <div class="d-flex gap-2 flex-wrap mb-2">
+              <span class="badge bg-light text-dark" *ngIf="evento.totalRespuestas !== undefined">
+                <i class="bi bi-chat-dots me-1"></i>{{ evento.totalRespuestas }} respuestas
+              </span>
+              <span class="badge bg-light text-dark" *ngIf="evento.fechaFin">
+                <i class="bi bi-clock me-1"></i>{{ getFechaFormateada(evento.fechaFin) }}
+              </span>
+            </div>
+
+            <small class="text-muted d-block mb-2">
+              Visible para: {{ evento.rolesVisibles?.join(', ') || 'Todos' }}
+            </small>
+          </div>
+          <div class="card-footer bg-light">
+            <div class="btn-group btn-group-sm w-100">
+              <button class="btn btn-outline-info" (click)="verEstadisticas(evento)" title="Ver estadisticas">
+                <i class="bi bi-bar-chart"></i>
+              </button>
+              <button class="btn btn-outline-primary" (click)="abrirModalEditar(evento)" title="Editar"
+                      *ngIf="evento.estado === 'BORRADOR'">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-outline-success" (click)="cambiarEstado(evento, 'ACTIVO')" title="Activar"
+                      *ngIf="evento.estado === 'BORRADOR'">
+                <i class="bi bi-play-fill"></i>
+              </button>
+              <button class="btn btn-outline-warning" (click)="cambiarEstado(evento, 'FINALIZADO')" title="Finalizar"
+                      *ngIf="evento.estado === 'ACTIVO'">
+                <i class="bi bi-stop-fill"></i>
+              </button>
+              <button class="btn btn-outline-secondary" (click)="cambiarEstado(evento, 'BORRADOR')" title="Volver a borrador"
+                      *ngIf="evento.estado === 'ACTIVO'">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+              <button class="btn btn-outline-danger" (click)="eliminarEvento(evento)" title="Eliminar"
+                      *ngIf="evento.estado !== 'ACTIVO'">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ==================== VISTA MIS EVENTOS (Todos los usuarios) ==================== -->
+  <ng-container *ngIf="!esVistaGestion()">
+    <!-- Filtros para usuarios -->
+    <div class="card mb-4">
+      <div class="card-body py-2">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <!-- Filtro por estado -->
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm"
+                    [class.btn-warning]="filtroMisEventos === 'pendientes'"
+                    [class.btn-outline-warning]="filtroMisEventos !== 'pendientes'"
+                    (click)="filtroMisEventos = 'pendientes'">
+              <i class="bi bi-exclamation-circle me-1"></i>
+              Pendientes ({{ eventosPendientesCount }})
+            </button>
+            <button class="btn btn-sm"
+                    [class.btn-success]="filtroMisEventos === 'respondidos'"
+                    [class.btn-outline-success]="filtroMisEventos !== 'respondidos'"
+                    (click)="filtroMisEventos = 'respondidos'">
+              <i class="bi bi-check-circle me-1"></i>
+              Respondidos ({{ eventosRespondidosCount }})
+            </button>
+          </div>
+          <!-- Filtro por fecha -->
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-calendar3 text-muted"></i>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroDias" style="width: auto;">
+              <option *ngFor="let opcion of opcionesDias" [ngValue]="opcion.value">
+                {{ opcion.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="text-muted mt-2">Cargando eventos...</p>
+    </div>
+
+    <!-- Sin eventos (empleado) -->
+    <div *ngIf="!isLoading && misEventosFiltrados.length === 0" class="text-center py-5">
+      <i class="bi bi-calendar-check text-muted" style="font-size: 4rem;"></i>
+      <h5 class="text-muted mt-3">
+        {{ filtroMisEventos === 'pendientes' ? 'No tienes eventos pendientes' : 'No has respondido ningun evento' }}
+      </h5>
+      <p class="text-muted" *ngIf="filtroMisEventos === 'pendientes'">
+        Todos tus eventos estan al dia
+      </p>
+    </div>
+
+    <!-- Lista de eventos (empleado) -->
+    <div class="row g-3" *ngIf="!isLoading && misEventosFiltrados.length > 0">
+      <div class="col-md-6 col-lg-4" *ngFor="let evento of misEventosFiltrados">
+        <div class="card h-100 shadow-sm"
+             [class.border-warning]="!evento.yaRespondio"
+             [class.border-success]="evento.yaRespondio">
+          <div class="card-header d-flex justify-content-between align-items-center py-2"
+               [ngClass]="'bg-' + getTipoEventoColor(evento.tipoEvento)"
+               [class.text-white]="true">
+            <span>
+              <i class="bi {{ getTipoEventoIcon(evento.tipoEvento) }} me-1"></i>
+              {{ getTipoEventoLabel(evento.tipoEvento) }}
+            </span>
+            <span class="badge"
+                  [class.bg-warning]="!evento.yaRespondio"
+                  [class.text-dark]="!evento.yaRespondio"
+                  [class.bg-success]="evento.yaRespondio">
+              {{ evento.yaRespondio ? 'Respondido' : 'Pendiente' }}
+            </span>
+          </div>
+          <div class="card-body">
+            <h5 class="card-title">{{ evento.titulo }}</h5>
+            <p class="card-text text-muted small">{{ evento.descripcion }}</p>
+
+            <div class="d-flex gap-2 flex-wrap mb-2">
+              <span class="badge bg-light text-dark" *ngIf="evento.fechaFin">
+                <i class="bi bi-clock me-1"></i>Vence: {{ getFechaFormateada(evento.fechaFin) }}
+              </span>
+            </div>
+
+            <!-- Mostrar opciones de encuesta -->
+            <div *ngIf="evento.tipoEvento === 'ENCUESTA' && evento.opciones && evento.opciones.length > 0" class="mb-2">
+              <small class="text-muted d-block mb-1">Opciones:</small>
+              <div class="d-flex flex-wrap gap-1">
+                <span class="badge bg-light text-dark" *ngFor="let opcion of evento.opciones">
+                  {{ opcion.textoOpcion }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer bg-light">
+            <button class="btn w-100"
+                    [class.btn-primary]="!evento.yaRespondio"
+                    [class.btn-outline-success]="evento.yaRespondio"
+                    (click)="abrirModalResponder(evento)">
+              <i class="bi" [class.bi-reply]="!evento.yaRespondio" [class.bi-eye]="evento.yaRespondio"></i>
+              {{ evento.yaRespondio ? 'Ver detalle' : 'Responder' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>
+
+<!-- ==================== MODAL CREAR/EDITAR EVENTO (Admin) ==================== -->
+<div class="modal fade show"
+     [class.d-block]="mostrarModalEvento"
+     [style.display]="mostrarModalEvento ? 'block' : 'none'"
+     tabindex="-1"
+     *ngIf="mostrarModalEvento">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-calendar-plus me-2"></i>
+          {{ eventoEditId ? 'Editar Evento' : 'Nuevo Evento' }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalEvento()" [disabled]="isGuardando"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Titulo -->
+        <div class="mb-3">
+          <label class="form-label fw-bold">Titulo *</label>
+          <input type="text" class="form-control" [(ngModel)]="eventoEdit.titulo"
+                 placeholder="Titulo del evento" maxlength="200">
+        </div>
+
+        <!-- Descripcion -->
+        <div class="mb-3">
+          <label class="form-label fw-bold">Descripcion *</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="eventoEdit.descripcion"
+                    placeholder="Descripcion detallada del evento"></textarea>
+        </div>
+
+        <!-- Tipo de evento -->
+        <div class="mb-3">
+          <label class="form-label fw-bold">Tipo de Evento *</label>
+          <div class="d-flex gap-2 flex-wrap">
+            <button *ngFor="let tipo of tiposEvento"
+                    class="btn"
+                    [class.btn-primary]="eventoEdit.tipoEvento === tipo.value"
+                    [class.btn-outline-secondary]="eventoEdit.tipoEvento !== tipo.value"
+                    (click)="eventoEdit.tipoEvento = tipo.value">
+              <i class="bi {{ getTipoEventoIcon(tipo.value) }} me-1"></i>{{ tipo.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Opciones para encuesta -->
+        <div class="mb-3" *ngIf="eventoEdit.tipoEvento === 'ENCUESTA'">
+          <label class="form-label fw-bold">Opciones de la encuesta *</label>
+          <div class="input-group mb-2">
+            <input type="text" class="form-control" [(ngModel)]="opcionNueva"
+                   placeholder="Nueva opcion" (keyup.enter)="agregarOpcion()">
+            <button class="btn btn-outline-primary" (click)="agregarOpcion()">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+          <div class="list-group">
+            <div class="list-group-item d-flex justify-content-between align-items-center"
+                 *ngFor="let opcion of eventoEdit.opciones; let i = index">
+              <span><i class="bi bi-circle me-2"></i>{{ opcion }}</span>
+              <button class="btn btn-sm btn-outline-danger" (click)="eliminarOpcion(i)">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+          </div>
+          <small class="text-muted" *ngIf="!eventoEdit.opciones || eventoEdit.opciones.length < 2">
+            Se requieren al menos 2 opciones
+          </small>
+        </div>
+
+        <!-- Fechas -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Fecha Inicio *</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="eventoEdit.fechaInicio"
+                   [min]="fechaMinima">
+            <small class="text-muted">No puede ser anterior a la fecha actual</small>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Fecha Fin</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="eventoEdit.fechaFin"
+                   [min]="eventoEdit.fechaInicio || fechaMinima">
+            <small class="text-muted">No puede ser anterior a la fecha de inicio</small>
+          </div>
+        </div>
+
+        <!-- Roles visibles -->
+        <div class="mb-3">
+          <label class="form-label fw-bold">Visible para roles *</label>
+          <div class="d-flex gap-2 flex-wrap">
+            <button *ngFor="let rol of rolesDisponibles"
+                    class="btn btn-sm"
+                    [class.btn-success]="isRolSeleccionado(rol.value)"
+                    [class.btn-outline-secondary]="!isRolSeleccionado(rol.value)"
+                    (click)="toggleRol(rol.value)">
+              <i class="bi" [class.bi-check]="isRolSeleccionado(rol.value)" [class.bi-circle]="!isRolSeleccionado(rol.value)"></i>
+              {{ rol.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Opciones adicionales -->
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="permiteComentarios"
+                     [(ngModel)]="eventoEdit.permiteComentarios">
+              <label class="form-check-label" for="permiteComentarios">Permite comentarios</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="requiereRespuesta"
+                     [(ngModel)]="eventoEdit.requiereRespuesta">
+              <label class="form-check-label" for="requiereRespuesta">Requiere respuesta</label>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalEvento()" [disabled]="isGuardando">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="guardarEvento()" [disabled]="isGuardando">
+          <span *ngIf="isGuardando" class="spinner-border spinner-border-sm me-1"></span>
+          {{ eventoEditId ? 'Actualizar' : 'Crear' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show" *ngIf="mostrarModalEvento"></div>
+
+<!-- ==================== MODAL RESPONDER EVENTO (Empleado) ==================== -->
+<div class="modal fade show"
+     [class.d-block]="mostrarModalResponder"
+     [style.display]="mostrarModalResponder ? 'block' : 'none'"
+     tabindex="-1"
+     *ngIf="mostrarModalResponder && eventoResponder">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" [ngClass]="'bg-' + getTipoEventoColor(eventoResponder.tipoEvento)"
+           [class.text-white]="true">
+        <h5 class="modal-title">
+          <i class="bi {{ getTipoEventoIcon(eventoResponder.tipoEvento) }} me-2"></i>
+          {{ getTipoEventoLabel(eventoResponder.tipoEvento) }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalResponder()"
+                [disabled]="respuestaEnviando"></button>
+      </div>
+      <div class="modal-body">
+        <h5 class="mb-3">{{ eventoResponder.titulo }}</h5>
+        <p class="text-muted">{{ eventoResponder.descripcion }}</p>
+
+        <div class="d-flex gap-2 flex-wrap mb-3" *ngIf="eventoResponder.fechaFin">
+          <span class="badge bg-light text-dark">
+            <i class="bi bi-clock me-1"></i>Vence: {{ getFechaFormateada(eventoResponder.fechaFin) }}
+          </span>
+        </div>
+
+        <hr>
+
+        <!-- Ya respondido -->
+        <div *ngIf="eventoResponder.yaRespondio" class="text-center py-3">
+          <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+          <h5 class="text-success mt-2">Ya has respondido</h5>
+          <p class="text-muted">Gracias por tu participacion</p>
+        </div>
+
+        <!-- Respuesta SI/NO -->
+        <div *ngIf="!eventoResponder.yaRespondio && eventoResponder.tipoEvento === 'SI_NO'" class="text-center">
+          <p class="mb-3">Selecciona tu respuesta:</p>
+          <div class="d-flex gap-3 justify-content-center">
+            <button class="btn btn-lg btn-success px-5" (click)="responderSiNo(true)" [disabled]="respuestaEnviando">
+              <i class="bi bi-check-lg me-2"></i>SI
+            </button>
+            <button class="btn btn-lg btn-danger px-5" (click)="responderSiNo(false)" [disabled]="respuestaEnviando">
+              <i class="bi bi-x-lg me-2"></i>NO
+            </button>
+          </div>
+        </div>
+
+        <!-- Respuesta ASISTENCIA -->
+        <div *ngIf="!eventoResponder.yaRespondio && eventoResponder.tipoEvento === 'ASISTENCIA'" class="text-center">
+          <p class="mb-3">Confirma tu asistencia:</p>
+          <div class="d-grid gap-2">
+            <button class="btn btn-success" (click)="responderAsistencia('CONFIRMADO')" [disabled]="respuestaEnviando">
+              <i class="bi bi-check-circle me-2"></i>Confirmo mi asistencia
+            </button>
+            <button class="btn btn-danger" (click)="responderAsistencia('NO_ASISTIRE')" [disabled]="respuestaEnviando">
+              <i class="bi bi-x-circle me-2"></i>No asistire
+            </button>
+            <button class="btn btn-outline-secondary" (click)="responderAsistencia('PENDIENTE')" [disabled]="respuestaEnviando">
+              <i class="bi bi-question-circle me-2"></i>Aun no lo se
+            </button>
+          </div>
+        </div>
+
+        <!-- Respuesta ENCUESTA -->
+        <div *ngIf="!eventoResponder.yaRespondio && eventoResponder.tipoEvento === 'ENCUESTA'">
+          <p class="mb-3 text-center">Selecciona una opcion:</p>
+          <div class="d-grid gap-2">
+            <button class="btn btn-outline-primary text-start"
+                    *ngFor="let opcion of eventoResponder.opciones"
+                    (click)="responderEncuesta(opcion.id!)"
+                    [disabled]="respuestaEnviando">
+              <i class="bi bi-circle me-2"></i>{{ opcion.textoOpcion }}
+            </button>
+          </div>
+        </div>
+
+        <!-- INFORMATIVO -->
+        <div *ngIf="!eventoResponder.yaRespondio && eventoResponder.tipoEvento === 'INFORMATIVO'" class="text-center py-3">
+          <i class="bi bi-info-circle text-primary" style="font-size: 3rem;"></i>
+          <p class="mt-3 text-muted">Este es un evento informativo. Lee el contenido y cierra cuando hayas terminado.</p>
+        </div>
+
+        <div *ngIf="respuestaEnviando" class="text-center mt-3">
+          <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+          <span class="text-muted">Enviando respuesta...</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="marcarEventoVisto()" [disabled]="respuestaEnviando">
+          {{ eventoResponder.yaRespondio || eventoResponder.tipoEvento === 'INFORMATIVO' ? 'Cerrar' : 'Cancelar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show" *ngIf="mostrarModalResponder"></div>

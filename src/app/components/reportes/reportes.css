@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+.table th {
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.table td {
+  font-size: 0.85rem;
+  vertical-align: middle;
+}

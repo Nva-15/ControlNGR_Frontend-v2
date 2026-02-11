@@ -1,0 +1,376 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-secondary" (click)="volver()">
+        <i class="bi bi-arrow-left"></i>
+      </button>
+      <div>
+        <h4 class="mb-0">
+          <i class="bi bi-bar-chart-fill me-2 text-primary"></i>Estadisticas del Evento
+        </h4>
+        <small class="text-muted" *ngIf="evento">{{ evento.titulo }}</small>
+      </div>
+    </div>
+    <div class="btn-group" *ngIf="!isLoading && estadisticas">
+      <button class="btn btn-success" (click)="exportarExcel()">
+        <i class="bi bi-file-earmark-excel me-1"></i>Excel
+      </button>
+      <button class="btn btn-danger" (click)="exportarPDF()">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+      </button>
+      <button class="btn btn-info" (click)="exportarResumenPDF()">
+        <i class="bi bi-file-text me-1"></i>Resumen
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+    <p class="text-muted mt-3">Cargando estadisticas...</p>
+  </div>
+
+  <div *ngIf="!isLoading && evento && estadisticas">
+    <!-- Info del Evento -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <div class="d-flex align-items-center gap-3 mb-2">
+              <span class="badge bg-{{ getTipoEventoColor(evento.tipoEvento) }} fs-6">
+                <i class="bi {{ getTipoEventoIcon(evento.tipoEvento) }} me-1"></i>
+                {{ getTipoEventoLabel(evento.tipoEvento) }}
+              </span>
+              <span class="badge bg-{{ getEstadoColor(evento.estado) }}">
+                {{ getEstadoLabel(evento.estado) }}
+              </span>
+            </div>
+            <h3 class="mb-2">{{ evento.titulo }}</h3>
+            <p class="text-muted mb-0">{{ evento.descripcion }}</p>
+          </div>
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <small class="text-muted d-block" *ngIf="evento.fechaInicio">
+              <i class="bi bi-calendar-event me-1"></i>Inicio: {{ getFechaFormateada(evento.fechaInicio) }}
+            </small>
+            <small class="text-muted d-block" *ngIf="evento.fechaFin">
+              <i class="bi bi-calendar-x me-1"></i>Fin: {{ getFechaFormateada(evento.fechaFin) }}
+            </small>
+            <small class="text-muted d-block">
+              <i class="bi bi-people me-1"></i>Roles: {{ evento.rolesVisibles?.join(', ') }}
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metricas Principales -->
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="card text-center h-100 shadow-sm border-primary">
+          <div class="card-body">
+            <i class="bi bi-chat-dots text-primary" style="font-size: 2.5rem;"></i>
+            <h2 class="mt-2 mb-0 text-primary">{{ estadisticas.totalRespuestas }}</h2>
+            <p class="text-muted mb-0">Respuestas Recibidas</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-center h-100 shadow-sm border-info">
+          <div class="card-body">
+            <i class="bi bi-people-fill text-info" style="font-size: 2.5rem;"></i>
+            <h2 class="mt-2 mb-0 text-info">{{ estadisticas.totalEmpleados }}</h2>
+            <p class="text-muted mb-0">Total Empleados</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-center h-100 shadow-sm border-success">
+          <div class="card-body">
+            <i class="bi bi-percent text-success" style="font-size: 2.5rem;"></i>
+            <h2 class="mt-2 mb-0 text-success">{{ estadisticas.porcentajeParticipacion | number:'1.1-1' }}%</h2>
+            <p class="text-muted mb-0">Participacion</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resultados segun tipo -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Resultados</h5>
+      </div>
+      <div class="card-body">
+
+        <!-- SI/NO -->
+        <div *ngIf="estadisticas.tipoEvento === 'SI_NO'" class="row g-4">
+          <div class="col-md-6">
+            <div class="card bg-success bg-opacity-10 border-success h-100">
+              <div class="card-body text-center">
+                <i class="bi bi-hand-thumbs-up-fill text-success" style="font-size: 3rem;"></i>
+                <h1 class="display-4 text-success mb-0">{{ estadisticas.respuestasSi || 0 }}</h1>
+                <h5 class="text-success">SI</h5>
+                <div class="progress mt-3" style="height: 10px;">
+                  <div class="progress-bar bg-success"
+                       [style.width.%]="estadisticas.totalRespuestas ? ((estadisticas.respuestasSi || 0) / estadisticas.totalRespuestas * 100) : 0">
+                  </div>
+                </div>
+                <small class="text-muted">
+                  {{ estadisticas.totalRespuestas ? ((estadisticas.respuestasSi || 0) / estadisticas.totalRespuestas * 100 | number:'1.1-1') : 0 }}%
+                </small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card bg-danger bg-opacity-10 border-danger h-100">
+              <div class="card-body text-center">
+                <i class="bi bi-hand-thumbs-down-fill text-danger" style="font-size: 3rem;"></i>
+                <h1 class="display-4 text-danger mb-0">{{ estadisticas.respuestasNo || 0 }}</h1>
+                <h5 class="text-danger">NO</h5>
+                <div class="progress mt-3" style="height: 10px;">
+                  <div class="progress-bar bg-danger"
+                       [style.width.%]="estadisticas.totalRespuestas ? ((estadisticas.respuestasNo || 0) / estadisticas.totalRespuestas * 100) : 0">
+                  </div>
+                </div>
+                <small class="text-muted">
+                  {{ estadisticas.totalRespuestas ? ((estadisticas.respuestasNo || 0) / estadisticas.totalRespuestas * 100 | number:'1.1-1') : 0 }}%
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ASISTENCIA -->
+        <div *ngIf="estadisticas.tipoEvento === 'ASISTENCIA'" class="row g-4">
+          <div class="col-md-4">
+            <div class="card bg-success bg-opacity-10 border-success h-100">
+              <div class="card-body text-center">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                <h1 class="display-4 text-success mb-0">{{ estadisticas.confirmados || 0 }}</h1>
+                <h5 class="text-success">Confirmados</h5>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-danger bg-opacity-10 border-danger h-100">
+              <div class="card-body text-center">
+                <i class="bi bi-x-circle-fill text-danger" style="font-size: 3rem;"></i>
+                <h1 class="display-4 text-danger mb-0">{{ estadisticas.noAsistiran || 0 }}</h1>
+                <h5 class="text-danger">No Asistiran</h5>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card bg-warning bg-opacity-10 border-warning h-100">
+              <div class="card-body text-center">
+                <i class="bi bi-question-circle-fill text-warning" style="font-size: 3rem;"></i>
+                <h1 class="display-4 text-warning mb-0">{{ estadisticas.pendientes || 0 }}</h1>
+                <h5 class="text-warning">Pendientes</h5>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ENCUESTA -->
+        <div *ngIf="estadisticas.tipoEvento === 'ENCUESTA' && estadisticas.opcionesEstadisticas">
+          <div class="row g-3">
+            <div class="col-12" *ngFor="let opcion of estadisticas.opcionesEstadisticas; let i = index">
+              <div class="d-flex align-items-center gap-3">
+                <div class="text-center" style="min-width: 60px;">
+                  <h3 class="mb-0 text-primary">{{ opcion.votos }}</h3>
+                  <small class="text-muted">votos</small>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-bold">{{ opcion.textoOpcion }}</span>
+                    <span class="badge bg-primary">{{ opcion.porcentaje | number:'1.1-1' }}%</span>
+                  </div>
+                  <div class="progress" style="height: 25px;">
+                    <div class="progress-bar bg-primary progress-bar-striped"
+                         [style.width.%]="opcion.porcentaje"
+                         role="progressbar">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INFORMATIVO -->
+        <div *ngIf="estadisticas.tipoEvento === 'INFORMATIVO'" class="text-center py-4">
+          <i class="bi bi-info-circle text-info" style="font-size: 4rem;"></i>
+          <h4 class="mt-3">Evento Informativo</h4>
+          <p class="text-muted">{{ estadisticas.totalRespuestas }} empleados han visto este evento</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs y Filtro de fecha -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <ul class="nav nav-tabs mb-0">
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'resumen'" (click)="activeTab = 'resumen'" href="javascript:void(0)">
+            <i class="bi bi-graph-up me-1"></i>Resumen
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="activeTab === 'respuestas'" (click)="activeTab = 'respuestas'" href="javascript:void(0)">
+            <i class="bi bi-list-check me-1"></i>Respuestas ({{ respuestasFiltradas.length }})
+          </a>
+        </li>
+        <li class="nav-item" *ngIf="evento.permiteComentarios">
+          <a class="nav-link" [class.active]="activeTab === 'comentarios'" (click)="activeTab = 'comentarios'" href="javascript:void(0)">
+            <i class="bi bi-chat-left-text me-1"></i>Comentarios ({{ comentariosFiltrados.length }})
+          </a>
+        </li>
+      </ul>
+      <!-- Filtro por fecha -->
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-calendar3 text-muted"></i>
+        <select class="form-select form-select-sm" [(ngModel)]="filtroDias" style="width: auto;">
+          <option *ngFor="let opcion of opcionesDias" [ngValue]="opcion.value">
+            {{ opcion.label }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="card shadow-sm">
+      <div class="card-body">
+
+        <!-- Resumen Tab -->
+        <div *ngIf="activeTab === 'resumen'">
+          <div class="row">
+            <div class="col-md-6">
+              <h6 class="text-muted mb-3">Informacion General</h6>
+              <table class="table table-sm">
+                <tbody>
+                  <tr>
+                    <td class="text-muted">Creado por:</td>
+                    <td class="fw-bold">{{ evento.creadoPorNombre || 'Sistema' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Fecha creacion:</td>
+                    <td>{{ getFechaFormateada(evento.fechaCreacion) }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Permite comentarios:</td>
+                    <td>
+                      <span class="badge" [class.bg-success]="evento.permiteComentarios" [class.bg-secondary]="!evento.permiteComentarios">
+                        {{ evento.permiteComentarios ? 'Si' : 'No' }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Requiere respuesta:</td>
+                    <td>
+                      <span class="badge" [class.bg-warning]="evento.requiereRespuesta" [class.bg-secondary]="!evento.requiereRespuesta">
+                        {{ evento.requiereRespuesta ? 'Si' : 'No' }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-muted mb-3">Participacion</h6>
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="progress flex-grow-1" style="height: 30px;">
+                  <div class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+                       [style.width.%]="estadisticas.porcentajeParticipacion">
+                    {{ estadisticas.porcentajeParticipacion | number:'1.1-1' }}%
+                  </div>
+                </div>
+              </div>
+              <p class="text-muted">
+                <strong>{{ estadisticas.totalRespuestas }}</strong> de <strong>{{ estadisticas.totalEmpleados }}</strong> empleados han participado
+              </p>
+              <p class="text-muted" *ngIf="estadisticas.totalEmpleados - estadisticas.totalRespuestas > 0">
+                <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                Faltan <strong>{{ estadisticas.totalEmpleados - estadisticas.totalRespuestas }}</strong> empleados por responder
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Respuestas Tab -->
+        <div *ngIf="activeTab === 'respuestas'">
+          <div *ngIf="respuestasFiltradas.length === 0" class="text-center py-4">
+            <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+            <p class="text-muted mt-2">No hay respuestas en el periodo seleccionado</p>
+          </div>
+          <div class="table-responsive" *ngIf="respuestasFiltradas.length > 0">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>Empleado</th>
+                  <th>Respuesta</th>
+                  <th>Comentario</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of respuestasFiltradas">
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <img [src]="getFotoUrl(r.empleadoFoto)"
+                           class="rounded-circle"
+                           width="35" height="35"
+                           style="object-fit: cover;"
+                           onerror="this.src='https://ui-avatars.com/api/?name=U&background=6c757d&color=fff'">
+                      <span>{{ r.empleadoNombre }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge"
+                          [class.bg-success]="r.respuestaSiNo === true || r.confirmacionAsistencia === 'CONFIRMADO'"
+                          [class.bg-danger]="r.respuestaSiNo === false || r.confirmacionAsistencia === 'NO_ASISTIRE'"
+                          [class.bg-warning]="r.confirmacionAsistencia === 'PENDIENTE'"
+                          [class.bg-primary]="r.opcionTexto"
+                          [class.bg-info]="!r.respuestaSiNo && !r.confirmacionAsistencia && !r.opcionTexto">
+                      {{ getRespuestaTexto(r) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span *ngIf="r.comentario" class="text-muted small">{{ r.comentario }}</span>
+                    <span *ngIf="!r.comentario" class="text-muted">-</span>
+                  </td>
+                  <td class="text-muted small">{{ getFechaFormateada(r.fechaRespuesta) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Comentarios Tab -->
+        <div *ngIf="activeTab === 'comentarios'">
+          <div *ngIf="comentariosFiltrados.length === 0" class="text-center py-4">
+            <i class="bi bi-chat-left text-muted" style="font-size: 3rem;"></i>
+            <p class="text-muted mt-2">No hay comentarios en el periodo seleccionado</p>
+          </div>
+          <div *ngIf="comentariosFiltrados.length > 0">
+            <div class="border-bottom py-3" *ngFor="let c of comentariosFiltrados">
+              <div class="d-flex gap-3">
+                <img [src]="getFotoUrl(c.empleadoFoto)"
+                     class="rounded-circle"
+                     width="45" height="45"
+                     style="object-fit: cover;"
+                     onerror="this.src='https://ui-avatars.com/api/?name=U&background=6c757d&color=fff'">
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <strong>{{ c.empleadoNombre }}</strong>
+                    <small class="text-muted">{{ getFechaFormateada(c.fechaComentario) }}</small>
+                  </div>
+                  <p class="mb-0">{{ c.comentario }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>

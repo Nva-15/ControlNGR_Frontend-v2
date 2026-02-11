@@ -1,0 +1,106 @@
+<div class="container-fluid vh-100 bg-gradient">
+  <div class="row h-100 justify-content-center align-items-center">
+    <div class="col-md-4 col-lg-4 col-xl-3">
+      <div class="card shadow-lg border-0">
+        <!-- Logo y Título -->
+        <div class="card-header login-header text-white text-center py-4">
+          <div class="mb-2">
+            <img src="/img/Logo.PNG"
+                 alt="Control NGR"
+                 class="img-fluid"
+                 width="120"
+                 height="80"
+                 style="max-height: 80px; object-fit: contain;">
+          </div>
+          <small class="opacity-75">Sistema de Gestión de Asistencia</small>
+        </div>
+        
+        <div class="card-body p-4">
+          <h5 class="card-title text-center mb-4 text-dark">Iniciar Sesión</h5>
+          
+          <form #loginForm="ngForm" (ngSubmit)="onSubmit()" class="needs-validation" novalidate>
+            <!-- Campo DNI/Usuario -->
+            <div class="mb-4">
+              <label for="username" class="form-label fw-semibold">
+                <i class="bi bi-person-badge me-2"></i>DNI / Usuario
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light">
+                  <i class="bi bi-person"></i>
+                </span>
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  id="username"
+                  name="username"
+                  [(ngModel)]="credentials.username"
+                  required
+                  placeholder="Ingresa tu DNI"
+                  [class.is-invalid]="errorMessage">
+              </div>
+            </div>
+
+            <!-- Campo Contraseña -->
+            <div class="mb-4">
+              <label for="password" class="form-label fw-semibold">
+                <i class="bi bi-key me-2"></i>Contraseña
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light">
+                  <i class="bi bi-lock"></i>
+                </span>
+                <input 
+                  [type]="showPassword ? 'text' : 'password'" 
+                  class="form-control" 
+                  id="password"
+                  name="password"
+                  [(ngModel)]="credentials.password"
+                  required
+                  placeholder="Ingresa tu contraseña"
+                  [class.is-invalid]="errorMessage">
+                <button class="btn btn-outline-secondary" type="button" (click)="togglePassword()">
+                  <i class="bi" [class.bi-eye]="!showPassword" [class.bi-eye-slash]="showPassword"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Botón Login -->
+            <button
+              type="submit"
+              class="btn btn-login w-100 py-3 fw-semibold"
+              [disabled]="!credentials.username || !credentials.password || isLoading">
+              <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+              <i *ngIf="!isLoading" class="bi bi-box-arrow-in-right me-2"></i>
+              {{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
+            </button>
+
+            <!-- Mensaje de error -->
+            <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show mt-4 mb-0" role="alert">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              <strong>Error:</strong> {{ errorMessage }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" (click)="errorMessage = ''"></button>
+            </div>
+          </form>
+
+          <!-- Información adicional -->
+          <div class="mt-4 text-center">
+            <p class="text-muted small mb-2">
+              <i class="bi bi-info-circle me-1"></i>
+              Usa tu DNI como usuario y la contraseña asignada
+            </p>
+            <p class="small text-muted">
+              ¿Problemas para acceder? Contacta con administración
+            </p>
+          </div>
+        </div>
+
+        <!-- Footer del card -->
+        <div class="card-footer text-center py-3" style="background-color: #F5F0EB;">
+          <small class="text-muted">
+            © 2025 Control NGR - Sistema de Asistencia
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
