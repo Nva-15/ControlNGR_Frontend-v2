@@ -49,14 +49,31 @@ export function esGestion(rol?: string | null): boolean {
   return !!rol && (GESTION as string[]).includes(rol.toLowerCase());
 }
 
-/** Mismo criterio que el backend (Roles.puedeAdministrar). */
+/** Rango dentro de gerencia: director 3, gerente 2, jefe 1, el resto 0 (igual que el backend). */
+export function rango(rol?: string | null): number {
+  switch ((rol || '').toLowerCase()) {
+    case ROLES.DIRECTOR: return 3;
+    case ROLES.GERENTE: return 2;
+    case ROLES.JEFE: return 1;
+    default: return 0;
+  }
+}
+
+/** Mismo criterio que el backend (Roles.puedeAdministrar): la gerencia solo administra rangos inferiores. */
 export function puedeAdministrar(rolEditor?: string | null, rolObjetivo?: string | null): boolean {
   const editor = (rolEditor || '').toLowerCase();
   const objetivo = (rolObjetivo || '').toLowerCase();
-  if (editor === ROLES.ADMIN || esGerencia(editor)) return true;
+  if (editor === ROLES.ADMIN) return true;
+  if (esGerencia(editor)) return objetivo !== ROLES.ADMIN && rango(objetivo) < rango(editor);
   if (editor === ROLES.SUPERVISOR) return (OPERATIVOS as string[]).includes(objetivo);
   if (editor === ROLES.GESTOR) return objetivo === ROLES.ASISTENTE;
   return false;
+}
+
+/** Mismo criterio que el backend (Roles.puedeAsignarRol). */
+export function puedeAsignarRol(rolEditor?: string | null, rolNuevo?: string | null): boolean {
+  if ((rolEditor || '').toLowerCase() === ROLES.ADMIN) return true;
+  return esGerencia(rolEditor) && rango(rolNuevo) < rango(rolEditor);
 }
 
 /** Clase de insignia por rol. */
