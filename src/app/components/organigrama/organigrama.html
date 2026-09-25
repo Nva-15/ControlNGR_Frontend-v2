@@ -1,422 +1,97 @@
-<div class="container-fluid mt-3 mb-5">
-  
-  <!-- 🎂 PANEL DE CUMPLEAÑOS SEMANALES -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body p-3 bg-light">
-      <div class="d-flex align-items-center mb-3">
-        <i class="bi bi-balloon-heart-fill text-danger fs-4 me-2"></i>
-        <h5 class="mb-0 fw-bold text-dark">🎂 Cumpleaños Próximos (7 días)</h5>
-      </div>
-      
-      <div *ngIf="cumpleanosHoy.length === 0 && cumpleanosProximos.length === 0" class="text-center py-3">
-        <p class="text-muted mb-0">No hay cumpleaños en los próximos 7 días</p>
-      </div>
-      
-      <!-- Cumpleañeros de HOY -->
-      <div *ngIf="cumpleanosHoy.length > 0" class="mb-3">
-        <h6 class="text-success fw-bold mb-2">
-          <i class="bi bi-gift-fill me-1"></i> ¡Feliz Cumpleaños Hoy!
-        </h6>
-        <div class="row g-2">
-          <div *ngFor="let emp of cumpleanosHoy" class="col-12 col-md-6 col-lg-4">
-            <div class="card border-success border-2 shadow-sm cumple-hoy-card">
-              <div class="card-body p-2">
-                <div class="d-flex align-items-center">
-                  <img [src]="getFoto(emp)"
-                       class="rounded-circle me-2"
-                       width="40"
-                       height="40"
-                       loading="lazy"
-                       decoding="async"
-                       style="object-fit: cover;"
-                       (error)="onImageError($event)">
-                  <div class="flex-grow-1">
-                    <strong class="d-block">{{ emp.nombre }}</strong>
-                    <small class="text-success fw-bold">
-                      <i class="bi bi-balloon-fill me-1"></i>
-                      🎉 ¡Feliz cumpleaños!
-                    </small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Próximos cumpleaños -->
-      <div *ngIf="cumpleanosProximos.length > 0">
-        <h6 class="text-primary fw-bold mb-2">
-          <i class="bi bi-calendar-heart me-1"></i> Próximos Cumpleaños
-        </h6>
-        <div class="row g-2">
-          <div *ngFor="let emp of cumpleanosProximos" class="col-12 col-md-6 col-lg-4">
-            <div class="card border-0 shadow-sm">
-              <div class="card-body p-2">
-                <div class="d-flex align-items-center">
-                  <img [src]="getFoto(emp)"
-                       class="rounded-circle me-2"
-                       width="35"
-                       height="35"
-                       loading="lazy"
-                       decoding="async"
-                       style="object-fit: cover;"
-                       (error)="onImageError($event)">
-                  <div class="flex-grow-1">
-                    <strong class="d-block" style="font-size: 0.9rem;">{{ emp.nombre }}</strong>
-                    <small class="text-muted" style="font-size: 0.8rem;">
-                      <i class="bi bi-calendar3 me-1"></i>
-                      Cumple el {{ emp.fechaCumpleFormateada }}
-                    </small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Info de rango -->
-      <div class="mt-3 pt-2 border-top">
-        <small class="text-muted">
-          <i class="bi bi-info-circle me-1"></i>
-          Mostrando cumpleaños dentro de los próximos 7 días (zona horaria: Perú UTC-5)
-        </small>
-      </div>
-    </div>
-  </div>
-
-  <!-- 🏛️ TÍTULO DEL ORGANIGRAMA -->
-  <div class="text-center mb-4">
-    <h2 class="text-primary fw-bold">
-      <i class="bi bi-diagram-3-fill me-2"></i>Organigrama Institucional
-    </h2>
-    <p class="text-muted">Estructura jerárquica del equipo NGR</p>
-  </div>
-
-  <!-- ⏳ LOADING -->
-  <div *ngIf="isLoading" class="text-center py-5">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Cargando...</span>
-    </div>
-    <p class="text-muted mt-2">Cargando estructura organizacional...</p>
-  </div>
-
-  <!-- 🏗️ ESTRUCTURA DE PIRÁMIDE - SIN ROLES VISIBLES -->
-  <div *ngIf="!isLoading" class="org-pyramid-container">
-    
-    <!-- 1️⃣ NIVEL: JEFATURAS / ADMIN - SIN ROL -->
-    <div *ngIf="nivelJefes.length > 0" class="pyramid-level level-1">
-      <div class="level-label">
-        <span class="badge bg-primary px-3 py-2">
-          <i class="bi bi-award-fill me-1"></i> Jefaturas & Administración
-        </span>
-      </div>
-      <div class="level-cards">
-        <div *ngFor="let emp of nivelJefes" 
-             class="pyramid-card card-jefe"
-             (click)="seleccionarEmpleado(emp)">
-          <div class="card-inner">
-            <img [src]="getFoto(emp)"
-                 class="emp-img"
-                 loading="lazy"
-                 decoding="async"
-                 (error)="onImageError($event)"
-                 alt="{{ emp.nombre }}">
-            <div class="emp-info">
-              <h6 class="emp-name">{{ emp.nombre }}</h6>
-              <small class="emp-cargo">{{ getNivelDisplay(emp) }}</small>
-              <!-- SIN BADGE DE ROL -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2️⃣ NIVEL: SUPERVISORES - SIN ROL -->
-    <div *ngIf="nivelSupervisores.length > 0" class="pyramid-level level-2">
-      <div class="level-label">
-        <span class="badge bg-info px-3 py-2">
-          <i class="bi bi-eye-fill me-1"></i> Supervisores
-        </span>
-      </div>
-      <div class="level-cards">
-        <div *ngFor="let emp of nivelSupervisores" 
-             class="pyramid-card card-supervisor"
-             (click)="seleccionarEmpleado(emp)">
-          <div class="card-inner">
-            <img [src]="getFoto(emp)"
-                 class="emp-img"
-                 loading="lazy"
-                 decoding="async"
-                 (error)="onImageError($event)"
-                 alt="{{ emp.nombre }}">
-            <div class="emp-info">
-              <h6 class="emp-name">{{ emp.nombre }}</h6>
-              <small class="emp-cargo">{{ getNivelDisplay(emp) }}</small>
-              <!-- SIN BADGE DE ROL -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3️⃣ NIVEL: TÉCNICOS - SIN ROL -->
-    <div *ngIf="nivelTecnicos.length > 0" class="pyramid-level level-3">
-      <div class="level-label">
-        <span class="badge bg-success px-3 py-2">
-          <i class="bi bi-tools me-1"></i> Técnicos
-        </span>
-      </div>
-      <div class="level-cards">
-        <div *ngFor="let emp of nivelTecnicos" 
-             class="pyramid-card card-tecnico"
-             (click)="seleccionarEmpleado(emp)">
-          <div class="card-inner">
-            <img [src]="getFoto(emp)"
-                 class="emp-img"
-                 loading="lazy"
-                 decoding="async"
-                 (error)="onImageError($event)"
-                 alt="{{ emp.nombre }}">
-            <div class="emp-info">
-              <h6 class="emp-name">{{ emp.nombre }}</h6>
-              <small class="emp-cargo">{{ getNivelDisplay(emp) }}</small>
-              <!-- SIN BADGE DE ROL -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4️⃣ NIVEL: HD - SIN ROL -->
-    <div *ngIf="nivelHD.length > 0" class="pyramid-level level-4">
-      <div class="level-label">
-        <span class="badge bg-warning text-dark px-3 py-2">
-          <i class="bi bi-headset me-1"></i> Help Desk (HD)
-        </span>
-      </div>
-      <div class="level-cards">
-        <div *ngFor="let emp of nivelHD" 
-             class="pyramid-card card-hd"
-             (click)="seleccionarEmpleado(emp)">
-          <div class="card-inner">
-            <img [src]="getFoto(emp)"
-                 class="emp-img"
-                 loading="lazy"
-                 decoding="async"
-                 (error)="onImageError($event)"
-                 alt="{{ emp.nombre }}">
-            <div class="emp-info">
-              <h6 class="emp-name">{{ emp.nombre }}</h6>
-              <small class="emp-cargo">{{ getNivelDisplay(emp) }}</small>
-              <!-- SIN BADGE DE ROL -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 5️⃣ NIVEL: NOC - SIN ROL -->
-    <div *ngIf="nivelNOC.length > 0" class="pyramid-level level-5">
-      <div class="level-label">
-        <span class="badge bg-dark px-3 py-2">
-          <i class="bi bi-hdd-network me-1"></i> Network Operations Center (NOC)
-        </span>
-      </div>
-      <div class="level-cards">
-        <div *ngFor="let emp of nivelNOC" 
-             class="pyramid-card card-noc"
-             (click)="seleccionarEmpleado(emp)">
-          <div class="card-inner">
-            <img [src]="getFoto(emp)"
-                 class="emp-img"
-                 loading="lazy"
-                 decoding="async"
-                 (error)="onImageError($event)"
-                 alt="{{ emp.nombre }}">
-            <div class="emp-info">
-              <h6 class="emp-name">{{ emp.nombre }}</h6>
-              <small class="emp-cargo">{{ getNivelDisplay(emp) }}</small>
-              <!-- SIN BADGE DE ROL -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- 📱 RESPONSIVE INFO -->
-  <div class="text-center mt-4 text-muted">
-    <small>
-      <i class="bi bi-info-circle me-1"></i>
-      Haz clic en cualquier colaborador para ver información general
-    </small>
-  </div>
-
-</div>
-
-<!-- 👤 MODAL DETALLE EMPLEADO (SIN INFORMACIÓN SENSIBLE Y SIN ROL) -->
-<div *ngIf="mostrarDetalle" class="modal-backdrop fade show"></div>
-<div *ngIf="mostrarDetalle" 
-     class="modal fade show d-block" 
-     tabindex="-1"
-     (click)="cerrarDetalle()">
-  <div class="modal-dialog modal-lg modal-dialog-centered" (click)="$event.stopPropagation()">
-    <div class="modal-content border-0 shadow-lg">
-      
-      <!-- HEADER -->
-      <div class="modal-header border-0 bg-primary text-white">
-        <h5 class="modal-title">
-          <i class="bi bi-person-badge me-2"></i>
-          Información del Colaborador
-        </h5>
-        <button type="button" 
-                class="btn-close btn-close-white" 
-                (click)="cerrarDetalle()"
-                aria-label="Close"></button>
-      </div>
-      
-      <!-- BODY -->
-      <div class="modal-body p-4">
-        
-        <!-- LOADING -->
-        <div *ngIf="isLoadingDetalle" class="text-center py-4">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando...</span>
-          </div>
-          <p class="text-muted mt-2">Cargando información del colaborador...</p>
-        </div>
-        
-        <!-- CONTENIDO -->
-        <div *ngIf="!isLoadingDetalle && empleadoSeleccionado" class="row">
-          <!-- Columna izquierda: Solo foto y nombre -->
-          <div class="col-md-4 text-center">
-            <img [src]="getFoto(empleadoSeleccionado)"
-                 class="rounded-circle border border-4 border-primary shadow mb-3"
-                 width="150"
-                 height="150"
-                 loading="lazy"
-                 decoding="async"
-                 style="object-fit: cover;"
-                 (error)="onImageError($event)"
-                 alt="{{ empleadoSeleccionado.nombre }}">
-            
-            <h4 class="fw-bold mb-1">{{ empleadoSeleccionado.nombre }}</h4>
-            <p class="text-muted mb-3">{{ empleadoSeleccionado.cargo || getNivelDisplay(empleadoSeleccionado) }}</p>
-            
-            <!-- SIN BADGE DE ROL EN MODAL -->
-            
-            <!-- Cumpleaños -->
-            <div *ngIf="empleadoSeleccionado.cumpleanos" 
-                 class="alert alert-success py-2 mb-3">
-              <div class="d-flex align-items-center">
-                <i class="bi bi-balloon-heart-fill fs-5 me-2"></i>
-                <div>
-                  <strong class="d-block">🎂 Cumpleaños</strong>
-                  {{ getFormatoFecha(empleadoSeleccionado.cumpleanos) }}
-                  <span *ngIf="calcularEdad(empleadoSeleccionado.cumpleanos)" 
-                        class="text-muted">
-                    • {{ calcularEdad(empleadoSeleccionado.cumpleanos) }} años
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Columna derecha: Información personal -->
-          <div class="col-md-8">
-            <!-- Hobby y Descripción -->
-            <div class="card mb-3 border-0 shadow-sm">
-              <div class="card-body">
-                <h6 class="card-title text-primary fw-bold mb-3">
-                  <i class="bi bi-info-circle me-2"></i>Información Personal
-                </h6>
-                
-                <div class="row">
-                  <!-- Hobby -->
-                  <div *ngIf="empleadoSeleccionado.hobby" class="col-12 mb-3">
-                    <label class="text-muted small">Hobby / Interés</label>
-                    <p class="mb-0">
-                      <i class="bi bi-joystick text-primary me-2"></i>
-                      {{ empleadoSeleccionado.hobby }}
-                    </p>
-                  </div>
-                  
-                  <!-- Descripción -->
-                  <div *ngIf="empleadoSeleccionado.descripcion" class="col-12 mb-3">
-                    <label class="text-muted small">Descripción Personal</label>
-                    <p class="mb-0" style="text-align: justify;">
-                      {{ empleadoSeleccionado.descripcion }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Información laboral -->
-            <div class="card border-0 shadow-sm">
-              <div class="card-body">
-                <h6 class="card-title text-primary fw-bold mb-3">
-                  <i class="bi bi-briefcase me-2"></i>Información Laboral
-                </h6>
-                
-                <div class="row">
-                  <!-- Fecha de ingreso -->
-                  <div *ngIf="empleadoSeleccionado.ingreso" class="col-12 col-md-6 mb-3">
-                    <label class="text-muted small">Fecha de Ingreso</label>
-                    <p class="mb-0">
-                      <i class="bi bi-calendar-check text-primary me-2"></i>
-                      {{ getFormatoFecha(empleadoSeleccionado.ingreso) }}
-                    </p>
-                  </div>
-                  
-                  <!-- Tiempo en la empresa -->
-                  <div *ngIf="empleadoSeleccionado.ingreso" class="col-12 col-md-6 mb-3">
-                    <label class="text-muted small">Tiempo en la Empresa</label>
-                    <p class="mb-0 fw-bold text-success">
-                      <i class="bi bi-clock-history text-success me-2"></i>
-                      {{ calcularTiempoEnEmpresa(empleadoSeleccionado.ingreso) }}
-                    </p>
-                  </div>
-                  
-                  <!-- Estado -->
-                  <div class="col-12 col-md-6 mb-3">
-                    <label class="text-muted small">Estado</label>
-                    <p class="mb-0">
-                      <i class="bi bi-circle-fill me-2" 
-                         [ngClass]="{
-                           'text-success': empleadoSeleccionado.activo,
-                           'text-danger': !empleadoSeleccionado.activo
-                         }"></i>
-                      <span *ngIf="empleadoSeleccionado.activo">
-                        Activo en la empresa
-                      </span>
-                      <span *ngIf="!empleadoSeleccionado.activo">
-                        No activo
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- FOOTER -->
-      <div class="modal-footer border-0 bg-light">
-        <button type="button" 
-                class="btn btn-outline-primary"
-                (click)="cerrarDetalle()">
-          <i class="bi bi-x-circle me-1"></i> Cerrar
-        </button>
-        <small class="text-muted ms-auto">
-          <i class="bi bi-info-circle me-1"></i>
-          Zona horaria: Perú (UTC-5)
-        </small>
-      </div>
-    </div>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Organigrama</h1>
+    <p class="page-subtitle">Estructura del área y equipos por departamento.</p>
   </div>
 </div>
+
+@if (cargando) {
+  <div class="flex justify-center py-16"><span class="spinner"></span></div>
+} @else {
+  @if (cumpleanos.length) {
+    <section class="card mb-8 overflow-hidden">
+      <div class="flex items-center gap-3 bg-gradient-to-r from-vino-700 to-coral-500 px-5 py-3 text-white">
+        <i class="bi bi-cake2 text-lg"></i>
+        <h2 class="font-semibold text-white">Cumpleaños de la semana</h2>
+      </div>
+      <div class="flex gap-4 overflow-x-auto p-5">
+        @for (c of cumpleanos; track c.emp.id) {
+          <button type="button" class="flex min-w-56 items-center gap-3 rounded-xl border p-3 text-left hover:bg-stone-50"
+                  [class]="c.esHoy ? 'border-oro-300 bg-oro-50' : 'border-stone-200'" (click)="seleccionado = c.emp">
+            <app-avatar [nombre]="c.emp.nombre" [foto]="c.emp.foto" [tamano]="44" />
+            <span class="min-w-0">
+              <span class="block truncate text-sm font-medium">{{ c.emp.nombre }}</span>
+              <span class="block text-xs first-letter:uppercase" [class]="c.esHoy ? 'font-semibold text-oro-700' : 'text-stone-500'">{{ fechaCumple(c) }}</span>
+            </span>
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Liderazgo -->
+  <div class="flex flex-col items-center gap-2">
+    @for (nivel of niveles; track nivel.titulo; let ultimo = $last) {
+      <p class="text-[11px] font-semibold uppercase tracking-wider text-stone-500">{{ nivel.titulo }}</p>
+      <div class="flex flex-wrap justify-center gap-4">
+        @for (p of nivel.personas; track p.id) {
+          <button type="button" (click)="seleccionado = p"
+                  class="card flex w-60 flex-col items-center p-5 text-center transition hover:-translate-y-0.5 hover:shadow-md">
+            <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="64" />
+            <p class="mt-3 font-semibold text-stone-900">{{ p.nombre }}</p>
+            <p class="text-xs text-stone-500">{{ p.cargo }}</p>
+            <span class="mt-2" [class]="rolBadge(p.rol)">{{ rolLabel(p.rol) }}</span>
+          </button>
+        }
+      </div>
+      @if (!ultimo || equipos.length) { <div class="h-8 w-px bg-stone-300"></div> }
+    }
+  </div>
+
+  <!-- Equipos -->
+  <div class="mt-2 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+    @for (eq of equipos; track eq.departamento) {
+      <section class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="bi bi-building text-vino-700"></i> {{ eq.departamento }}</h3>
+          <span class="badge-gray">{{ eq.personas.length }}</span>
+        </div>
+        <ul class="divide-y divide-stone-100">
+          @for (p of eq.personas; track p.id) {
+            <li>
+              <button type="button" class="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-stone-50" (click)="seleccionado = p">
+                <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="38" />
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-medium">{{ p.nombre }}</span>
+                  <span class="block truncate text-xs text-stone-500">{{ p.cargo }}</span>
+                </span>
+                <span [class]="rolBadge(p.rol)">{{ rolLabel(p.rol) }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+}
+
+<app-modal [abierto]="!!seleccionado" [titulo]="seleccionado?.nombre || ''" [subtitulo]="seleccionado?.cargo || ''" (cerrar)="seleccionado = null">
+  @if (seleccionado; as p) {
+    <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+      <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="96" />
+      <div class="flex-1 space-y-3">
+        <div class="flex flex-wrap gap-2">
+          <span [class]="rolBadge(p.rol)">{{ rolLabel(p.rol) }}</span>
+          @if (p.departamentoNombre) { <span class="badge-gray">{{ p.departamentoNombre }}</span> }
+        </div>
+        <dl class="grid grid-cols-2 gap-3 text-sm">
+          <div><dt class="label">En la empresa</dt><dd>{{ antiguedad(p.ingreso) }}</dd></div>
+          <div><dt class="label">Cumpleaños</dt><dd>{{ fechaLarga(p.cumpleanos) }}</dd></div>
+          @if (p.email) { <div class="col-span-2"><dt class="label">Correo</dt><dd>{{ p.email }}</dd></div> }
+        </dl>
+        @if (p.descripcion) { <div><p class="label">Sobre mí</p><p class="text-sm text-stone-700">{{ p.descripcion }}</p></div> }
+        @if (p.hobby) { <div><p class="label">Pasatiempos</p><p class="text-sm text-stone-700">{{ p.hobby }}</p></div> }
+      </div>
+    </div>
+  }
+</app-modal>

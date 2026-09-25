@@ -1,5 +1,7 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ModalComponent } from '../shared/modal/modal.component';
+import { PERSONAL, rolLabel } from '../../utils/roles';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth';
@@ -11,9 +13,8 @@ import { Evento, EventoRequest, RespuestaEventoRequest } from '../../interfaces/
 @Component({
   selector: 'app-eventos',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './eventos.html',
-  styleUrls: ['./eventos.css']
+  imports: [CommonModule, FormsModule, ModalComponent],
+  templateUrl: './eventos.html'
 })
 export class EventosComponent implements OnInit, OnDestroy {
   private auth = inject(AuthService);
@@ -71,13 +72,7 @@ export class EventosComponent implements OnInit, OnDestroy {
   // Fecha minima para validacion
   fechaMinima: string = '';
 
-  rolesDisponibles = [
-    { value: 'admin', label: 'Administrador' },
-    { value: 'supervisor', label: 'Supervisor' },
-    { value: 'tecnico', label: 'Tecnico' },
-    { value: 'hd', label: 'HD' },
-    { value: 'noc', label: 'NOC' }
-  ];
+  rolesDisponibles = PERSONAL.map(r => ({ value: r as string, label: rolLabel(r) }));
 
   tiposEvento = [
     { value: 'ENCUESTA', label: 'Encuesta' },
@@ -99,7 +94,7 @@ export class EventosComponent implements OnInit, OnDestroy {
 
     this.actualizarFechaMinima();
 
-    this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 5000);
+    this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 30000);
   }
 
   ngOnDestroy() {
@@ -136,7 +131,24 @@ export class EventosComponent implements OnInit, OnDestroy {
 
   // Puede gestionar eventos (admin/supervisor)
   puedeGestionar(): boolean {
-    return this.auth.isAdmin() || this.auth.isSupervisor();
+    return this.auth.isGestion();
+  }
+
+  cambiarModo(modo: 'mis-eventos' | 'gestion') {
+    this.router.navigate([], { queryParams: { modo: modo === 'gestion' ? 'gestion' : null }, replaceUrl: true });
+  }
+
+  tipoBadge(tipo: string): string {
+    switch (tipo) {
+      case 'ENCUESTA': return 'badge-violet';
+      case 'SI_NO': return 'badge-green';
+      case 'ASISTENCIA': return 'badge-oro';
+      default: return 'badge-blue';
+    }
+  }
+
+  rolLabel(rol: string): string {
+    return rolLabel(rol);
   }
 
   // Mostrar vista de gestión (admin mode)
@@ -280,7 +292,7 @@ export class EventosComponent implements OnInit, OnDestroy {
       tipoEvento: 'INFORMATIVO',
       fechaInicio: this.fechaMinima,
       fechaFin: fechaFinStr,
-      rolesVisibles: ['admin', 'supervisor', 'tecnico', 'hd', 'noc'],
+      rolesVisibles: [...PERSONAL],
       permiteComentarios: true,
       requiereRespuesta: true,
       opciones: []
@@ -632,11 +644,10 @@ export class EventosComponent implements OnInit, OnDestroy {
 
   getEstadoColor(estado: string): string {
     switch (estado) {
-      case 'BORRADOR': return 'secondary';
-      case 'ACTIVO': return 'success';
-      case 'FINALIZADO': return 'primary';
-      case 'CANCELADO': return 'danger';
-      default: return 'secondary';
+      case 'ACTIVO': return 'badge-green';
+      case 'FINALIZADO': return 'badge-blue';
+      case 'CANCELADO': return 'badge-red';
+      default: return 'badge-gray';
     }
   }
 
@@ -655,11 +666,6 @@ export class EventosComponent implements OnInit, OnDestroy {
     }
   }
 
-  getFotoUrl(foto: string | undefined): string {
-    if (!foto) return 'https://ui-avatars.com/api/?name=U&background=6c757d&color=fff';
-    if (foto.startsWith('http')) return foto;
-    return `${this.apiConfig.baseUrl}/${foto}`;
-  }
 
   volver() {
     this.router.navigate(['/dashboard']);

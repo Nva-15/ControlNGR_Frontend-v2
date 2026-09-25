@@ -1,5 +1,7 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AvatarComponent } from '../shared/avatar/avatar.component';
+import { rolLabel } from '../../utils/roles';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EventosService } from '../../services/eventos';
@@ -11,9 +13,8 @@ import { Evento, EstadisticasEvento, RespuestaEvento, ComentarioEvento } from '.
 @Component({
   selector: 'app-evento-estadisticas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './evento-estadisticas.html',
-  styleUrls: ['./evento-estadisticas.css']
+  imports: [CommonModule, FormsModule, AvatarComponent],
+  templateUrl: './evento-estadisticas.html'
 })
 export class EventoEstadisticasComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
@@ -48,7 +49,7 @@ export class EventoEstadisticasComponent implements OnInit, OnDestroy {
     if (id) {
       this.eventoId = parseInt(id);
       this.cargarDatos();
-      this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 5000);
+      this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 30000);
     } else {
       this.router.navigate(['/eventos']);
     }
@@ -196,12 +197,20 @@ export class EventoEstadisticasComponent implements OnInit, OnDestroy {
 
   getEstadoColor(estado: string): string {
     switch (estado) {
-      case 'ACTIVO': return 'success';
-      case 'FINALIZADO': return 'primary';
-      case 'BORRADOR': return 'secondary';
-      case 'CANCELADO': return 'danger';
-      default: return 'secondary';
+      case 'ACTIVO': return 'badge-green';
+      case 'FINALIZADO': return 'badge-blue';
+      case 'CANCELADO': return 'badge-red';
+      default: return 'badge-gray';
     }
+  }
+
+  /** Ancho de barra en porcentaje (0-100). */
+  porcentaje(valor: number | undefined, total: number | undefined): number {
+    return total ? Math.round(((valor || 0) / total) * 100) : 0;
+  }
+
+  rolLabel(rol: string): string {
+    return rolLabel(rol);
   }
 
   getFechaFormateada(fecha: string | undefined): string {
@@ -237,11 +246,6 @@ export class EventoEstadisticasComponent implements OnInit, OnDestroy {
     return 'Visto';
   }
 
-  getFotoUrl(foto: string | undefined): string {
-    if (!foto) return 'https://ui-avatars.com/api/?name=U&background=6c757d&color=fff';
-    if (foto.startsWith('http')) return foto;
-    return `${this.apiConfig.baseUrl}/${foto}`;
-  }
 
   // ==================== EXPORTACION ====================
 

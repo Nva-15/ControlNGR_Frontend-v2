@@ -1,136 +1,60 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { NotificationService, Toast } from '../../../services/notification.service';
 import { Subscription } from 'rxjs';
 
+/** Notificaciones emergentes (esquina superior derecha). */
 @Component({
   selector: 'app-toast-container',
   standalone: true,
-  imports: [CommonModule],
   template: `
-    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
-      <div *ngFor="let toast of toasts; trackBy: trackById"
-           class="toast show fade-in"
-           [class.bg-success]="toast.type === 'success'"
-           [class.bg-danger]="toast.type === 'error'"
-           [class.bg-warning]="toast.type === 'warning'"
-           [class.bg-info]="toast.type === 'info'"
-           [class.text-white]="toast.type !== 'warning'"
-           role="alert">
-        <div class="toast-header"
-             [class.bg-success]="toast.type === 'success'"
-             [class.bg-danger]="toast.type === 'error'"
-             [class.bg-warning]="toast.type === 'warning'"
-             [class.bg-info]="toast.type === 'info'"
-             [class.text-white]="toast.type !== 'warning'">
-          <i class="bi me-2"
-             [class.bi-check-circle-fill]="toast.type === 'success'"
-             [class.bi-x-circle-fill]="toast.type === 'error'"
-             [class.bi-exclamation-triangle-fill]="toast.type === 'warning'"
-             [class.bi-info-circle-fill]="toast.type === 'info'"></i>
-          <strong class="me-auto">{{ toast.title }}</strong>
-          <button type="button" class="btn-close btn-close-white"
-                  (click)="removeToast(toast.id)"
-                  [class.btn-close-white]="toast.type !== 'warning'"></button>
+    <div class="pointer-events-none fixed right-4 top-4 z-[80] flex w-full max-w-sm flex-col gap-3" aria-live="polite">
+      @for (toast of toasts; track toast.id) {
+        <div class="pointer-events-auto flex gap-3 rounded-xl border bg-white p-4 shadow-lg" [class]="borde(toast)">
+          <i class="bi text-lg" [class]="icono(toast)"></i>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-stone-900">{{ toast.title }}</p>
+            <p class="mt-0.5 whitespace-pre-line text-sm text-stone-600">{{ toast.message }}</p>
+          </div>
+          <button type="button" class="btn-icon size-6! -mr-1 -mt-1" (click)="cerrar(toast.id)" aria-label="Cerrar">
+            <i class="bi bi-x"></i>
+          </button>
         </div>
-        <div class="toast-body">
-          {{ toast.message }}
-        </div>
-        <div class="toast-progress" *ngIf="toast.duration && toast.duration > 0">
-          <div class="toast-progress-bar"
-               [style.animation-duration.ms]="toast.duration"></div>
-        </div>
-      </div>
+      }
     </div>
-  `,
-  styles: [`
-    .toast {
-      min-width: 300px;
-      margin-bottom: 0.5rem;
-      border: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    .toast-header {
-      border-bottom: 1px solid rgba(255,255,255,0.2);
-    }
-
-    .toast-body {
-      font-size: 0.95rem;
-    }
-
-    .fade-in {
-      animation: fadeInSlide 0.3s ease-out;
-    }
-
-    @keyframes fadeInSlide {
-      from {
-        opacity: 0;
-        transform: translateX(100%);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .toast-progress {
-      height: 3px;
-      background: rgba(255,255,255,0.3);
-      border-radius: 0 0 4px 4px;
-      overflow: hidden;
-    }
-
-    .toast-progress-bar {
-      height: 100%;
-      background: rgba(255,255,255,0.7);
-      animation: progress linear forwards;
-    }
-
-    @keyframes progress {
-      from { width: 100%; }
-      to { width: 0%; }
-    }
-
-    .bg-success .toast-header,
-    .bg-danger .toast-header,
-    .bg-info .toast-header {
-      background: inherit !important;
-    }
-
-    .bg-warning .toast-header {
-      background: inherit !important;
-      color: #212529;
-    }
-
-    .bg-warning .btn-close {
-      filter: none;
-    }
-  `]
+  `
 })
 export class ToastContainerComponent implements OnInit, OnDestroy {
+  private notification = inject(NotificationService);
+  private sub?: Subscription;
   toasts: Toast[] = [];
-  private subscription!: Subscription;
-
-  constructor(private notificationService: NotificationService) {}
 
   ngOnInit() {
-    this.subscription = this.notificationService.toasts$.subscribe(toasts => {
-      this.toasts = toasts;
-    });
+    this.sub = this.notification.toasts$.subscribe(t => this.toasts = t);
   }
 
   ngOnDestroy() {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
+    this.sub?.unsubscribe();
+  }
+
+  cerrar(id: number) {
+    this.notification.removeToast(id);
+  }
+
+  icono(t: Toast): string {
+    switch (t.type) {
+      case 'success': return 'bi-check-circle-fill text-emerald-600';
+      case 'error': return 'bi-x-circle-fill text-red-600';
+      case 'warning': return 'bi-exclamation-triangle-fill text-amber-500';
+      default: return 'bi-info-circle-fill text-sky-600';
     }
   }
 
-  removeToast(id: number) {
-    this.notificationService.removeToast(id);
-  }
-
-  trackById(index: number, toast: Toast): number {
-    return toast.id;
+  borde(t: Toast): string {
+    switch (t.type) {
+      case 'success': return 'border-emerald-200';
+      case 'error': return 'border-red-200';
+      case 'warning': return 'border-amber-200';
+      default: return 'border-sky-200';
+    }
   }
 }

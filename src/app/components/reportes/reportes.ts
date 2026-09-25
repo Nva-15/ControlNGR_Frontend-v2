@@ -6,13 +6,13 @@ import { AuthService } from '../../services/auth';
 import { ExportService } from '../../services/export';
 import { NotificationService } from '../../services/notification.service';
 import { ReporteAsistencia } from '../../interfaces/asistencia';
+import { PERSONAL, rolBadge, rolLabel } from '../../utils/roles';
 
 @Component({
   selector: 'app-reportes',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './reportes.html',
-  styleUrls: ['./reportes.css']
+  templateUrl: './reportes.html'
 })
 export class ReportesComponent implements OnInit, OnDestroy {
   private asistenciaService = inject(AsistenciaService);
@@ -34,10 +34,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
 
   roles = [
     { value: '', label: 'Todos los roles' },
-    { value: 'supervisor', label: 'Supervisor' },
-    { value: 'tecnico', label: 'Tecnico' },
-    { value: 'hd', label: 'HD' },
-    { value: 'noc', label: 'NOC' }
+    ...PERSONAL.map(r => ({ value: r as string, label: rolLabel(r) }))
   ];
 
   estados = [
@@ -48,7 +45,10 @@ export class ReportesComponent implements OnInit, OnDestroy {
     { value: 'Permiso', label: 'Permiso' },
     { value: 'Descanso', label: 'Descanso' },
     { value: 'Vacaciones', label: 'Vacaciones' },
-    { value: 'Compensado', label: 'Compensado' }
+    { value: 'Compensado', label: 'Compensado' },
+    { value: 'Descanso_medico', label: 'Descanso médico' },
+    { value: 'Licencia', label: 'Licencia' },
+    { value: 'Sin horario', label: 'Sin horario' }
   ];
 
   // Resumen
@@ -64,7 +64,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
     this.fechaInicio = this.fechaHoy;
     this.fechaFin = this.fechaHoy;
     this.cargarReporte();
-    this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 5000);
+    this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 60000);
   }
 
   ngOnDestroy(): void {
@@ -130,8 +130,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
   }
 
   private filtrarPorPermisoDeRol(data: ReporteAsistencia[]): ReporteAsistencia[] {
-    const rol = this.authService.getUserRole();
-    if (rol === 'admin' || rol === 'supervisor') {
+    if (this.isAdminOrSupervisor()) {
       return data;
     }
     const currentEmpleado = this.authService.getCurrentEmpleado();
@@ -173,28 +172,26 @@ export class ReportesComponent implements OnInit, OnDestroy {
 
   getEstadoBadgeClass(estado: string): string {
     switch (estado) {
-      case 'A tiempo': return 'badge bg-success';
-      case 'Tardanza': return 'badge bg-warning text-dark';
-      case 'Falta': return 'badge bg-danger';
-      case 'Permiso': return 'badge bg-info';
-      case 'Descanso': return 'badge bg-secondary';
-      case 'Vacaciones': return 'badge bg-primary';
-      case 'Compensado': return 'badge bg-info';
-      case 'Sin horario': return 'badge bg-light text-dark border';
-      case 'Pendiente': return 'badge bg-light text-muted border';
-      default: return 'badge bg-secondary';
+      case 'A tiempo': return 'badge-green';
+      case 'Tardanza': return 'badge-amber';
+      case 'Falta': return 'badge-red';
+      case 'Vacaciones': return 'badge-oro';
+      case 'Compensado': return 'badge-blue';
+      case 'Descanso_medico': case 'Licencia': case 'Permiso': return 'badge-violet';
+      default: return 'badge-gray';
     }
   }
 
+  estadoTexto(estado: string): string {
+    return this.estados.find(e => e.value === estado)?.label || estado;
+  }
+
   getRolClass(rol: string): string {
-    switch (rol?.toLowerCase()) {
-      case 'admin': return 'badge bg-danger';
-      case 'supervisor': return 'badge bg-primary';
-      case 'tecnico': return 'badge bg-success';
-      case 'hd': return 'badge bg-info';
-      case 'noc': return 'badge bg-warning text-dark';
-      default: return 'badge bg-secondary';
-    }
+    return rolBadge(rol);
+  }
+
+  getRolLabel(rol: string): string {
+    return rolLabel(rol);
   }
 
   formatHora(hora: string | null): string {
@@ -217,9 +214,9 @@ export class ReportesComponent implements OnInit, OnDestroy {
     return labels[dia] || dia;
   }
 
+  /** Jefaturas, supervisores y gestor ven a todo el personal. */
   isAdminOrSupervisor(): boolean {
-    const rol = this.authService.getUserRole();
-    return rol === 'admin' || rol === 'supervisor';
+    return this.authService.isGestion();
   }
 
   limpiarFiltros(): void {

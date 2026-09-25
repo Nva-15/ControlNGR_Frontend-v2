@@ -1,193 +1,72 @@
-<div class="container-fluid py-4">
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="mb-1">
-        <i class="bi bi-graph-up me-2"></i>
-        Reporte de Asistencia
-      </h2>
-      <p class="text-muted mb-0">Control de puntualidad y asistencia del personal</p>
-    </div>
-    <div class="d-flex gap-2">
-      <button class="btn btn-success btn-sm" (click)="exportarExcel()" [disabled]="reporteFiltrado.length === 0">
-        <i class="bi bi-file-earmark-excel me-1"></i> Excel
-      </button>
-      <button class="btn btn-danger btn-sm" (click)="exportarPdf()" [disabled]="reporteFiltrado.length === 0">
-        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
-      </button>
-    </div>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Reportes de asistencia</h1>
+    <p class="page-subtitle">Puntualidad y ausencias según el horario programado.</p>
   </div>
-
-  <!-- Cards de resumen -->
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm text-center">
-        <div class="card-body py-3">
-          <h4 class="text-primary mb-0">{{ totalRegistros }}</h4>
-          <small class="text-muted">Dias Laborables</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm text-center">
-        <div class="card-body py-3">
-          <h4 class="text-success mb-0">{{ totalATiempo }}</h4>
-          <small class="text-muted">A Tiempo</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm text-center">
-        <div class="card-body py-3">
-          <h4 class="text-warning mb-0">{{ totalTardanzas }}</h4>
-          <small class="text-muted">Tardanzas</small>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm text-center">
-        <div class="card-body py-3">
-          <h4 class="text-danger mb-0">{{ totalFaltas }}</h4>
-          <small class="text-muted">Faltas</small>
-        </div>
-      </div>
-    </div>
+  <div class="flex gap-2">
+    <button class="btn-secondary" (click)="exportarExcel()" [disabled]="!reporteFiltrado.length"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+    <button class="btn-secondary" (click)="exportarPdf()" [disabled]="!reporteFiltrado.length"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
   </div>
+</div>
 
-  <!-- Filtros -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <div class="row g-3 align-items-end">
-        <div class="col-md-2">
-          <label class="form-label small fw-bold">Fecha Inicio</label>
-          <input type="date" class="form-control form-control-sm" [(ngModel)]="fechaInicio"
-                 [max]="fechaHoy" (ngModelChange)="validarFechaInicio()">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-bold">Fecha Fin</label>
-          <input type="date" class="form-control form-control-sm" [(ngModel)]="fechaFin"
-                 [min]="fechaInicio" [max]="fechaHoy" (ngModelChange)="validarFechaFin()">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-bold">Buscar Empleado</label>
-          <input type="text" class="form-control form-control-sm" [(ngModel)]="filtroBusqueda"
-                 placeholder="Nombre..." (ngModelChange)="aplicarFiltros()">
-        </div>
-        <div class="col-md-2" *ngIf="isAdminOrSupervisor()">
-          <label class="form-label small fw-bold">Rol</label>
-          <select class="form-select form-select-sm" [(ngModel)]="filtroRol" (change)="aplicarFiltros()">
-            <option *ngFor="let r of roles" [value]="r.value">{{ r.label }}</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-bold">Estado</label>
-          <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
-            <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <div class="d-flex gap-2">
-            <button class="btn btn-primary btn-sm flex-grow-1" (click)="cargarReporte()" [disabled]="isLoading">
-              <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-1"></span>
-              <i class="bi bi-search me-1" *ngIf="!isLoading"></i>Buscar
-            </button>
-            <button class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()" title="Limpiar filtros">
-              <i class="bi bi-x-lg"></i>
-            </button>
-          </div>
-        </div>
+<div class="card mb-6">
+  <div class="card-body flex flex-wrap items-end gap-3">
+    <div><label class="label">Desde</label><input type="date" class="input" [max]="fechaHoy" [(ngModel)]="fechaInicio" (change)="validarFechaInicio()" /></div>
+    <div><label class="label">Hasta</label><input type="date" class="input" [min]="fechaInicio" [max]="fechaHoy" [(ngModel)]="fechaFin" (change)="validarFechaFin()" /></div>
+    <button class="btn-primary" (click)="cargarReporte()" [disabled]="isLoading"><i class="bi bi-search"></i> Consultar</button>
+    <div class="mx-2 hidden h-8 w-px bg-stone-200 lg:block"></div>
+    @if (isAdminOrSupervisor()) {
+      <div class="min-w-48 flex-1"><label class="label">Buscar</label><input class="input" placeholder="Colaborador" [(ngModel)]="filtroBusqueda" (ngModelChange)="aplicarFiltros()" /></div>
+      <div class="w-44"><label class="label">Rol</label>
+        <select class="select" [(ngModel)]="filtroRol" (ngModelChange)="aplicarFiltros()">
+          @for (r of roles; track r.value) { <option [value]="r.value">{{ r.label }}</option> }
+        </select>
       </div>
+    }
+    <div class="w-44"><label class="label">Estado</label>
+      <select class="select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
+        @for (e of estados; track e.value) { <option [value]="e.value">{{ e.label }}</option> }
+      </select>
     </div>
+    <button class="btn-ghost btn-sm" (click)="limpiarFiltros()"><i class="bi bi-x-circle"></i> Limpiar</button>
   </div>
+</div>
 
-  <!-- Leyenda -->
-  <div class="mb-3">
-    <span class="me-2"><span class="badge bg-success">A tiempo</span></span>
-    <span class="me-2"><span class="badge bg-warning text-dark">Tardanza</span></span>
-    <span class="me-2"><span class="badge bg-danger">Falta</span></span>
-    <span class="me-2"><span class="badge bg-info">Permiso</span></span>
-    <span class="me-2"><span class="badge bg-secondary">Descanso</span></span>
-    <span class="me-2"><span class="badge bg-primary">Vacaciones</span></span>
-  </div>
+<div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+  <div class="card p-5"><p class="stat-label">Días laborales</p><p class="stat-value mt-1">{{ totalRegistros }}</p></div>
+  <div class="card p-5"><p class="stat-label">A tiempo</p><p class="stat-value mt-1 text-emerald-700!">{{ totalATiempo }}</p></div>
+  <div class="card p-5"><p class="stat-label">Tardanzas</p><p class="stat-value mt-1 text-amber-600!">{{ totalTardanzas }}</p></div>
+  <div class="card p-5"><p class="stat-label">Faltas</p><p class="stat-value mt-1 text-red-600!">{{ totalFaltas }}</p></div>
+</div>
 
-  <!-- Loading -->
-  <div *ngIf="isLoading" class="text-center py-5">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Cargando...</span>
-    </div>
-    <p class="mt-2 text-muted">Generando reporte...</p>
-  </div>
-
-  <!-- Tabla -->
-  <div *ngIf="!isLoading" class="card">
-    <div class="card-body p-0">
-      <!-- Sin resultados -->
-      <div *ngIf="reporteFiltrado.length === 0" class="text-center py-5">
-        <i class="bi bi-inbox display-4 text-muted"></i>
-        <p class="mt-2 text-muted mb-0">No hay registros para el rango seleccionado</p>
-      </div>
-
-      <div *ngIf="reporteFiltrado.length > 0" class="table-responsive">
-        <table class="table table-bordered table-hover table-sm mb-0">
-          <thead class="table-dark">
+<div class="card">
+  @if (isLoading) {
+    <div class="flex justify-center py-12"><span class="spinner"></span></div>
+  } @else if (!reporteFiltrado.length) {
+    <div class="empty-state"><i class="bi bi-clipboard-data text-4xl"></i><p>No hay registros para el periodo seleccionado.</p></div>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Colaborador</th><th>Fecha</th><th>Programado</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Retraso</th><th>Observaciones</th></tr>
+        </thead>
+        <tbody>
+          @for (r of reporteFiltrado; track $index) {
             <tr>
-              <th>Empleado</th>
-              <th *ngIf="isAdminOrSupervisor()">Rol</th>
-              <th>Fecha</th>
-              <th>Dia</th>
-              <th class="text-center">H. Programada</th>
-              <th class="text-center">H. Entrada Real</th>
-              <th class="text-center">H. Salida Prog.</th>
-              <th class="text-center">H. Salida Real</th>
-              <th class="text-center">Estado</th>
-              <th class="text-center">Min. Retraso</th>
-              <th>Observaciones</th>
+              <td><p class="font-medium">{{ r.empleadoNombre }}</p><span [class]="getRolClass(r.empleadoRol)">{{ getRolLabel(r.empleadoRol) }}</span></td>
+              <td class="whitespace-nowrap">{{ getDiaSemanaLabel(r.diaSemana) }} {{ r.fecha.split('-').reverse().join('/') }}</td>
+              <td class="tabular-nums text-stone-600">{{ formatHora(r.horarioEntrada) }} – {{ formatHora(r.horarioSalida) }}</td>
+              <td class="tabular-nums">{{ formatHora(r.horaEntradaReal) }}</td>
+              <td class="tabular-nums">{{ formatHora(r.horaSalidaReal) }}
+                @if (r.salidaAutomatica) { <span class="badge-gray ml-1" title="Salida registrada automáticamente">auto</span> }
+              </td>
+              <td><span [class]="getEstadoBadgeClass(r.estado)">{{ estadoTexto(r.estado) }}</span></td>
+              <td class="tabular-nums">@if (r.minutosRetraso) { <span class="text-amber-700">{{ formatRetraso(r.minutosRetraso) }}</span> } @else { — }</td>
+              <td class="max-w-xs truncate text-stone-500" [title]="r.observaciones || ''">{{ r.observaciones || '' }}</td>
             </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let r of reporteFiltrado"
-                [class.table-danger]="r.estado === 'Falta'"
-                [class.table-warning]="r.estado === 'Tardanza'"
-                [class.table-secondary]="r.estado === 'Descanso' || r.estado === 'Sin horario'">
-              <td class="fw-bold">{{ r.empleadoNombre }}</td>
-              <td *ngIf="isAdminOrSupervisor()">
-                <span [class]="getRolClass(r.empleadoRol)">{{ r.empleadoRol | uppercase }}</span>
-              </td>
-              <td>{{ r.fecha }}</td>
-              <td>{{ getDiaSemanaLabel(r.diaSemana) }}</td>
-              <td class="text-center">{{ formatHora(r.horarioEntrada) }}</td>
-              <td class="text-center">
-                <span [class.text-danger]="r.estado === 'Tardanza'"
-                      [class.fw-bold]="r.estado === 'Tardanza'">
-                  {{ formatHora(r.horaEntradaReal) }}
-                </span>
-              </td>
-              <td class="text-center">{{ formatHora(r.horarioSalida) }}</td>
-              <td class="text-center">{{ formatHora(r.horaSalidaReal) }}</td>
-              <td class="text-center">
-                <span [class]="getEstadoBadgeClass(r.estado)">{{ r.estado }}</span>
-              </td>
-              <td class="text-center">
-                <span *ngIf="r.minutosRetraso !== null && r.minutosRetraso > 0" class="text-danger fw-bold">
-                  {{ formatRetraso(r.minutosRetraso) }}
-                </span>
-                <span *ngIf="r.minutosRetraso !== null && r.minutosRetraso === 0">-</span>
-                <span *ngIf="r.minutosRetraso === null">-</span>
-              </td>
-              <td class="text-truncate" style="max-width: 150px;">
-                {{ r.observaciones || '-' }}
-                <span *ngIf="r.salidaAutomatica" class="badge bg-light text-muted border ms-1" style="font-size:0.6rem">
-                  Auto
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          }
+        </tbody>
+      </table>
     </div>
-    <div class="card-footer text-muted small" *ngIf="reporteFiltrado.length > 0">
-      <i class="bi bi-info-circle me-1"></i>
-      Mostrando {{ reporteFiltrado.length }} registros | Tolerancia de puntualidad: 5 minutos
-    </div>
-  </div>
+  }
 </div>

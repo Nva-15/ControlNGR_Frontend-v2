@@ -1,894 +1,411 @@
-<div class="container mt-4">
-  
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="text-primary fw-bold">
-      <i class="bi bi-folder2-open me-2"></i>Gestión de Solicitudes
-    </h3>
-    <button class="btn btn-primary" 
-            *ngIf="activeTab !== 'crear'" 
-            (click)="activeTab = 'crear'">
-      <i class="bi bi-plus-lg me-2"></i>Nueva Solicitud
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Solicitudes</h1>
+    <p class="page-subtitle">Vacaciones, compensación por feriado, descanso médico y licencias.</p>
+  </div>
+  @if (pestana !== 'nueva') {
+    <button type="button" class="btn-primary" (click)="cambiarPestana('nueva')"><i class="bi bi-plus-lg"></i> Nueva solicitud</button>
+  }
+</div>
+
+<nav class="tabs mb-6">
+  <button type="button" class="tab" [class.tab-active]="pestana === 'mis-solicitudes'" (click)="cambiarPestana('mis-solicitudes')">
+    <i class="bi bi-person-lines-fill"></i> Mis solicitudes
+  </button>
+  <button type="button" class="tab" [class.tab-active]="pestana === 'nueva'" (click)="cambiarPestana('nueva')">
+    <i class="bi bi-plus-circle"></i> Nueva
+  </button>
+  @if (esAprobador) {
+    <button type="button" class="tab" [class.tab-active]="pestana === 'aprobar'" (click)="cambiarPestana('aprobar')">
+      <i class="bi bi-inbox"></i> Por aprobar
+      @if (porAprobar.length) { <span class="rounded-full bg-vino-600 px-2 py-0.5 text-[11px] font-semibold text-white">{{ porAprobar.length }}</span> }
+    </button>
+    <button type="button" class="tab" [class.tab-active]="pestana === 'equipo'" (click)="cambiarPestana('equipo')">
+      <i class="bi bi-people"></i> Historial del equipo
+    </button>
+  }
+</nav>
+
+<!-- Filtros comunes a las listas -->
+<ng-template #filtros let-conTexto="conTexto">
+  <div class="flex flex-wrap items-end gap-3 px-5 py-4">
+    <div class="w-40">
+      <label class="label">Estado</label>
+      <select class="select" [(ngModel)]="filtroEstado">
+        <option value="">Todos</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="aprobado">Aprobada</option>
+        <option value="rechazado">Rechazada</option>
+      </select>
+    </div>
+    <div class="w-48">
+      <label class="label">Tipo</label>
+      <select class="select" [(ngModel)]="filtroTipo">
+        <option value="">Todos</option>
+        @for (t of tipos; track t.codigo) { <option [value]="t.codigo">{{ t.nombre }}</option> }
+      </select>
+    </div>
+    @if (conTexto) {
+      <div class="min-w-48 flex-1">
+        <label class="label">Buscar</label>
+        <input class="input" [(ngModel)]="filtroTexto" placeholder="Nombre o motivo" />
+      </div>
+    }
+    <button type="button" class="btn-ghost btn-sm" (click)="limpiarFiltros()"><i class="bi bi-x-circle"></i> Limpiar</button>
+  </div>
+</ng-template>
+
+@switch (pestana) {
+  <!-- ==================== MIS SOLICITUDES ==================== -->
+  @case ('mis-solicitudes') {
+    <div class="card">
+      <ng-container *ngTemplateOutlet="filtros; context: { conTexto: false }" />
+      @if (cargando) {
+        <div class="flex justify-center py-12"><span class="spinner"></span></div>
+      } @else if (!misFiltradas.length) {
+        <div class="empty-state">
+          <i class="bi bi-inbox text-4xl"></i>
+          <p>No tiene solicitudes{{ filtroEstado || filtroTipo ? ' con esos filtros' : '' }}.</p>
+          <button class="btn-primary btn-sm mt-2" (click)="cambiarPestana('nueva')">Registrar solicitud</button>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Tipo</th><th>Periodo</th><th>Días</th><th>Estado</th><th>Gestionado por</th><th class="text-right">Acciones</th></tr></thead>
+            <tbody>
+              @for (s of misFiltradas; track s.id) {
+                <tr>
+                  <td>
+                    <div class="flex items-center gap-2 font-medium">
+                      <i class="bi text-stone-400" [class]="iconoTipo(s.tipo)"></i>{{ s.tipoNombre }}
+                      @if (s.evidencias.length) { <i class="bi bi-paperclip text-stone-400" title="Con evidencia"></i> }
+                    </div>
+                    @if (s.motivoLicencia) { <p class="text-xs text-stone-500">{{ s.motivoLicencia }}</p> }
+                  </td>
+                  <td class="whitespace-nowrap">{{ fechaCorta(s.fechaInicio) }} – {{ fechaCorta(s.fechaFin) }}</td>
+                  <td class="tabular-nums">{{ dias(s.diasSolicitados) }}</td>
+                  <td><span [class]="estadoClase(s.estado)">{{ estadoTexto(s.estado) }}</span></td>
+                  <td class="text-stone-600">
+                    {{ s.aprobadoPor || '—' }}
+                    @if (s.comentarioGestion) { <p class="max-w-xs truncate text-xs text-stone-400" [title]="s.comentarioGestion">{{ s.comentarioGestion }}</p> }
+                  </td>
+                  <td>
+                    <div class="flex justify-end gap-1">
+                      <button class="btn-icon" title="Ver detalle" (click)="verDetalle(s)"><i class="bi bi-eye"></i></button>
+                      @if (s.estado === 'pendiente') {
+                        <button class="btn-icon" title="Editar" (click)="editar(s)"><i class="bi bi-pencil"></i></button>
+                        <button class="btn-icon hover:bg-red-50! hover:text-red-600!" title="Eliminar" (click)="eliminar(s)"><i class="bi bi-trash"></i></button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="flex justify-end gap-2 border-t border-stone-100 px-5 py-3">
+          <button class="btn-secondary btn-sm" (click)="exportarExcel(misFiltradas, 'mis_solicitudes')"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+          <button class="btn-secondary btn-sm" (click)="exportarPDF(misFiltradas, 'Mis solicitudes', 'mis_solicitudes')"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ==================== NUEVA ==================== -->
+  @case ('nueva') {
+    <div class="grid gap-6 lg:grid-cols-3">
+      <form class="card lg:col-span-2" (ngSubmit)="enviar()">
+        <div class="card-body space-y-6">
+          <div>
+            <p class="label">Tipo de solicitud</p>
+            <div class="grid gap-3 sm:grid-cols-2">
+              @for (t of tipos; track t.codigo) {
+                <button type="button" (click)="seleccionarTipo(t.codigo)"
+                        class="flex items-start gap-3 rounded-xl border p-4 text-left transition"
+                        [class]="form.tipo === t.codigo ? 'border-vino-500 bg-vino-50 ring-2 ring-vino-100' : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50'">
+                  <span class="flex size-10 shrink-0 items-center justify-center rounded-lg"
+                        [class]="form.tipo === t.codigo ? 'bg-vino-700 text-white' : 'bg-stone-100 text-stone-500'">
+                    <i class="bi text-lg" [class]="iconoTipo(t.codigo)"></i>
+                  </span>
+                  <span>
+                    <span class="block font-medium text-stone-900">{{ t.nombre }}</span>
+                    <span class="block text-xs text-stone-500">{{ t.descripcion }}</span>
+                  </span>
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (tipoSeleccionado; as t) {
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="label" for="inicio">Desde</label>
+                <input id="inicio" name="inicio" type="date" class="input" [(ngModel)]="form.fechaInicio" (change)="onFechasCambiadas()" required />
+              </div>
+              <div>
+                <label class="label" for="fin">Hasta</label>
+                <input id="fin" name="fin" type="date" class="input" [min]="form.fechaInicio" [(ngModel)]="form.fechaFin" (change)="onFechasCambiadas()" required />
+              </div>
+            </div>
+
+            @if (t.requiereMotivoLicencia) {
+              <div>
+                <label class="label" for="motivoLic">Motivo de la licencia</label>
+                <select id="motivoLic" name="motivoLic" class="select" [(ngModel)]="form.motivoLicenciaId" required>
+                  <option [ngValue]="null" disabled>Seleccione…</option>
+                  @for (m of motivosLicencia; track m.id) { <option [ngValue]="m.id">{{ m.nombre }}</option> }
+                </select>
+              </div>
+            }
+
+            @if (t.requiereEvidencia) {
+              <div>
+                <p class="label">Evidencia <span class="text-red-600">*</span></p>
+                @if (archivo) {
+                  <div class="flex items-center gap-3 rounded-lg border border-stone-200 p-3">
+                    <i class="bi text-2xl" [class]="archivo.type === 'application/pdf' ? 'bi-file-earmark-pdf text-red-600' : 'bi-file-earmark-image text-sky-600'"></i>
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm font-medium">{{ archivo.name }}</p>
+                      <p class="text-xs text-stone-500">{{ tamano(archivo.size) }}</p>
+                    </div>
+                    <button type="button" class="btn-icon" (click)="archivo = null" title="Quitar"><i class="bi bi-x-lg"></i></button>
+                  </div>
+                } @else {
+                  <label class="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-stone-300 p-6 text-center hover:border-vino-300 hover:bg-vino-50/40">
+                    <i class="bi bi-cloud-arrow-up text-3xl text-stone-400"></i>
+                    <span class="text-sm font-medium text-stone-700">Adjunte el certificado o sustento</span>
+                    <span class="text-xs text-stone-500">Foto (JPG, PNG) o PDF · máximo {{ maxMb }} MB</span>
+                    <input type="file" class="hidden" accept="application/pdf,image/jpeg,image/png" (change)="seleccionarArchivo($event)" />
+                  </label>
+                }
+              </div>
+            }
+
+            <div>
+              <label class="label" for="motivo">Comentario {{ t.requiereEvidencia ? '' : '(opcional)' }}</label>
+              <textarea id="motivo" name="motivo" class="textarea" rows="3" maxlength="1000" [(ngModel)]="form.motivo"
+                        placeholder="Detalle adicional para quien aprueba"></textarea>
+            </div>
+
+            @if (conflictos.length) {
+              <div class="alert-warning">
+                <i class="bi bi-people"></i>
+                <div>
+                  <p class="font-medium">Compañeros de su mismo rol tienen solicitudes en esas fechas:</p>
+                  <ul class="mt-1 list-inside list-disc text-xs">
+                    @for (c of conflictos; track c.id) { <li>{{ c.empleado }} · {{ c.tipo }} · {{ fechaCorta(c.fechaInicio) }} – {{ fechaCorta(c.fechaFin) }} ({{ c.estado }})</li> }
+                  </ul>
+                  <p class="mt-1 text-xs">Puede enviarla igual; quien aprueba lo evaluará.</p>
+                </div>
+              </div>
+            }
+          }
+        </div>
+        <div class="flex justify-end gap-2 rounded-b-xl border-t border-stone-100 bg-stone-50 px-5 py-4">
+          <button type="button" class="btn-secondary" (click)="cambiarPestana('mis-solicitudes')">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="!puedeEnviar">
+            @if (enviando) { <span class="spinner size-4! border-white/40! border-t-white!"></span> }
+            <i class="bi bi-send"></i> Enviar solicitud
+          </button>
+        </div>
+      </form>
+
+      <!-- Resumen -->
+      <aside class="space-y-4">
+        <div class="card p-5">
+          <p class="stat-label">Resumen</p>
+          <dl class="mt-4 space-y-3 text-sm">
+            <div class="flex justify-between"><dt class="text-stone-500">Tipo</dt><dd class="font-medium">{{ tipoSeleccionado?.nombre || '—' }}</dd></div>
+            <div class="flex justify-between"><dt class="text-stone-500">Días solicitados</dt><dd class="font-semibold tabular-nums">{{ diasSolicitados }}</dd></div>
+            @if (disponible !== null) {
+              <div class="flex justify-between"><dt class="text-stone-500">Disponibles</dt><dd class="font-semibold tabular-nums">{{ dias(disponible) }}</dd></div>
+              <div class="flex justify-between border-t border-stone-100 pt-3">
+                <dt class="text-stone-500">Quedarían</dt>
+                <dd class="font-semibold tabular-nums" [class]="excedeSaldo ? 'text-red-600' : 'text-emerald-700'">{{ dias((disponible || 0) - diasSolicitados) }}</dd>
+              </div>
+            }
+          </dl>
+          @if (excedeSaldo) {
+            <div class="alert-danger mt-4"><i class="bi bi-exclamation-triangle"></i><span>No tiene días suficientes para esta solicitud.</span></div>
+          }
+          @if (tipoSeleccionado && disponible === null) {
+            <p class="field-help mt-4">Este tipo no descuenta días de sus saldos.</p>
+          }
+        </div>
+        <div class="card p-5 text-xs text-stone-500 space-y-2">
+          <p><i class="bi bi-info-circle mr-1"></i> Se cuentan días calendario, incluidos el primero y el último.</p>
+          <p><i class="bi bi-info-circle mr-1"></i> Los días se descuentan cuando la solicitud es aprobada.</p>
+        </div>
+      </aside>
+    </div>
+  }
+
+  <!-- ==================== POR APROBAR ==================== -->
+  @case ('aprobar') {
+    @if (!porAprobar.length) {
+      <div class="card"><div class="empty-state"><i class="bi bi-check2-all text-4xl text-emerald-500"></i><p>No hay solicitudes pendientes de su aprobación.</p></div></div>
+    } @else {
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        @for (s of porAprobar; track s.id) {
+          <article class="card flex flex-col">
+            <div class="card-body flex-1 space-y-3">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="font-semibold text-stone-900">{{ s.empleadoNombre }}</p>
+                  <p class="text-xs text-stone-500">{{ rolLabel(s.empleadoRol) }}</p>
+                </div>
+                <span class="badge-oro"><i class="bi" [class]="iconoTipo(s.tipo)"></i> {{ s.tipoNombre }}</span>
+              </div>
+              <div class="rounded-lg bg-stone-50 p-3 text-sm">
+                <p class="font-medium">{{ fechaCorta(s.fechaInicio) }} – {{ fechaCorta(s.fechaFin) }}</p>
+                <p class="text-xs text-stone-500">{{ dias(s.diasSolicitados) }} día(s) · enviada el {{ fechaCorta(s.fechaSolicitud) }}</p>
+              </div>
+              @if (s.motivoLicencia) { <p class="text-sm"><span class="text-stone-500">Motivo:</span> {{ s.motivoLicencia }}</p> }
+              @if (motivoLimpio(s)) { <p class="line-clamp-3 text-sm text-stone-600">{{ motivoLimpio(s) }}</p> }
+              @if (tieneConflicto(s)) { <span class="badge-amber"><i class="bi bi-people"></i> Cruce con compañeros</span> }
+              @for (ev of s.evidencias; track ev.id) {
+                <button type="button" class="btn-ghost btn-sm -ml-2" (click)="abrirEvidencia(s, ev)"><i class="bi bi-paperclip"></i> {{ ev.nombre }}</button>
+              }
+            </div>
+            <div class="flex gap-2 border-t border-stone-100 p-4">
+              <button class="btn-ghost btn-sm" (click)="verDetalle(s)"><i class="bi bi-eye"></i></button>
+              <button class="btn-danger-soft btn-sm flex-1" (click)="abrirGestion(s, 'rechazado')"><i class="bi bi-x-lg"></i> Rechazar</button>
+              <button class="btn-success btn-sm flex-1" (click)="abrirGestion(s, 'aprobado')"><i class="bi bi-check-lg"></i> Aprobar</button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  }
+
+  <!-- ==================== EQUIPO ==================== -->
+  @case ('equipo') {
+    <div class="card">
+      <ng-container *ngTemplateOutlet="filtros; context: { conTexto: true }" />
+      @if (!equipoFiltrado.length) {
+        <div class="empty-state"><i class="bi bi-inbox text-4xl"></i><p>No hay solicitudes para mostrar.</p></div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Colaborador</th><th>Tipo</th><th>Periodo</th><th>Días</th><th>Estado</th><th>Gestionado por</th><th class="text-right">Acciones</th></tr></thead>
+            <tbody>
+              @for (s of equipoFiltrado; track s.id) {
+                <tr>
+                  <td><p class="font-medium">{{ s.empleadoNombre }}</p><p class="text-xs text-stone-500">{{ rolLabel(s.empleadoRol) }}</p></td>
+                  <td>{{ s.tipoNombre }}</td>
+                  <td class="whitespace-nowrap">{{ fechaCorta(s.fechaInicio) }} – {{ fechaCorta(s.fechaFin) }}</td>
+                  <td class="tabular-nums">{{ dias(s.diasSolicitados) }}</td>
+                  <td><span [class]="estadoClase(s.estado)">{{ estadoTexto(s.estado) }}</span></td>
+                  <td class="text-stone-600">{{ s.aprobadoPor || '—' }}</td>
+                  <td>
+                    <div class="flex justify-end gap-1">
+                      <button class="btn-icon" title="Ver detalle" (click)="verDetalle(s)"><i class="bi bi-eye"></i></button>
+                      @if (s.estado === 'pendiente') {
+                        <button class="btn-icon hover:text-emerald-700!" title="Aprobar" (click)="abrirGestion(s, 'aprobado')"><i class="bi bi-check-lg"></i></button>
+                        <button class="btn-icon hover:text-red-600!" title="Rechazar" (click)="abrirGestion(s, 'rechazado')"><i class="bi bi-x-lg"></i></button>
+                      } @else if (puedeCorregir(s)) {
+                        <button class="btn-ghost btn-sm" (click)="abrirGestion(s, s.estado === 'aprobado' ? 'rechazado' : 'aprobado')">
+                          <i class="bi bi-arrow-repeat"></i> {{ s.estado === 'aprobado' ? 'Cambiar a rechazada' : 'Cambiar a aprobada' }}
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="flex justify-end gap-2 border-t border-stone-100 px-5 py-3">
+          <button class="btn-secondary btn-sm" (click)="exportarExcel(equipoFiltrado, 'solicitudes_equipo')"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+          <button class="btn-secondary btn-sm" (click)="exportarPDF(equipoFiltrado, 'Solicitudes del equipo', 'solicitudes_equipo')"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+        </div>
+      }
+    </div>
+  }
+}
+
+<!-- Detalle -->
+<app-modal [abierto]="!!detalle" titulo="Detalle de la solicitud" [subtitulo]="detalle?.empleadoNombre || ''" tamano="lg" (cerrar)="detalle = null">
+  @if (detalle; as s) {
+    <dl class="grid gap-4 sm:grid-cols-3">
+      <div><dt class="label">Tipo</dt><dd class="font-medium">{{ s.tipoNombre }}</dd></div>
+      <div><dt class="label">Periodo</dt><dd class="font-medium">{{ fechaCorta(s.fechaInicio) }} – {{ fechaCorta(s.fechaFin) }}</dd></div>
+      <div><dt class="label">Días</dt><dd class="font-medium">{{ dias(s.diasSolicitados) }}</dd></div>
+      <div><dt class="label">Estado</dt><dd><span [class]="estadoClase(s.estado)">{{ estadoTexto(s.estado) }}</span></dd></div>
+      <div><dt class="label">Gestionado por</dt><dd class="font-medium">{{ s.aprobadoPor || '—' }}</dd></div>
+      @if (s.motivoLicencia) { <div><dt class="label">Motivo de licencia</dt><dd class="font-medium">{{ s.motivoLicencia }}</dd></div> }
+    </dl>
+    @if (s.motivo) {
+      <div class="mt-5"><p class="label">Comentario del solicitante</p><p class="whitespace-pre-line rounded-lg bg-stone-50 p-3 text-sm">{{ s.motivo }}</p></div>
+    }
+    @if (s.comentarioGestion) {
+      <div class="mt-4"><p class="label">Comentario de quien gestionó</p><p class="rounded-lg bg-stone-50 p-3 text-sm">{{ s.comentarioGestion }}</p></div>
+    }
+    @if (s.evidencias.length) {
+      <div class="mt-4">
+        <p class="label">Evidencia</p>
+        @for (ev of s.evidencias; track ev.id) {
+          <button type="button" class="btn-secondary btn-sm" (click)="abrirEvidencia(s, ev)"><i class="bi bi-paperclip"></i> {{ ev.nombre }} ({{ tamano(ev.tamanoBytes) }})</button>
+        }
+      </div>
+    }
+    <div class="mt-6">
+      <p class="label">Historial</p>
+      <ol class="relative ml-2 space-y-4 border-l border-stone-200 pl-5">
+        @for (h of historial; track $index) {
+          <li>
+            <span class="absolute -left-[5px] mt-1.5 size-2.5 rounded-full bg-vino-600"></span>
+            <p class="text-sm font-medium">{{ estadoTexto(h.estadoNuevo) }} <span class="font-normal text-stone-500">· {{ h.usuario }}</span></p>
+            <p class="text-xs text-stone-500">{{ h.fecha.replace('T', ' ').substring(0, 16) }}</p>
+            @if (h.comentario) { <p class="mt-1 text-sm text-stone-600">{{ h.comentario }}</p> }
+          </li>
+        } @empty {
+          <li class="text-sm text-stone-500">Sin registros.</li>
+        }
+      </ol>
+    </div>
+  }
+</app-modal>
+
+<!-- Editar -->
+<app-modal [abierto]="!!editando" titulo="Editar solicitud" [subtitulo]="editando?.tipoNombre || ''" (cerrar)="editando = null">
+  <div class="space-y-4">
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div><label class="label">Desde</label><input type="date" class="input" [(ngModel)]="edicion.fechaInicio" /></div>
+      <div><label class="label">Hasta</label><input type="date" class="input" [min]="edicion.fechaInicio" [(ngModel)]="edicion.fechaFin" /></div>
+    </div>
+    <div><label class="label">Comentario</label><textarea class="textarea" rows="3" [(ngModel)]="edicion.motivo"></textarea></div>
+  </div>
+  <div footer class="flex gap-2">
+    <button class="btn-secondary" (click)="editando = null">Cancelar</button>
+    <button class="btn-primary" [disabled]="gestionando" (click)="guardarEdicion()">Guardar</button>
+  </div>
+</app-modal>
+
+<!-- Aprobar / rechazar -->
+<app-modal [abierto]="!!gestion" [titulo]="gestion?.estado === 'aprobado' ? 'Aprobar solicitud' : 'Rechazar solicitud'"
+           [subtitulo]="gestion ? gestion.solicitud.empleadoNombre + ' · ' + gestion.solicitud.tipoNombre : ''" (cerrar)="gestion = null">
+  @if (gestion; as g) {
+    <p class="text-sm text-stone-600">
+      {{ fechaCorta(g.solicitud.fechaInicio) }} – {{ fechaCorta(g.solicitud.fechaFin) }} ({{ dias(g.solicitud.diasSolicitados) }} día(s)).
+      @if (g.solicitud.estado !== 'pendiente') {
+        <br /><strong>Está corrigiendo una decisión anterior.</strong>
+        @if (g.estado === 'rechazado' && g.solicitud.descuentaDe !== 'NINGUNO') { Los días descontados serán devueltos al colaborador. }
+      }
+      @if (g.estado === 'aprobado' && g.solicitud.descuentaDe !== 'NINGUNO') {
+        <br />Se descontarán {{ dias(g.solicitud.diasSolicitados) }} día(s) de su saldo de {{ g.solicitud.descuentaDe === 'VACACIONES' ? 'vacaciones' : 'compensación' }}.
+      }
+    </p>
+    <div class="mt-4">
+      <label class="label">Comentario {{ gestionRequiereComentario ? '(obligatorio)' : '(opcional)' }}</label>
+      <textarea class="textarea" rows="3" [(ngModel)]="g.comentario"
+                [placeholder]="gestionRequiereComentario ? 'Explique el motivo del rechazo' : 'Comentario para el colaborador'"></textarea>
+    </div>
+  }
+  <div footer class="flex gap-2">
+    <button class="btn-secondary" (click)="gestion = null">Cancelar</button>
+    <button [class]="gestion?.estado === 'aprobado' ? 'btn-success' : 'btn-danger'" [disabled]="gestionando" (click)="confirmarGestion()">
+      {{ gestion?.estado === 'aprobado' ? 'Aprobar' : 'Rechazar' }}
     </button>
   </div>
-
-  <!-- Filtros para MIS SOLICITUDES -->
-  <div *ngIf="activeTab === 'mis-solicitudes'" class="mb-4">
-    <div class="card shadow-sm border-0 bg-light">
-      <div class="card-body py-3">
-        <div class="row g-2 align-items-center">
-          <div class="col-auto">
-            <span class="text-muted fw-bold small text-uppercase">
-              <i class="bi bi-funnel me-1"></i>Filtros:
-            </span>
-          </div>
-          
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="filtroEstadoMisSolicitudes">
-              <option value="">Todos los Estados</option>
-              <option value="aprobado">✅ Aprobados</option>
-              <option value="rechazado">❌ Rechazados</option>
-              <option value="pendiente">⏳ Pendientes</option>
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="filtroTipoMisSolicitudes">
-              <option value="">Todos los Tipos</option>
-              <option value="vacaciones">Vacaciones</option>
-              <option value="permiso">Permiso</option>
-              <option value="descanso">Descanso</option>
-              <option value="compensacion">Compensacion</option>
-              <option value="licencia">Licencia</option>
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="filtroPeriodoMisSolicitudes">
-              <option value="hoy">Hoy</option>
-              <option value="7d">Ultimos 7 dias</option>
-              <option value="15d">Ultimos 15 dias</option>
-              <option value="1m">Ultimo mes</option>
-              <option value="3m">Ultimos 3 meses</option>
-              <option value="todos">Todos</option>
-            </select>
-          </div>
-
-          <div class="col-auto">
-            <button class="btn btn-sm btn-outline-secondary" 
-                    (click)="limpiarFiltros()" 
-                    title="Limpiar filtros">
-              <i class="bi bi-arrow-counterclockwise me-1"></i>Limpiar
-            </button>
-          </div>
-
-          <div class="col-auto ms-auto d-flex gap-1">
-            <button class="btn btn-success btn-sm" 
-                    (click)="exportarExcel()"
-                    [disabled]="exportando"
-                    title="Exportar a Excel">
-              <span *ngIf="exportando" class="spinner-border spinner-border-sm me-1"></span>
-              <i class="bi bi-file-earmark-excel" *ngIf="!exportando"></i>
-              <span class="d-none d-md-inline ms-1">Excel</span>
-            </button>
-            
-            <button class="btn btn-danger btn-sm" 
-                    (click)="exportarPDF()"
-                    [disabled]="exportando"
-                    title="Exportar a PDF">
-              <span *ngIf="exportando" class="spinner-border spinner-border-sm me-1"></span>
-              <i class="bi bi-file-earmark-pdf" *ngIf="!exportando"></i>
-              <span class="d-none d-md-inline ms-1">PDF</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Filtros para PENDIENTES -->
-  <div *ngIf="activeTab === 'aprobar' && esJefe()" class="mb-4">
-    <div class="card shadow-sm border-0 bg-light">
-      <div class="card-body py-3">
-        <div class="row g-2 align-items-center">
-          <div class="col-auto">
-            <span class="text-muted fw-bold small text-uppercase">
-              <i class="bi bi-funnel me-1"></i>Filtros:
-            </span>
-          </div>
-          
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="filtroRolPendientes">
-              <option value="">Todos los Roles</option>
-              <option *ngIf="esAdmin()" value="supervisor">👔 Supervisores</option>
-              <option *ngIf="esSupervisor() || esAdmin()" value="tecnico">👷 Técnicos</option>
-              <option *ngIf="esSupervisor() || esAdmin()" value="hd">🎧 HD</option>
-              <option *ngIf="esSupervisor() || esAdmin()" value="noc">🌐 NOC</option>
-              <option *ngIf="esAdmin()" value="admin">👑 Administradores</option>
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="filtroTipoPendientes">
-              <option value="">Todos los Tipos</option>
-              <option value="vacaciones">🏖️ Vacaciones</option>
-              <option value="permiso">📋 Permiso</option>
-              <option value="descanso">🏥 Descanso</option>
-              <option value="compensacion">⏰ Compensación</option>
-              <option value="licencia">📄 Licencia</option>
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-white border-end-0">
-                <i class="bi bi-person text-muted"></i>
-              </span>
-              <input type="text" class="form-control border-start-0" 
-                     placeholder="Empleado..." 
-                     [(ngModel)]="filtroEmpleadoPendientes">
-            </div>
-          </div>
-
-          <div class="col-md-auto d-flex align-items-center gap-2">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text">Desde</span>
-              <input type="date" class="form-control" 
-                     [(ngModel)]="filtroFechaInicioPendientes" 
-                     (change)="validarFechasFiltro()">
-            </div>
-            <div class="input-group input-group-sm">
-              <span class="input-group-text">Hasta</span>
-              <input type="date" class="form-control" 
-                     [(ngModel)]="filtroFechaFinPendientes" 
-                     [min]="filtroFechaInicioPendientes">
-            </div>
-          </div>
-
-          <div class="col-auto">
-            <button class="btn btn-sm btn-outline-secondary" 
-                    (click)="limpiarFiltros()" 
-                    title="Limpiar filtros">
-              <i class="bi bi-arrow-counterclockwise me-1"></i>Limpiar
-            </button>
-          </div>
-
-          <div class="col-auto ms-auto d-flex gap-1">
-            <button class="btn btn-success btn-sm" 
-                    (click)="exportarExcel()"
-                    [disabled]="exportando"
-                    title="Exportar a Excel">
-              <span *ngIf="exportando" class="spinner-border spinner-border-sm me-1"></span>
-              <i class="bi bi-file-earmark-excel" *ngIf="!exportando"></i>
-              <span class="d-none d-md-inline ms-1">Excel</span>
-            </button>
-            
-            <button class="btn btn-danger btn-sm" 
-                    (click)="exportarPDF()"
-                    [disabled]="exportando"
-                    title="Exportar a PDF">
-              <span *ngIf="exportando" class="spinner-border spinner-border-sm me-1"></span>
-              <i class="bi bi-file-earmark-pdf" *ngIf="!exportando"></i>
-              <span class="d-none d-md-inline ms-1">PDF</span>
-            </button>
-          </div>
-        </div>
-        <div *ngIf="filtroRolPendientes" class="mt-2">
-          <small class="text-muted">
-            <i class="bi bi-info-circle me-1"></i>
-            Mostrando solicitudes de 
-            <span *ngIf="filtroRolPendientes === 'supervisor'">supervisores</span>
-            <span *ngIf="filtroRolPendientes === 'tecnico'">técnicos</span>
-            <span *ngIf="filtroRolPendientes === 'hd'">HD</span>
-            <span *ngIf="filtroRolPendientes === 'noc'">NOC</span>
-            <span *ngIf="filtroRolPendientes === 'admin'">administradores</span>
-            <span *ngIf="filtroEmpleadoPendientes"> que coinciden con "{{filtroEmpleadoPendientes}}"</span>
-          </small>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Filtros para HISTORIAL -->
-  <div *ngIf="activeTab === 'historial' && esJefe()" class="mb-4">
-    <div class="card shadow-sm border-0 bg-light">
-      <div class="card-body py-3">
-        <div class="row g-2 align-items-center">
-          <div class="col-auto">
-            <span class="text-muted fw-bold small text-uppercase">
-              <i class="bi bi-funnel me-1"></i>Filtros:
-            </span>
-          </div>
-          
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="filtroRolHistorial">
-              <option value="">Todos los Roles</option>
-              <option *ngIf="esAdmin()" value="supervisor">👔 Supervisores</option>
-              <option *ngIf="esSupervisor() || esAdmin()" value="tecnico">👷 Técnicos</option>
-              <option *ngIf="esSupervisor() || esAdmin()" value="hd">🎧 HD</option>
-              <option *ngIf="esSupervisor() || esAdmin()" value="noc">🌐 NOC</option>
-              <option *ngIf="esAdmin()" value="admin">👑 Administradores</option>
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="filtroTipoHistorial">
-              <option value="">Todos los Tipos</option>
-              <option value="vacaciones">🏖️ Vacaciones</option>
-              <option value="permiso">📋 Permiso</option>
-              <option value="descanso">🏥 Descanso</option>
-              <option value="compensacion">⏰ Compensación</option>
-              <option value="licencia">📄 Licencia</option>
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="filtroEstadoHistorial">
-              <option value="">Todos los Estados</option>
-              <option value="aprobado">✅ Aprobados</option>
-              <option value="rechazado">❌ Rechazados</option>
-              <option value="cancelada">🚫 Canceladas</option>
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text bg-white border-end-0">
-                <i class="bi bi-person text-muted"></i>
-              </span>
-              <input type="text" class="form-control border-start-0" 
-                     placeholder="Empleado..." 
-                     [(ngModel)]="filtroEmpleadoHistorial">
-            </div>
-          </div>
-
-          <div class="col-md-2">
-            <select class="form-select form-select-sm" [(ngModel)]="filtroPeriodoHistorial"
-                    title="Filtrar por fecha de gestion">
-              <option value="hoy">Gestionados Hoy</option>
-              <option value="7d">Ultimos 7 dias</option>
-              <option value="15d">Ultimos 15 dias</option>
-              <option value="1m">Ultimo mes</option>
-              <option value="3m">Ultimos 3 meses</option>
-              <option value="todos">Todos</option>
-            </select>
-          </div>
-
-          <div class="col-md-auto d-flex align-items-center gap-2">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text">Desde</span>
-              <input type="date" class="form-control"
-                     [(ngModel)]="filtroFechaInicioHistorial"
-                     (change)="validarFechasFiltro()"
-                     title="Fecha inicio de la solicitud">
-            </div>
-            <div class="input-group input-group-sm">
-              <span class="input-group-text">Hasta</span>
-              <input type="date" class="form-control"
-                     [(ngModel)]="filtroFechaFinHistorial"
-                     [min]="filtroFechaInicioHistorial"
-                     (change)="validarFechasFiltro()"
-                     title="Fecha fin de la solicitud">
-            </div>
-          </div>
-
-          <div class="col-auto">
-            <button class="btn btn-sm btn-outline-secondary"
-                    (click)="limpiarFiltros()"
-                    title="Limpiar filtros">
-              <i class="bi bi-arrow-counterclockwise me-1"></i>Limpiar
-            </button>
-          </div>
-
-          <div class="col-auto ms-auto d-flex gap-1">
-            <button class="btn btn-success btn-sm" 
-                    (click)="exportarExcel()"
-                    [disabled]="exportando"
-                    title="Exportar a Excel">
-              <span *ngIf="exportando" class="spinner-border spinner-border-sm me-1"></span>
-              <i class="bi bi-file-earmark-excel" *ngIf="!exportando"></i>
-              <span class="d-none d-md-inline ms-1">Excel</span>
-            </button>
-            
-            <button class="btn btn-danger btn-sm" 
-                    (click)="exportarPDF()"
-                    [disabled]="exportando"
-                    title="Exportar a PDF">
-              <span *ngIf="exportando" class="spinner-border spinner-border-sm me-1"></span>
-              <i class="bi bi-file-earmark-pdf" *ngIf="!exportando"></i>
-              <span class="d-none d-md-inline ms-1">PDF</span>
-            </button>
-          </div>
-        </div>
-        <div *ngIf="filtroRolHistorial" class="mt-2">
-          <small class="text-muted">
-            <i class="bi bi-info-circle me-1"></i>
-            Mostrando historial de 
-            <span *ngIf="filtroRolHistorial === 'supervisor'">supervisores</span>
-            <span *ngIf="filtroRolHistorial === 'tecnico'">técnicos</span>
-            <span *ngIf="filtroRolHistorial === 'hd'">HD</span>
-            <span *ngIf="filtroRolHistorial === 'noc'">NOC</span>
-            <span *ngIf="filtroRolHistorial === 'admin'">administradores</span>
-            <span *ngIf="filtroEmpleadoHistorial"> que coinciden con "{{filtroEmpleadoHistorial}}"</span>
-          </small>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Tabs de Navegación -->
-  <ul class="nav nav-tabs mb-0 border-bottom-0">
-    <li class="nav-item">
-      <a class="nav-link" [class.active]="activeTab === 'mis-solicitudes'" 
-         (click)="activeTab = 'mis-solicitudes'" href="javascript:void(0)">
-         <i class="bi bi-person me-1"></i>Mis Solicitudes
-         <span class="badge bg-primary rounded-pill ms-1" *ngIf="misSolicitudes.length > 0">
-           {{ misSolicitudes.length }}
-         </span>
-      </a>
-    </li>
-    
-    <li class="nav-item" *ngIf="activeTab === 'crear'">
-      <a class="nav-link active" href="javascript:void(0)">
-         <i class="bi" [class.bi-pencil-square]="!modoEdicion" [class.bi-pencil]="modoEdicion" class="me-1"></i>
-         {{ modoEdicion ? 'Editando...' : 'Registrando...' }}
-      </a>
-    </li>
-
-    <ng-container *ngIf="esJefe()">
-      <li class="nav-item ms-auto"></li>
-      <li class="nav-item">
-        <a class="nav-link text-danger fw-bold" [class.active]="activeTab === 'aprobar'" 
-           (click)="activeTab = 'aprobar'" href="javascript:void(0)">
-           <i class="bi bi-exclamation-circle me-1"></i>Pendientes
-           <span class="badge bg-danger rounded-pill ms-1" *ngIf="solicitudesPendientes.length > 0">
-             {{ solicitudesPendientes.length }}
-           </span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" [class.active]="activeTab === 'historial'" 
-           (click)="activeTab = 'historial'" href="javascript:void(0)">
-           <i class="bi bi-clock-history me-1"></i>Historial Global
-        </a>
-      </li>
-    </ng-container>
-  </ul>
-
-  <!-- Contenido: Mis Solicitudes -->
-  <div *ngIf="activeTab === 'mis-solicitudes'" class="card shadow-sm border-top-0 rounded-bottom">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="bg-light text-secondary">
-            <tr>
-              <th class="ps-4">Tipo</th>
-              <th>Fecha Solicitud</th>
-              <th>Rango Fechas</th>
-              <th>Motivo</th>
-              <th>Estado</th>
-              <th>Autorizado Por</th>
-              <th class="text-end pe-4">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let sol of misSolicitudesFiltradas">
-              <td class="ps-4 fw-bold text-primary">{{ sol.tipo | titlecase }}</td>
-              <td class="text-muted small">
-                {{ sol.fechaSolicitud ? formatFechaHora(sol.fechaSolicitud) : 'N/A' }}
-              </td>
-              <td>
-                <span class="badge bg-light text-dark border">
-                  {{ formatFecha(sol.fechaInicio) }} ➔ {{ formatFecha(sol.fechaFin) }}
-                </span>
-              </td>
-              <td class="text-truncate" style="max-width: 200px;" title="{{sol.motivo}}">
-                {{ sol.motivo || 'Sin motivo' }}
-              </td>
-              <td>
-                <span class="badge rounded-pill" [ngClass]="getEstadoClass(sol.estado || '')">
-                  {{ (sol.estado || '').toUpperCase() }}
-                </span>
-              </td>
-              <td>
-                <div *ngIf="sol.nombreAprobador || sol.aprobadoPor" class="d-flex align-items-center text-success">
-                  <i class="bi bi-person-check-fill me-2"></i>
-                  <span class="fw-bold">{{ sol.nombreAprobador || sol.aprobadoPor }}</span>
-                </div>
-                <span *ngIf="!sol.nombreAprobador && !sol.aprobadoPor" class="text-muted small fst-italic">
-                  -- Pendiente --
-                </span>
-              </td>
-              <td class="text-end pe-4">
-                <div class="btn-group btn-group-sm" role="group">
-                  <button class="btn btn-outline-primary"
-                          (click)="cargarSolicitudParaEditar(sol)"
-                          *ngIf="puedeEditarSolicitud(sol)"
-                          title="Editar solicitud">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button class="btn btn-outline-danger"
-                          (click)="eliminarSolicitud(sol.id!)"
-                          *ngIf="sol.estado === 'pendiente'"
-                          title="Eliminar solicitud pendiente">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-                <span *ngIf="sol.estado !== 'pendiente'" class="text-muted small fst-italic">
-                  --
-                </span>
-              </td>
-            </tr>
-            <tr *ngIf="misSolicitudesFiltradas.length === 0">
-              <td colspan="7" class="text-center py-5 text-muted">
-                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                No se encontraron registros.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="card-footer bg-transparent border-top-0 py-2">
-        <small class="text-muted">
-          Mostrando {{ misSolicitudesFiltradas.length }} de {{ misSolicitudes.length }} solicitudes
-        </small>
-      </div>
-    </div>
-  </div>
-
-  <!-- Contenido: Crear/Editar Solicitud -->
-  <div *ngIf="activeTab === 'crear'" class="card shadow-sm border-top-0 rounded-bottom">
-    <div class="card-body p-4">
-      <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-          <h4 class="mb-4 text-center text-primary">
-            <i class="bi me-2" [class.bi-plus-circle]="!modoEdicion" [class.bi-pencil-square]="modoEdicion"></i>
-            {{ modoEdicion ? 'Editar Solicitud' : 'Nueva Solicitud' }}
-          </h4>
-          
-          <div *ngIf="mensaje" class="alert alert-success d-flex align-items-center mb-3">
-            <i class="bi bi-check-circle-fill me-2"></i> {{ mensaje }}
-          </div>
-
-          <!-- Formulario para Crear -->
-          <form *ngIf="!modoEdicion" (ngSubmit)="crearSolicitud()">
-            <div class="mb-3">
-              <label class="form-label fw-bold">Tipo de Solicitud</label>
-              <select class="form-select" [(ngModel)]="nuevaSolicitud.tipo" name="tipo" required>
-                <option value="vacaciones">🏖️ Vacaciones</option>
-                <option value="permiso">📋 Permiso Personal</option>
-                <option value="descanso">🏥 Descanso Médico</option>
-                <option value="compensacion">⏰ Compensación de Horas</option>
-                <option value="licencia">📄 Licencia Especial</option>
-              </select>
-            </div>
-
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label fw-bold">Fecha Inicio</label>
-                <input type="date" class="form-control" 
-                       [(ngModel)]="nuevaSolicitud.fechaInicio" 
-                       name="fechaInicio" 
-                       required
-                       [min]="getFechaActual()">
-                <small class="form-text text-muted">Primer día</small>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-bold">Fecha Fin</label>
-                <input type="date" class="form-control" 
-                       [(ngModel)]="nuevaSolicitud.fechaFin" 
-                       name="fechaFin" 
-                       required
-                       [min]="nuevaSolicitud.fechaInicio || getFechaActual()">
-                <small class="form-text text-muted">Último día</small>
-              </div>
-            </div>
-
-            <div class="mb-4">
-              <label class="form-label fw-bold">Motivo</label>
-              <textarea class="form-control" rows="4" 
-                        [(ngModel)]="nuevaSolicitud.motivo" 
-                        name="motivo" 
-                        placeholder="Explique el motivo..."
-                        required></textarea>
-              <small class="form-text text-muted">Máximo 500 caracteres</small>
-            </div>
-
-            <div class="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-3">
-              <button type="button" class="btn btn-outline-secondary me-md-2" 
-                      (click)="cancelarCreacion()">
-                <i class="bi bi-arrow-left me-1"></i>Cancelar
-              </button>
-              <button type="submit" class="btn btn-primary px-4" [disabled]="isLoading">
-                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                <i class="bi bi-send me-2" *ngIf="!isLoading"></i>
-                {{ isLoading ? 'Enviando...' : 'Enviar' }}
-              </button>
-            </div>
-          </form>
-
-          <!-- Formulario para Editar -->
-          <form *ngIf="modoEdicion" (ngSubmit)="guardarEdicion()">
-            <div class="mb-3">
-              <label class="form-label fw-bold">Tipo de Solicitud</label>
-              <select class="form-select" [(ngModel)]="editandoSolicitud.tipo" name="tipo" required>
-                <option value="vacaciones">🏖️ Vacaciones</option>
-                <option value="permiso">📋 Permiso Personal</option>
-                <option value="descanso">🏥 Descanso Médico</option>
-                <option value="compensacion">⏰ Compensación de Horas</option>
-                <option value="licencia">📄 Licencia Especial</option>
-              </select>
-            </div>
-
-            <div class="mb-3" *ngIf="esJefe()">
-              <label class="form-label fw-bold">Estado</label>
-              <select class="form-select" [(ngModel)]="editandoSolicitud.estado" name="estado">
-                <option value="pendiente">⏳ Pendiente</option>
-                <option value="aprobado">✅ Aprobado</option>
-                <option value="rechazado">❌ Rechazado</option>
-              </select>
-            </div>
-
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label fw-bold">Fecha Inicio</label>
-                <input type="date" class="form-control" 
-                       [(ngModel)]="editandoSolicitud.fechaInicio" 
-                       name="fechaInicio" 
-                       required>
-                <small class="form-text text-muted">Primer día</small>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-bold">Fecha Fin</label>
-                <input type="date" class="form-control" 
-                       [(ngModel)]="editandoSolicitud.fechaFin" 
-                       name="fechaFin" 
-                       required
-                       [min]="editandoSolicitud.fechaInicio">
-                <small class="form-text text-muted">Último día</small>
-              </div>
-            </div>
-
-            <div class="mb-4">
-              <label class="form-label fw-bold">Motivo</label>
-              <textarea class="form-control" rows="4" 
-                        [(ngModel)]="editandoSolicitud.motivo" 
-                        name="motivo" 
-                        placeholder="Explique el motivo..."
-                        required></textarea>
-              <small class="form-text text-muted">Máximo 500 caracteres</small>
-            </div>
-
-            <div class="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-3">
-              <button type="button" class="btn btn-outline-secondary me-md-2" 
-                      (click)="cancelarEdicion()">
-                <i class="bi bi-arrow-left me-1"></i>Cancelar
-              </button>
-              <button type="submit" class="btn btn-primary px-4" [disabled]="isLoading">
-                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-                <i class="bi bi-save me-2" *ngIf="!isLoading"></i>
-                {{ isLoading ? 'Guardando...' : 'Guardar' }}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Contenido: Aprobar (Pendientes) -->
-  <div *ngIf="activeTab === 'aprobar' && esJefe()" class="card shadow-sm border-top-0 rounded-bottom">
-    <div class="card-header bg-danger text-white py-3">
-      <h5 class="mb-0">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-        Solicitudes Pendientes
-      </h5>
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="bg-light text-secondary">
-            <tr>
-              <th class="ps-4">Empleado</th>
-              <th>Rol</th>
-              <th>Tipo</th>
-              <th>Fechas</th>
-              <th>Motivo</th>
-              <th class="text-end pe-4">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let sol of pendientesFiltradas">
-              <td class="ps-4">
-                <div class="fw-bold">{{ sol.empleadoNombre }}</div>
-                <small class="text-muted badge bg-white text-dark border">
-                  {{ sol.fechaSolicitud ? formatFechaHora(sol.fechaSolicitud) : 'N/A' }}
-                </small>
-              </td>
-              <td>
-                <span class="badge" [ngClass]="getRolClass(obtenerRolEmpleado(sol.empleadoId))">
-                  {{ obtenerRolEmpleado(sol.empleadoId) | uppercase }}
-                </span>
-              </td>
-              <td>
-                <span class="badge bg-secondary">{{ (sol.tipo || '').toUpperCase() }}</span>
-              </td>
-              <td>
-                <div class="fw-bold">{{ formatFecha(sol.fechaInicio) }}</div>
-                <small class="text-muted">al {{ formatFecha(sol.fechaFin) }}</small>
-              </td>
-              <td class="text-truncate" style="max-width: 250px;" title="{{sol.motivo}}">
-                {{ sol.motivo || 'Sin motivo' }}
-              </td>
-              <td class="text-end pe-4">
-                <div class="btn-group btn-group-sm">
-                  <button class="btn btn-success"
-                          (click)="procesar(sol.id!, 'aprobado')"
-                          title="Aprobar">
-                    <i class="bi bi-check-lg me-1"></i> Aprobar
-                  </button>
-                  <button class="btn btn-outline-danger"
-                          (click)="procesar(sol.id!, 'rechazado')"
-                          title="Rechazar">
-                    <i class="bi bi-x-lg me-1"></i> Rechazar
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="pendientesFiltradas.length === 0">
-              <td colspan="6" class="text-center py-5">
-                <div class="text-muted">
-                  <i class="bi bi-check2-circle fs-1 d-block mb-2 text-success"></i>
-                  <h5 class="fw-bold">¡Todo al día!</h5>
-                  <p class="mb-0">No hay solicitudes pendientes.</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="card-footer bg-transparent border-top-0 py-2">
-        <small class="text-muted">
-          Mostrando {{ pendientesFiltradas.length }} de {{ solicitudesPendientes.length }} pendientes
-        </small>
-      </div>
-    </div>
-  </div>
-
-  <!-- Contenido: Historial Global -->
-  <div *ngIf="activeTab === 'historial' && esJefe()" class="card shadow-sm border-top-0 rounded-bottom">
-    <div class="card-header bg-dark text-white py-3">
-      <h5 class="mb-0">
-        <i class="bi bi-clock-history me-2"></i>
-        Historial de Solicitudes
-      </h5>
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-striped align-middle mb-0">
-          <thead class="table-dark">
-            <tr>
-              <th class="ps-4">Empleado</th>
-              <th>Rol</th>
-              <th>Tipo</th>
-              <th>Rango</th>
-              <th>Estado</th>
-              <th>Autorizado Por</th>
-              <th>Fecha Proceso</th>
-              <th class="text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let sol of historialGlobalFiltrado">
-              <td class="ps-4">
-                <div class="fw-bold">{{ sol.empleadoNombre }}</div>
-                <div>
-                  <span class="badge" [ngClass]="getRolClass(obtenerRolEmpleado(sol.empleadoId))">
-                    {{ obtenerRolEmpleado(sol.empleadoId) | uppercase }}
-                  </span>
-                </div>
-              </td>
-              <td>
-                <span class="badge" [ngClass]="getRolClass(obtenerRolEmpleado(sol.empleadoId))">
-                  {{ obtenerRolEmpleado(sol.empleadoId) | uppercase }}
-                </span>
-              </td>
-              <td>
-                <span class="badge bg-secondary">{{ (sol.tipo || '').toUpperCase() }}</span>
-              </td>
-              <td>
-                <div>{{ formatFecha(sol.fechaInicio) }}</div>
-                <small class="text-muted">al {{ formatFecha(sol.fechaFin) }}</small>
-              </td>
-              <td>
-                <span class="badge rounded-pill" [ngClass]="getEstadoClass(sol.estado || '')">
-                  {{ (sol.estado || '').toUpperCase() }}
-                </span>
-              </td>
-              <td>
-                <div class="d-flex align-items-center">
-                  <i class="bi bi-person-circle me-2 text-muted"></i>
-                  <span>{{ sol.nombreAprobador || sol.aprobadoPor || 'Sistema' }}</span>
-                </div>
-              </td>
-              <td class="text-muted small">
-                {{ sol.fechaAprobacion ? formatFechaHora(sol.fechaAprobacion) : 'N/A' }}
-              </td>
-              <td class="text-center">
-                <div class="btn-group btn-group-sm" *ngIf="puedeCorregirEstado(sol)">
-                  <!-- Si está rechazado, mostrar botón para cambiar a aprobado -->
-                  <button class="btn btn-outline-success btn-sm"
-                          *ngIf="sol.estado === 'rechazado'"
-                          (click)="corregirEstado(sol.id!, 'aprobado')"
-                          title="Cambiar a Aprobado">
-                    <i class="bi bi-check-lg"></i> Aprobar
-                  </button>
-                  <!-- Si está aprobado, mostrar botón para cambiar a rechazado -->
-                  <button class="btn btn-outline-danger btn-sm"
-                          *ngIf="sol.estado === 'aprobado'"
-                          (click)="corregirEstado(sol.id!, 'rechazado')"
-                          title="Cambiar a Rechazado">
-                    <i class="bi bi-x-lg"></i> Rechazar
-                  </button>
-                </div>
-                <span *ngIf="!puedeCorregirEstado(sol)" class="text-muted small">—</span>
-              </td>
-            </tr>
-            <tr *ngIf="historialGlobalFiltrado.length === 0">
-              <td colspan="8" class="text-center py-5 text-muted">
-                <i class="bi bi-search fs-1 d-block mb-2"></i>
-                <h5>No se encontraron registros</h5>
-                <p class="mb-0">Intenta cambiar los filtros.</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="card-footer bg-transparent border-top-0 py-2">
-        <small class="text-muted">
-          Mostrando {{ historialGlobalFiltrado.length }} de {{ historialGlobal.length }} solicitudes
-        </small>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal de Confirmación de Conflictos -->
-  <div class="modal fade show"
-       [class.d-block]="mostrarModalConflictos"
-       [style.display]="mostrarModalConflictos ? 'block' : 'none'"
-       tabindex="-1"
-       role="dialog"
-       *ngIf="mostrarModalConflictos">
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-      <div class="modal-content">
-        <div class="modal-header bg-warning text-dark">
-          <h5 class="modal-title">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            Conflicto de Fechas Detectado
-          </h5>
-          <button type="button"
-                  class="btn-close"
-                  (click)="cancelarConflictos()"
-                  [disabled]="isLoading">
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="alert alert-warning mb-3">
-            <i class="bi bi-calendar-x me-2"></i>
-            <strong>Atención:</strong> {{ mensajeConflictos }}
-          </div>
-
-          <h6 class="text-muted mb-3">
-            <i class="bi bi-people me-2"></i>
-            Existe conflicto de fechas con las siguientes solicitudes de compañeros del mismo rol:
-          </h6>
-
-          <div class="table-responsive" *ngIf="conflictosDetectados.length > 0">
-            <table class="table table-sm table-bordered">
-              <thead class="table-light">
-                <tr>
-                  <th>Empleado</th>
-                  <th>Tipo</th>
-                  <th>Fecha Inicio</th>
-                  <th>Fecha Fin</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let conflicto of conflictosDetectados">
-                  <td class="fw-bold">{{ conflicto.empleado || conflicto.empleadoNombre || conflicto.nombreEmpleado || 'N/A' }}</td>
-                  <td>
-                    <span class="badge bg-secondary">{{ (conflicto.tipo || '') | titlecase }}</span>
-                  </td>
-                  <td>{{ formatFecha(conflicto.fechaInicio) }}</td>
-                  <td>{{ formatFecha(conflicto.fechaFin) }}</td>
-                  <td>
-                    <span class="badge" [ngClass]="getEstadoClass(conflicto.estado || 'pendiente')">
-                      {{ (conflicto.estado || 'pendiente') | titlecase }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="alert alert-info mt-3 mb-0">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>Nota:</strong> Si continúa, se agregará una nota informativa en el motivo de su solicitud indicando el conflicto detectado.
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button"
-                  class="btn btn-secondary"
-                  (click)="cancelarConflictos()"
-                  [disabled]="isLoading">
-            <i class="bi bi-x-circle me-1"></i>
-            Cancelar
-          </button>
-          <button type="button"
-                  class="btn btn-warning"
-                  (click)="confirmarConflictos()"
-                  [disabled]="isLoading">
-            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2"></span>
-            <i class="bi bi-check-circle me-1" *ngIf="!isLoading"></i>
-            {{ isLoading ? 'Procesando...' : 'Continuar de todos modos' }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- Backdrop del Modal de Conflictos -->
-  <div class="modal-backdrop fade show" *ngIf="mostrarModalConflictos"></div>
-
-  <!-- Modal de Gestión (Rechazar con comentario) -->
-  <div class="modal fade show"
-       [class.d-block]="mostrarModalGestion"
-       [style.display]="mostrarModalGestion ? 'block' : 'none'"
-       tabindex="-1"
-       role="dialog"
-       *ngIf="mostrarModalGestion">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title">
-            <i class="bi bi-x-circle me-2"></i>
-            Rechazar Solicitud
-          </h5>
-          <button type="button"
-                  class="btn-close btn-close-white"
-                  (click)="cancelarGestion()">
-          </button>
-        </div>
-        <div class="modal-body">
-          <p class="text-muted">Indique el motivo del rechazo de esta solicitud:</p>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Motivo / Comentario</label>
-            <textarea class="form-control" rows="4"
-                      [(ngModel)]="comentarioGestion"
-                      placeholder="Escriba el motivo del rechazo..."
-                      maxlength="500"></textarea>
-            <small class="form-text text-muted">
-              <i class="bi bi-envelope me-1"></i>Este comentario se enviara por correo al empleado.
-            </small>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button"
-                  class="btn btn-secondary"
-                  (click)="cancelarGestion()">
-            <i class="bi bi-arrow-left me-1"></i>
-            Cancelar
-          </button>
-          <button type="button"
-                  class="btn btn-danger"
-                  (click)="confirmarGestion()"
-                  [disabled]="!comentarioGestion.trim()">
-            <i class="bi bi-x-circle me-1"></i>
-            Confirmar Rechazo
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="modal-backdrop fade show" *ngIf="mostrarModalGestion"></div>
-
-</div>
+</app-modal>

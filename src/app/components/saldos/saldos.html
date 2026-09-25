@@ -1,0 +1,128 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Mis saldos</h1>
+    <p class="page-subtitle">Vacaciones y días por compensar disponibles para solicitar.</p>
+  </div>
+  <a routerLink="/solicitudes" [queryParams]="{ tab: 'nueva' }" class="btn-primary"><i class="bi bi-plus-lg"></i> Nueva solicitud</a>
+</div>
+
+@if (cargando) {
+  <div class="flex justify-center py-16"><span class="spinner"></span></div>
+} @else if (error) {
+  <div class="alert-danger"><i class="bi bi-exclamation-triangle"></i>{{ error }}</div>
+} @else if (datos) {
+  <div class="grid gap-6 md:grid-cols-2">
+    @for (s of [
+      { d: datos.saldos.vacaciones, titulo: 'Vacaciones', icono: 'bi-airplane', color: 'bg-oro-50 text-oro-600',
+        ayuda: 'Se abonan 30 días por cada año cumplido desde su fecha de ingreso.' },
+      { d: datos.saldos.compensacion, titulo: 'Días por compensar', icono: 'bi-calendar-plus', color: 'bg-vino-50 text-vino-700',
+        ayuda: 'Se abonan 2 días por cada feriado trabajado. No vencen.' }
+    ]; track s.titulo) {
+      <div class="card p-6">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="stat-label">{{ s.titulo }}</p>
+            <p class="mt-2 text-4xl font-semibold tabular-nums">{{ dias(s.d.disponible) }}<span class="ml-1 text-base font-normal text-stone-500">días disponibles</span></p>
+          </div>
+          <span class="flex size-12 items-center justify-center rounded-xl" [class]="s.color"><i class="bi text-xl" [class]="s.icono"></i></span>
+        </div>
+        <dl class="mt-5 grid grid-cols-2 gap-4 border-t border-stone-100 pt-4 text-sm">
+          <div><dt class="text-stone-500">Saldo actual</dt><dd class="font-semibold tabular-nums">{{ dias(s.d.saldo) }} días</dd></div>
+          <div><dt class="text-stone-500">En solicitudes pendientes</dt><dd class="font-semibold tabular-nums">{{ dias(s.d.pendiente) }} días</dd></div>
+        </dl>
+        <p class="field-help mt-4">{{ s.ayuda }}</p>
+      </div>
+    }
+  </div>
+
+  <div class="card mt-6">
+    <div class="px-5 pt-3">
+      <nav class="tabs">
+        <button type="button" class="tab" [class.tab-active]="pestana === 'movimientos'" (click)="pestana = 'movimientos'"><i class="bi bi-clock-history"></i> Movimientos</button>
+        <button type="button" class="tab" [class.tab-active]="pestana === 'feriados'" (click)="pestana = 'feriados'"><i class="bi bi-calendar-heart"></i> Feriados trabajados</button>
+        <button type="button" class="tab" [class.tab-active]="pestana === 'periodos'" (click)="pestana = 'periodos'"><i class="bi bi-award"></i> Años cumplidos</button>
+      </nav>
+    </div>
+
+    @switch (pestana) {
+      @case ('movimientos') {
+        <div class="flex gap-2 px-5 py-4">
+          @for (f of [['TODOS','Todos'],['VACACIONES','Vacaciones'],['COMPENSACION','Compensación']]; track f[0]) {
+            <button type="button" class="btn-sm rounded-full!" [class]="filtro === f[0] ? 'btn-primary' : 'btn-secondary'" (click)="filtro = $any(f[0])">{{ f[1] }}</button>
+          }
+        </div>
+        @if (!movimientos.length) {
+          <div class="empty-state"><i class="bi bi-inbox text-3xl"></i><p>Aún no hay movimientos.</p></div>
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Fecha</th><th>Saldo</th><th>Movimiento</th><th>Detalle</th><th class="text-right">Días</th><th class="text-right">Saldo resultante</th></tr></thead>
+              <tbody>
+                @for (m of movimientos; track m.id) {
+                  <tr>
+                    <td class="whitespace-nowrap text-stone-500">{{ fechaCorta(m.fecha) }}</td>
+                    <td>{{ m.tipoSaldo === 'VACACIONES' ? 'Vacaciones' : 'Compensación' }}</td>
+                    <td><span [class]="etiquetaMovimiento(m).clase">{{ etiquetaMovimiento(m).texto }}</span></td>
+                    <td class="max-w-md text-stone-600">
+                      {{ m.observacion }}
+                      <span class="block text-xs text-stone-400">Por {{ m.registradoPor }}</span>
+                    </td>
+                    <td class="text-right font-semibold tabular-nums" [class]="m.dias >= 0 ? 'text-emerald-700' : 'text-red-700'">{{ signo(m.dias) }}</td>
+                    <td class="text-right tabular-nums">{{ dias(m.saldoResultante) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+      @case ('feriados') {
+        @if (!datos.feriadosLaborados.length) {
+          <div class="empty-state"><i class="bi bi-calendar-heart text-3xl"></i><p>No registra feriados trabajados.</p></div>
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Fecha</th><th>Feriado</th><th>Días abonados</th><th>Estado</th></tr></thead>
+              <tbody>
+                @for (f of datos.feriadosLaborados; track f.id) {
+                  <tr>
+                    <td>{{ fechaCorta(f.fecha) }}</td>
+                    <td>{{ f.feriado }}</td>
+                    <td class="tabular-nums">{{ dias(f.diasOtorgados) }}</td>
+                    <td>
+                      @if (f.estado === 'ABONADO') { <span class="badge-green">Abonado</span> }
+                      @else { <span class="badge-gray" [title]="f.observacion || ''">Revertido</span> }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+      @case ('periodos') {
+        @if (!datos.periodosVacacionales.length) {
+          <div class="empty-state">
+            <i class="bi bi-award text-3xl"></i>
+            <p>Los próximos años cumplidos aparecerán aquí. Los días anteriores se registraron como carga inicial.</p>
+          </div>
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Periodo</th><th>Cumplido el</th><th>Días ganados</th></tr></thead>
+              <tbody>
+                @for (p of datos.periodosVacacionales; track p.id) {
+                  <tr>
+                    <td>{{ fechaCorta(p.periodoInicio) }} – {{ fechaCorta(p.periodoFin) }}</td>
+                    <td>{{ fechaCorta(p.fechaAdquisicion) }}</td>
+                    <td class="tabular-nums">{{ dias(p.diasGanados) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+    }
+  </div>
+}

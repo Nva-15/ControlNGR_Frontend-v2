@@ -1,796 +1,297 @@
-import { Component, OnInit, OnDestroy, inject, ViewChild, ElementRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
 import { AsistenciaService } from '../../services/asistencia';
 import { HorariosService } from '../../services/horarios';
 import { NotificationService } from '../../services/notification.service';
-import { ApiConfigService } from '../../services/api-config.service';
 import { EventosService } from '../../services/eventos';
 import { NotificacionesService } from '../../services/notificaciones';
+import { SaldosService } from '../../services/saldos';
 import { HorarioSemanal, HorarioDia } from '../../interfaces/horario';
 import { Evento, RespuestaEventoRequest } from '../../interfaces/evento';
+import { AsistenciaResponse } from '../../interfaces/asistencia';
+import { DetalleSaldos } from '../../interfaces/saldo';
+import { ModalComponent } from '../shared/modal/modal.component';
+import { dias, diaSemanaLima, horaCorta, hoyIso, mensajeError, ZONA } from '../../utils/format';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './dashboard.html',
-  styleUrls: ['./dashboard.css']
+  imports: [FormsModule, RouterLink, ModalComponent],
+  templateUrl: './dashboard.html'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  @ViewChild('fileInputModal') fileInputModal!: ElementRef;
-
-  private intervaloReloj: any;
-  private intervaloAutoRefresh: any;
-
-  private auth = inject(AuthService);
+  auth = inject(AuthService);
   private asistenciaService = inject(AsistenciaService);
   private horariosService = inject(HorariosService);
   private notification = inject(NotificationService);
-  private apiConfig = inject(ApiConfigService);
   private eventosService = inject(EventosService);
   private notificacionesService = inject(NotificacionesService);
-  private http = inject(HttpClient);
-  private router = inject(Router);
+  private saldosService = inject(SaldosService);
 
-  currentEmpleado: any;
-  fotoUrl: string = '';
+  empleado = this.auth.empleado;
+  ahora = new Date();
+  private reloj: any;
+  private refresco: any;
 
-  fechaActual = new Date();
-  asistenciaHoy: any = null;
-  isLoading = true;
-
-  tipoMarcaje: 'entrada' | 'salida' = 'entrada';
+  // Asistencia
+  asistenciaHoy: AsistenciaResponse | null = null;
+  cargandoAsistencia = true;
+  marcando = false;
   observaciones = '';
+  red: { ip: string; dentroDeRed: boolean; mensaje: string } | null = null;
 
-  mostrarModalPerfil = false;
-  isUpdating = false;
-  mensajeModal = '';
-  mensajeErrorModal = '';
+  // Saldos
+  saldos: DetalleSaldos | null = null;
+  porAprobar = 0;
 
-  descripcionEdit = '';
-  hobbyEdit = '';
-  fotoPreviewModal: string | null = null;
-  fotoFileModal: File | null = null;
-
-  mostrarSeccionPassword = false;
-  passwordActual = '';
-  passwordNueva = '';
-  passwordConfirmar = '';
-
+  // Horario
   horarioSemanal: HorarioSemanal | null = null;
-  isLoadingHorario = false;
+  cargandoHorario = true;
   diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-  diasLabels: { [key: string]: string } = {
-    'lunes': 'Lun', 'martes': 'Mar', 'miercoles': 'Mie',
-    'jueves': 'Jue', 'viernes': 'Vie', 'sabado': 'Sab', 'domingo': 'Dom'
+  diasLabels: Record<string, string> = {
+    lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles', jueves: 'Jueves',
+    viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo'
   };
 
   // Eventos
-  eventosActivos: Evento[] = [];
-  isLoadingEventos = false;
+  eventos: Evento[] = [];
   eventoSeleccionado: Evento | null = null;
-  mostrarModalEvento = false;
-  respuestaEnviando = false;
+  enviandoRespuesta = false;
+
+  readonly horaCorta = horaCorta;
+  readonly dias = dias;
 
   ngOnInit() {
-    this.currentEmpleado = this.auth.getCurrentEmpleado();
-
-    if (!this.currentEmpleado) {
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    this.fotoUrl = this.getFotoUrl(
-      this.currentEmpleado.foto,
-      this.currentEmpleado.nombre
-    );
-
     this.cargarAsistencia();
+    this.verificarRed();
+    this.cargarSaldos();
     this.cargarHorario();
     this.cargarEventos();
-    this.mostrarNotificacionesPostLogin();
-
-    // Actualizar la hora cada segundo
-    this.intervaloReloj = setInterval(() => {
-      this.fechaActual = new Date();
-    }, 1000);
-
-    // Auto-refresh datos cada 5 segundos
-    this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 5000);
+    this.mostrarAvisosDeInicio();
+    this.reloj = setInterval(() => this.ahora = new Date(), 1000);
+    this.refresco = setInterval(() => {
+      if (!this.eventoSeleccionado && !this.marcando) {
+        this.cargarAsistencia(false);
+        this.cargarEventos();
+      }
+    }, 60000);
   }
 
   ngOnDestroy() {
-    if (this.intervaloReloj) clearInterval(this.intervaloReloj);
-    if (this.intervaloAutoRefresh) clearInterval(this.intervaloAutoRefresh);
+    clearInterval(this.reloj);
+    clearInterval(this.refresco);
   }
 
-  private refrescarDatos() {
-    if (this.isLoading || !this.currentEmpleado?.id) return;
-    if (this.mostrarModalPerfil || this.mostrarModalEvento) return;
-    this.asistenciaService.getAsistenciasPorEmpleado(this.currentEmpleado.id).subscribe({
-      next: (data: any[]) => {
-        const hoy = new Date().toLocaleDateString('en-CA');
-        this.asistenciaHoy = data.find((a: any) => a.fecha && a.fecha.toString().substring(0, 10) === hoy) || null;
-      }
-    });
-    this.eventosService.getEventosActivos().subscribe({
-      next: (eventos) => this.eventosActivos = eventos.filter(e => !e.yaRespondio)
-    });
-    if (this.currentEmpleado.rol !== 'admin') {
-      this.horariosService.getMiHorarioVigente(this.currentEmpleado.id).subscribe({
-        next: (data) => this.horarioSemanal = data
-      });
-    }
+  get saludo(): string {
+    const h = Number(this.ahora.toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: ZONA }));
+    return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
   }
 
-  private getFotoUrl(fotoPath: string | undefined, nombre: string): string {
-    if (!fotoPath || fotoPath === 'img/perfil.png') {
-      return this.getAvatarPlaceholder(nombre);
-    }
-
-    if (fotoPath.startsWith('http')) {
-      return fotoPath;
-    }
-
-    return `${this.apiConfig.baseUrl}/${fotoPath}`;
+  get primerNombre(): string {
+    return (this.empleado()?.nombre || '').split(' ')[0];
   }
 
-  private getAvatarPlaceholder(nombre: string): string {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=0d6efd&color=fff&size=150`;
+  get fechaTexto(): string {
+    return this.ahora.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: ZONA });
   }
 
-  onImageError(event: Event): void {
-    const target = event.target as HTMLImageElement;
-    target.src = this.getAvatarPlaceholder(this.currentEmpleado?.nombre || 'Usuario');
+  get horaTexto(): string {
+    return this.ahora.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: ZONA });
   }
 
-  cargarAsistencia() {
-    this.isLoading = true;
-    this.asistenciaService.getAsistenciasPorEmpleado(this.currentEmpleado.id).subscribe({
-      next: (data: any[]) => {
-        const hoy = new Date().toLocaleDateString('en-CA');
+  // ==================== ASISTENCIA ====================
 
-        this.asistenciaHoy = data.find((a: any) => {
-          return a.fecha && a.fecha.toString().substring(0, 10) === hoy;
-        }) || null;
-
-        this.isLoading = false;
+  cargarAsistencia(mostrarCarga = true) {
+    const id = this.empleado()?.id;
+    if (!id) return;
+    if (mostrarCarga) this.cargandoAsistencia = true;
+    this.asistenciaService.getAsistenciasPorEmpleado(id).subscribe({
+      next: (data) => {
+        const hoy = hoyIso();
+        this.asistenciaHoy = data.find(a => a.fecha?.toString().substring(0, 10) === hoy) || null;
+        this.cargandoAsistencia = false;
       },
       error: () => {
-        this.isLoading = false;
         this.asistenciaHoy = null;
+        this.cargandoAsistencia = false;
       }
     });
   }
 
-  async marcarAsistencia() {
-    if (!this.currentEmpleado) return;
-
-    const ahora = new Date();
-    const fechaFormateada = ahora.toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+  verificarRed() {
+    this.asistenciaService.verificarRed().subscribe({
+      next: (r) => this.red = r,
+      error: () => this.red = null
     });
-    const horaFormateada = ahora.toLocaleTimeString('es-ES', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  }
 
-    const esMarcajeEntrada = this.tipoMarcaje === 'entrada';
-    const tipoTexto = esMarcajeEntrada ? 'ENTRADA' : 'SALIDA';
+  get estado(): { texto: string; clase: string } {
+    if (!this.asistenciaHoy?.horaEntrada) return { texto: 'Sin marcar', clase: 'badge-amber' };
+    if (!this.asistenciaHoy.horaSalida) return { texto: 'En jornada', clase: 'badge-green' };
+    return { texto: 'Jornada completa', clase: 'badge-blue' };
+  }
 
+  get puedeMarcarEntrada(): boolean {
+    return !this.asistenciaHoy?.horaEntrada;
+  }
+
+  get puedeMarcarSalida(): boolean {
+    return !!this.asistenciaHoy?.horaEntrada && !this.asistenciaHoy?.horaSalida;
+  }
+
+  get turnoHoy(): HorarioDia | null {
+    const dia = this.diasSemana[diaSemanaLima(this.ahora)];
+    return this.getHorarioDia(dia);
+  }
+
+  async marcar(tipo: 'entrada' | 'salida') {
+    if (this.marcando) return;
+    if (this.red && !this.red.dentroDeRed) {
+      this.notification.error(`Está fuera de red (IP ${this.red.ip}). No se puede marcar asistencia desde este equipo.`, 'Fuera de red');
+      return;
+    }
     const confirmado = await this.notification.confirm({
-      title: `Confirmar Marcaje de ${tipoTexto}`,
-      message: `Desea registrar su ${tipoTexto.toLowerCase()}?\n\n${fechaFormateada}\n${horaFormateada}`,
-      confirmText: `Marcar ${tipoTexto}`,
-      cancelText: 'Cancelar',
-      type: esMarcajeEntrada ? 'success' : 'danger'
+      title: tipo === 'entrada' ? 'Marcar entrada' : 'Marcar salida',
+      message: `${this.fechaTexto}\nHora aproximada: ${this.horaTexto.substring(0, 5)}`,
+      confirmText: tipo === 'entrada' ? 'Marcar entrada' : 'Marcar salida',
+      type: tipo === 'entrada' ? 'success' : 'warning'
     });
-
     if (!confirmado) return;
 
-    const req = {
-      empleadoId: this.currentEmpleado.id,
-      tipo: this.tipoMarcaje,
-      observaciones: this.observaciones.trim() || undefined
-    };
-
-    this.asistenciaService.registrarAsistencia(req).subscribe({
-      next: (res: any) => {
-        const hora = this.tipoMarcaje === 'entrada' ? res.horaEntrada : res.horaSalida;
-        const horaCorta = hora ? hora.substring(0, 5) : horaFormateada;
-
-        if (esMarcajeEntrada) {
-          this.notification.success(
-            `Entrada registrada a las ${horaCorta}`,
-            'Buen dia de trabajo!'
-          );
-        } else {
-          this.notification.success(
-            `Salida registrada a las ${horaCorta}`,
-            'Hasta pronto!'
-          );
-        }
-
+    this.marcando = true;
+    this.asistenciaService.registrarAsistencia({ tipo, observaciones: this.observaciones.trim() || undefined }).subscribe({
+      next: (res) => {
+        this.marcando = false;
         this.observaciones = '';
-        this.cargarAsistencia();
-      },
-      error: (e: any) => {
-        this.notification.error(
-          e.error?.error || 'Error al registrar asistencia',
-          'Error de marcaje'
+        this.asistenciaHoy = res;
+        const hora = horaCorta(tipo === 'entrada' ? res.horaEntrada : res.horaSalida);
+        this.notification.success(
+          tipo === 'entrada' ? `Entrada registrada a las ${hora}.` : `Salida registrada a las ${hora}.`,
+          tipo === 'entrada' ? '¡Buen día de trabajo!' : '¡Hasta pronto!'
         );
-        this.cargarAsistencia();
-      }
-    });
-  }
-
-  puedeMarcarEntrada(): boolean {
-    return !this.asistenciaHoy;
-  }
-
-  puedeMarcarSalida(): boolean {
-    return this.asistenciaHoy && this.asistenciaHoy.horaEntrada && !this.asistenciaHoy.horaSalida;
-  }
-
-  getEstadoAsistencia(): string {
-    if (!this.asistenciaHoy) return 'SIN REGISTRO';
-    if (this.asistenciaHoy.horaEntrada && !this.asistenciaHoy.horaSalida) return 'EN TRABAJO';
-    if (this.asistenciaHoy.horaEntrada && this.asistenciaHoy.horaSalida) return 'COMPLETADO';
-    return '-';
-  }
-
-  getBadgeColor(): string {
-    switch(this.getEstadoAsistencia()) {
-      case 'EN TRABAJO': return 'success';
-      case 'COMPLETADO': return 'primary';
-      case 'SIN REGISTRO': return 'warning';
-      default: return 'secondary';
-    }
-  }
-
-  getHoraFormateada(hora: string | undefined): string {
-    return hora ? hora.substring(0, 5) : '--:--';
-  }
-
-  isAdmin(): boolean {
-    return this.auth.isAdmin();
-  }
-
-  isSupervisor(): boolean {
-    return this.auth.isSupervisor();
-  }
-
-  logout() {
-    this.auth.logout();
-    this.router.navigate(['/login']);
-  }
-
-  irASolicitudes() {
-    const tab = (this.isAdmin() || this.isSupervisor()) ? 'aprobar' : 'mis-solicitudes';
-    this.router.navigate(['/solicitudes'], { queryParams: { tab } });
-  }
-
-  getUserRole(): string {
-    return this.auth.getUserRole();
-  }
-
-  getRolDisplayName(): string {
-    return this.auth.getRolDisplayName();
-  }
-
-  abrirModalPerfil() {
-    this.descripcionEdit = this.currentEmpleado?.descripcion || '';
-    this.hobbyEdit = this.currentEmpleado?.hobby || '';
-    this.fotoPreviewModal = null;
-    this.fotoFileModal = null;
-    this.mostrarSeccionPassword = false;
-    this.passwordActual = '';
-    this.passwordNueva = '';
-    this.passwordConfirmar = '';
-    this.mensajeModal = '';
-    this.mensajeErrorModal = '';
-    this.mostrarModalPerfil = true;
-  }
-
-  cerrarModalPerfil() {
-    this.mostrarModalPerfil = false;
-    this.fotoPreviewModal = null;
-    this.fotoFileModal = null;
-    if (this.fileInputModal) {
-      this.fileInputModal.nativeElement.value = '';
-    }
-  }
-
-  onFileSelectedModal(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg', 'image/bmp'];
-
-      // Verificar tipo MIME
-      if (!validTypes.includes(file.type)) {
-        this.mostrarErrorModal('Solo se permiten imagenes JPG, PNG, GIF o BMP. WebP no es soportado.');
-        event.target.value = '';
-        return;
-      }
-
-      // Verificar extensión del archivo
-      const fileName = file.name.toLowerCase();
-      if (fileName.endsWith('.webp')) {
-        this.mostrarErrorModal('Formato WebP no soportado. Use JPG, PNG, GIF o BMP.');
-        event.target.value = '';
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        this.mostrarErrorModal('La imagen no debe superar los 5MB');
-        event.target.value = '';
-        return;
-      }
-
-      this.fotoFileModal = file;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.fotoPreviewModal = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  cancelarFotoModal() {
-    this.fotoPreviewModal = null;
-    this.fotoFileModal = null;
-    if (this.fileInputModal) {
-      this.fileInputModal.nativeElement.value = '';
-    }
-  }
-
-  guardarDatosPersonales() {
-    if (!this.currentEmpleado?.id) return;
-
-    this.isUpdating = true;
-    this.mensajeErrorModal = '';
-
-    const datos = {
-      descripcion: this.descripcionEdit.trim(),
-      hobby: this.hobbyEdit.trim()
-    };
-
-    this.http.put(`${this.apiConfig.apiUrl}/auth/perfil/actualizar`, datos, {
-      headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
-    }).subscribe({
-      next: () => {
-        this.currentEmpleado.descripcion = this.descripcionEdit.trim();
-        this.currentEmpleado.hobby = this.hobbyEdit.trim();
-        localStorage.setItem('currentEmpleado', JSON.stringify(this.currentEmpleado));
-        this.mostrarMensajeModal('Datos actualizados correctamente');
-        this.isUpdating = false;
-      },
-      error: (e: any) => {
-        this.mostrarErrorModal(e.error?.error || 'Error al actualizar datos');
-        this.isUpdating = false;
-      }
-    });
-  }
-
-  guardarFoto() {
-    if (!this.currentEmpleado?.id || !this.fotoFileModal) return;
-
-    this.isUpdating = true;
-    this.mensajeErrorModal = '';
-
-    const formData = new FormData();
-    formData.append('archivo', this.fotoFileModal);
-
-    this.http.post(`${this.apiConfig.apiUrl}/imagenes/upload/${this.currentEmpleado.id}`, formData, {
-      headers: { 'Authorization': `Bearer ${this.auth.getToken()}` }
-    }).subscribe({
-      next: (response: any) => {
-        if (response.success && response.ruta) {
-          this.currentEmpleado.foto = response.ruta;
-          localStorage.setItem('currentEmpleado', JSON.stringify(this.currentEmpleado));
-          this.fotoUrl = this.getFotoUrl(response.ruta, this.currentEmpleado.nombre);
-          this.mostrarMensajeModal('Foto actualizada correctamente');
-          this.cancelarFotoModal();
-        } else if (response.error) {
-          // Manejar respuesta de error dentro de la respuesta exitosa
-          this.mostrarErrorModal(response.error);
+        if (res.feriado) {
+          this.notification.info(
+            `Hoy es feriado (${res.feriado}). Se abonaron ${dias(res.diasCompensacionAbonados)} día(s) a su saldo de compensación.`,
+            'Feriado laborado', 8000);
+          this.cargarSaldos();
         }
-        this.isUpdating = false;
       },
       error: (e) => {
-        const errorMsg = e.error?.error || e.error?.message || e.message || 'Error al subir la imagen';
-        this.mostrarErrorModal(errorMsg);
-        this.isUpdating = false;
+        this.marcando = false;
+        if (e.error?.fueraDeRed) this.verificarRed();
+        this.notification.error(mensajeError(e, 'No se pudo registrar la asistencia'), 'No se registró la marcación', 7000);
+        this.cargarAsistencia(false);
       }
     });
   }
 
-  cambiarPassword() {
-    if (!this.currentEmpleado?.username) return;
+  // ==================== SALDOS ====================
 
-    if (!this.passwordActual || !this.passwordNueva || !this.passwordConfirmar) {
-      this.mostrarErrorModal('Todos los campos de contrasena son requeridos');
-      return;
-    }
-
-    if (this.passwordNueva.length < 6) {
-      this.mostrarErrorModal('La nueva contrasena debe tener al menos 6 caracteres');
-      return;
-    }
-
-    if (this.passwordNueva !== this.passwordConfirmar) {
-      this.mostrarErrorModal('Las contrasenas no coinciden');
-      return;
-    }
-
-    this.isUpdating = true;
-    this.mensajeErrorModal = '';
-
-    this.auth.cambiarPassword(
-      this.currentEmpleado.username,
-      this.passwordActual,
-      this.passwordNueva
-    ).subscribe({
-      next: () => {
-        this.mostrarMensajeModal('Contrasena cambiada exitosamente');
-        this.passwordActual = '';
-        this.passwordNueva = '';
-        this.passwordConfirmar = '';
-        this.mostrarSeccionPassword = false;
-        this.isUpdating = false;
-      },
-      error: (e) => {
-        this.mostrarErrorModal(e.error?.error || 'Error al cambiar contrasena');
-        this.isUpdating = false;
-      }
-    });
+  cargarSaldos() {
+    this.saldosService.miSaldo().subscribe({ next: (s) => this.saldos = s, error: () => this.saldos = null });
   }
 
-  private mostrarMensajeModal(msg: string) {
-    this.mensajeModal = msg;
-    this.mensajeErrorModal = '';
-    setTimeout(() => this.mensajeModal = '', 4000);
-
-    // Mostrar toast de éxito
-    this.notification.success(msg, 'Exitoso');
-  }
-
-  private mostrarErrorModal(msg: string) {
-    this.mensajeErrorModal = msg;
-    this.mensajeModal = '';
-    setTimeout(() => this.mensajeErrorModal = '', 5000);
-
-    // Mostrar toast de error (rojo)
-    this.notification.error(msg, 'Error');
-  }
-
-  getNivelDisplay(nivel: string): string {
-    switch (nivel?.toLowerCase()) {
-      case 'jefe': return 'Jefe/Gerente';
-      case 'supervisor': return 'Supervisor';
-      case 'tecnico': return 'Tecnico';
-      case 'hd': return 'HD';
-      case 'bo': return 'Back Office';
-      case 'noc': return 'NOC';
-      default: return nivel || 'Sin nivel';
-    }
-  }
+  // ==================== HORARIO ====================
 
   cargarHorario() {
-    if (!this.currentEmpleado?.id) return;
-    if (this.currentEmpleado.rol === 'admin') return;
-
-    this.isLoadingHorario = true;
-    // Usar horario semanal activo (nuevo sistema) en vez de horario base (tabla vieja)
-    this.horariosService.getMiHorarioVigente(this.currentEmpleado.id).subscribe({
-      next: (data) => {
-        this.horarioSemanal = data;
-        this.isLoadingHorario = false;
-      },
-      error: () => {
-        this.isLoadingHorario = false;
-        this.horarioSemanal = null;
-      }
+    const id = this.empleado()?.id;
+    if (!id) return;
+    this.horariosService.getMiHorarioVigente(id).subscribe({
+      next: (data) => { this.horarioSemanal = data; this.cargandoHorario = false; },
+      error: () => { this.horarioSemanal = null; this.cargandoHorario = false; }
     });
   }
 
   getHorarioDia(dia: string): HorarioDia | null {
-    if (!this.horarioSemanal) return null;
-    const horarios = this.horarioSemanal.horariosSemana as any;
-    return horarios[dia] || null;
+    return (this.horarioSemanal?.horariosSemana as any)?.[dia] || null;
   }
 
-  getTipoDiaLabel(tipo: string | undefined): string {
-    switch (tipo) {
-      case 'descanso': return 'Descanso';
-      case 'compensado': return 'Compensado';
-      case 'vacaciones': return 'Vacaciones';
-      default: return 'Normal';
-    }
+  esHoy(dia: string): boolean {
+    return this.diasSemana[diaSemanaLima(this.ahora)] === dia;
   }
 
-  tieneHorarioAsignado(): boolean {
-    if (!this.horarioSemanal) return false;
-    return this.diasSemana.some(dia => this.getHorarioDia(dia) !== null);
+  tipoDiaLabel(tipo?: string): string {
+    const map: Record<string, string> = {
+      descanso: 'Descanso', compensado: 'Compensado', vacaciones: 'Vacaciones',
+      descanso_medico: 'Descanso médico', licencia: 'Licencia', permiso: 'Permiso'
+    };
+    return tipo ? (map[tipo] || tipo) : 'Laboral';
   }
 
-  getRolDisplay(rol: string): string {
-    switch (rol?.toLowerCase()) {
-      case 'admin': return 'Administrador';
-      case 'supervisor': return 'Supervisor';
-      case 'tecnico': return 'Tecnico';
-      case 'hd': return 'HD';
-      case 'noc': return 'NOC';
-      default: return rol || 'Sin rol';
-    }
+  turnoLabel(turno?: string): string {
+    return turno === 'manana' ? 'Mañana' : turno === 'tarde' ? 'Tarde' : (turno || '—');
   }
 
-  getFechaEnEspanol(): string {
-    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-
-    const fecha = this.fechaActual;
-    const diaSemana = dias[fecha.getDay()];
-    const diaMes = fecha.getDate();
-    const mes = meses[fecha.getMonth()];
-    const año = fecha.getFullYear();
-
-    // Obtener la hora actual
-    const horas = fecha.getHours().toString().padStart(2, '0');
-    const minutos = fecha.getMinutes().toString().padStart(2, '0');
-    const segundos = fecha.getSeconds().toString().padStart(2, '0');
-
-    return `${diaSemana}, ${diaMes} de ${mes} de ${año} - ${horas}:${minutos}:${segundos}`;
+  tieneHorario(): boolean {
+    return this.diasSemana.some(d => this.getHorarioDia(d));
   }
 
   // ==================== EVENTOS ====================
 
   cargarEventos() {
-    this.isLoadingEventos = true;
     this.eventosService.getEventosActivos().subscribe({
-      next: (eventos) => {
-        // Solo mostrar eventos que NO han sido respondidos
-        this.eventosActivos = eventos.filter(e => !e.yaRespondio);
-        this.isLoadingEventos = false;
-      },
-      error: () => {
-        this.isLoadingEventos = false;
-        this.eventosActivos = [];
-      }
+      next: (ev) => this.eventos = ev.filter(e => !e.yaRespondio),
+      error: () => this.eventos = []
     });
   }
 
-  abrirEvento(evento: Evento) {
-    this.eventoSeleccionado = evento;
-    this.mostrarModalEvento = true;
-  }
+  icono(tipo: string) { return this.eventosService.getTipoEventoIcon(tipo); }
+  tipoLabel(tipo: string) { return this.eventosService.getTipoEventoLabel(tipo); }
 
-  cerrarModalEvento() {
-    this.mostrarModalEvento = false;
-    this.eventoSeleccionado = null;
-  }
-
-  getTipoEventoIcon(tipo: string): string {
-    return this.eventosService.getTipoEventoIcon(tipo);
-  }
-
-  getTipoEventoColor(tipo: string): string {
-    return this.eventosService.getTipoEventoColor(tipo);
-  }
-
-  getTipoEventoLabel(tipo: string): string {
-    return this.eventosService.getTipoEventoLabel(tipo);
-  }
-
-  getFechaEventoFormateada(fecha: string | undefined): string {
-    if (!fecha) return 'Sin fecha';
-    try {
-      const date = new Date(fecha);
-      return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return fecha;
-    }
-  }
-
-  async responderSiNo(evento: Evento, respuesta: boolean) {
-    if (this.respuestaEnviando) return;
-
-    const confirmado = await this.notification.confirm({
-      title: respuesta ? 'Confirmar SI' : 'Confirmar NO',
-      message: `Desea responder "${respuesta ? 'SI' : 'NO'}" a "${evento.titulo}"?`,
-      confirmText: 'Confirmar',
-      cancelText: 'Cancelar',
-      type: respuesta ? 'success' : 'danger'
-    });
-
-    if (!confirmado) return;
-
-    this.respuestaEnviando = true;
-    const request: RespuestaEventoRequest = {
-      eventoId: evento.id!,
-      respuestaSiNo: respuesta
-    };
-
-    this.eventosService.responderEvento(request).subscribe({
+  private responder(req: RespuestaEventoRequest, mensaje: string) {
+    this.enviandoRespuesta = true;
+    this.eventosService.responderEvento(req).subscribe({
       next: () => {
-        this.notification.success(
-          `Has respondido "${respuesta ? 'SI' : 'NO'}"`,
-          'Respuesta registrada'
-        );
+        this.enviandoRespuesta = false;
+        this.notification.success(mensaje, 'Respuesta registrada');
+        this.eventoSeleccionado = null;
         this.cargarEventos();
-        this.cerrarModalEvento();
-        this.respuestaEnviando = false;
+        this.notificacionesService.cargarResumen().subscribe();
       },
-      error: (err) => {
-        this.notification.error(err, 'Error');
-        this.respuestaEnviando = false;
+      error: (e) => {
+        this.enviandoRespuesta = false;
+        this.notification.error(mensajeError(e), 'Error');
       }
     });
   }
 
-  async responderAsistencia(evento: Evento, confirmacion: string) {
-    if (this.respuestaEnviando) return;
-
-    const labels: { [key: string]: string } = {
-      'CONFIRMADO': 'Confirmar asistencia',
-      'NO_ASISTIRE': 'No asistire',
-      'PENDIENTE': 'Marcar como pendiente'
-    };
-
-    const confirmado = await this.notification.confirm({
-      title: labels[confirmacion] || confirmacion,
-      message: `Desea marcar su asistencia como "${labels[confirmacion]}" para "${evento.titulo}"?`,
-      confirmText: 'Confirmar',
-      cancelText: 'Cancelar',
-      type: confirmacion === 'CONFIRMADO' ? 'success' : 'warning'
-    });
-
-    if (!confirmado) return;
-
-    this.respuestaEnviando = true;
-    const request: RespuestaEventoRequest = {
-      eventoId: evento.id!,
-      confirmacionAsistencia: confirmacion
-    };
-
-    this.eventosService.responderEvento(request).subscribe({
-      next: () => {
-        this.notification.success(
-          `Asistencia marcada como "${labels[confirmacion]}"`,
-          'Respuesta registrada'
-        );
-        this.cargarEventos();
-        this.cerrarModalEvento();
-        this.respuestaEnviando = false;
-      },
-      error: (err) => {
-        this.notification.error(err, 'Error');
-        this.respuestaEnviando = false;
-      }
-    });
+  responderSiNo(evento: Evento, valor: boolean) {
+    this.responder({ eventoId: evento.id!, respuestaSiNo: valor }, `Respondió "${valor ? 'Sí' : 'No'}".`);
   }
 
-  async responderEncuesta(evento: Evento, opcionId: number) {
-    if (this.respuestaEnviando) return;
+  responderAsistencia(evento: Evento, confirmacion: string) {
+    const labels: Record<string, string> = { CONFIRMADO: 'Asistiré', NO_ASISTIRE: 'No asistiré', PENDIENTE: 'Aún no sé' };
+    this.responder({ eventoId: evento.id!, confirmacionAsistencia: confirmacion }, `Marcó "${labels[confirmacion]}".`);
+  }
 
+  votar(evento: Evento, opcionId: number) {
     const opcion = evento.opciones?.find(o => o.id === opcionId);
-
-    const confirmado = await this.notification.confirm({
-      title: 'Confirmar voto',
-      message: `Desea votar por "${opcion?.textoOpcion}" en "${evento.titulo}"?`,
-      confirmText: 'Votar',
-      cancelText: 'Cancelar',
-      type: 'success'
-    });
-
-    if (!confirmado) return;
-
-    this.respuestaEnviando = true;
-    const request: RespuestaEventoRequest = {
-      eventoId: evento.id!,
-      opcionId: opcionId
-    };
-
-    this.eventosService.responderEvento(request).subscribe({
-      next: () => {
-        this.notification.success(
-          `Has votado por "${opcion?.textoOpcion}"`,
-          'Voto registrado'
-        );
-        this.cargarEventos();
-        this.cerrarModalEvento();
-        this.respuestaEnviando = false;
-      },
-      error: (err) => {
-        this.notification.error(err, 'Error');
-        this.respuestaEnviando = false;
-      }
-    });
+    this.responder({ eventoId: evento.id!, opcionId }, `Votó por "${opcion?.textoOpcion}".`);
   }
 
-  marcarEventoVisto(evento: Evento) {
-    if (evento.tipoEvento === 'INFORMATIVO' && !evento.yaRespondio) {
-      const request: RespuestaEventoRequest = {
-        eventoId: evento.id!,
-        comentario: 'Visto'
-      };
-      this.eventosService.responderEvento(request).subscribe({
-        next: () => {
-          this.cargarEventos();
-          this.cerrarModalEvento();
-        }
-      });
-    } else {
-      this.cerrarModalEvento();
-    }
+  marcarVisto(evento: Evento) {
+    this.responder({ eventoId: evento.id!, comentario: 'Visto' }, 'Marcado como leído.');
   }
 
-  // ==================== NOTIFICACIONES POST-LOGIN ====================
+  // ==================== AVISOS ====================
 
-  private mostrarNotificacionesPostLogin() {
-    // Solo mostrar una vez por sesion
-    const yaMostrado = sessionStorage.getItem('notificacionesMostradas');
-    if (yaMostrado) return;
-
+  private mostrarAvisosDeInicio() {
     this.notificacionesService.cargarResumen().subscribe({
-      next: (resumen) => {
-        if (!resumen) return;
+      next: (r) => {
+        if (!r) return;
+        this.porAprobar = r.solicitudesPendientes || 0;
+        if (sessionStorage.getItem('notificacionesMostradas')) return;
         sessionStorage.setItem('notificacionesMostradas', 'true');
-
-        // Mostrar toasts con delay para que no se apilen todos a la vez
-        let delay = 1500; // esperar a que cargue el dashboard
-
-        if (resumen.solicitudesAprobadas > 0) {
-          setTimeout(() => {
-            this.notification.success(
-              `Tienes ${resumen.solicitudesAprobadas} solicitud(es) aprobada(s) recientemente`,
-              'Solicitudes'
-            );
-          }, delay);
-          delay += 800;
+        if (r.solicitudesAprobadas > 0) {
+          this.notification.success(`Tiene ${r.solicitudesAprobadas} solicitud(es) aprobada(s) recientemente.`, 'Solicitudes');
         }
-
-        if (resumen.solicitudesRechazadas > 0) {
-          setTimeout(() => {
-            this.notification.warning(
-              `Tienes ${resumen.solicitudesRechazadas} solicitud(es) rechazada(s) recientemente`,
-              'Solicitudes'
-            );
-          }, delay);
-          delay += 800;
+        if (r.solicitudesRechazadas > 0) {
+          this.notification.warning(`Tiene ${r.solicitudesRechazadas} solicitud(es) rechazada(s) recientemente.`, 'Solicitudes');
         }
-
-        if (resumen.eventosSinResponder > 0) {
-          setTimeout(() => {
-            this.notification.info(
-              `Tienes ${resumen.eventosSinResponder} evento(s) pendiente(s) de responder`,
-              'Eventos'
-            );
-          }, delay);
-          delay += 800;
-        }
-
-        if ((this.isAdmin() || this.isSupervisor()) && resumen.solicitudesPendientes > 0) {
-          setTimeout(() => {
-            this.notification.info(
-              `Hay ${resumen.solicitudesPendientes} solicitud(es) esperando aprobacion`,
-              'Pendientes'
-            );
-          }, delay);
+        if (r.solicitudesPendientes > 0) {
+          this.notification.info(`Hay ${r.solicitudesPendientes} solicitud(es) esperando su aprobación.`, 'Por aprobar');
         }
       }
     });

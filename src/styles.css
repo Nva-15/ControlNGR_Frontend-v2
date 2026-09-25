@@ -1,56 +1,290 @@
-
-@import "bootstrap/dist/css/bootstrap.min.css";
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
 @import "bootstrap-icons/font/bootstrap-icons.css";
 
-/* Global Styles */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ============================================================
+   Tema Control NGR (colores del logo)
+   vino  = carmesí del centro del logo (color principal)
+   coral = anillo intermedio
+   oro   = naranja y dorado de la cruz (acentos)
+   Neutros: stone (gris cálido) de Tailwind
+   ============================================================ */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+
+  --color-vino-50: #fdf2f4;
+  --color-vino-100: #fbe5e9;
+  --color-vino-200: #f5c9d2;
+  --color-vino-300: #ec9dae;
+  --color-vino-400: #de6581;
+  --color-vino-500: #c93a5b;
+  --color-vino-600: #b02145;
+  --color-vino-700: #9b1437;
+  --color-vino-800: #80122f;
+  --color-vino-900: #6b122b;
+  --color-vino-950: #3c0514;
+
+  --color-coral-400: #e07a63;
+  --color-coral-500: #ce5b47;
+  --color-coral-600: #b44634;
+
+  --color-oro-50: #fdf8ec;
+  --color-oro-100: #faefd2;
+  --color-oro-200: #f4dea5;
+  --color-oro-300: #ebc57c;
+  --color-oro-400: #e4ab4c;
+  --color-oro-500: #e0922e;
+  --color-oro-600: #c47422;
+  --color-oro-700: #a2571f;
+  --color-oro-800: #84451f;
+  --color-oro-900: #6d3a1d;
 }
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f8f9fa;
-  color: #333;
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-stone-50 text-stone-800 font-sans text-sm;
+  }
+
+  h1, h2, h3, h4 {
+    @apply text-stone-900 font-semibold tracking-tight;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-vino-400;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-stone-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-stone-400; }
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
+/* ---------- Botones ---------- */
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+           transition-colors duration-150 cursor-pointer select-none whitespace-nowrap
+           disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+@utility btn-sm {
+  @apply px-3! py-1.5! text-xs!;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
+@utility btn-lg {
+  @apply px-5! py-3! text-base!;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+@utility btn-primary {
+  @apply btn bg-vino-700 text-white hover:bg-vino-800 shadow-sm;
 }
 
-/* Utility classes */
-.cursor-pointer {
-  cursor: pointer;
+@utility btn-accent {
+  @apply btn bg-oro-500 text-white hover:bg-oro-600 shadow-sm;
 }
 
-.text-justify {
-  text-align: justify;
+@utility btn-secondary {
+  @apply btn bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 shadow-sm;
 }
 
-.shadow-soft {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+@utility btn-ghost {
+  @apply btn text-stone-600 hover:bg-stone-100 hover:text-stone-900;
 }
 
-/* Form validation styles */
-.ng-valid[required], .ng-valid.required {
-  border-left: 5px solid #42A948;
+@utility btn-success {
+  @apply btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm;
 }
 
-.ng-invalid:not(form) {
-  border-left: 5px solid #a94442;
+@utility btn-danger {
+  @apply btn bg-red-600 text-white hover:bg-red-700 shadow-sm;
+}
+
+@utility btn-danger-soft {
+  @apply btn bg-red-50 text-red-700 hover:bg-red-100;
+}
+
+@utility btn-icon {
+  @apply inline-flex items-center justify-center size-8 rounded-lg text-stone-500
+           hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer
+           disabled:opacity-40 disabled:cursor-not-allowed;
+}
+
+/* ---------- Tarjetas ---------- */
+
+@utility card {
+  @apply bg-white rounded-xl border border-stone-200/70 shadow-sm;
+}
+
+@utility card-header {
+  @apply flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-stone-100;
+}
+
+@utility card-title {
+  @apply text-base font-semibold text-stone-900 flex items-center gap-2;
+}
+
+@utility card-body {
+  @apply p-5;
+}
+
+/* ---------- Formularios ---------- */
+
+@utility label {
+  @apply block text-xs font-medium text-stone-600 mb-1.5;
+}
+
+@utility input {
+  @apply block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900
+           placeholder:text-stone-400 shadow-xs transition
+           focus:border-vino-400 focus:ring-2 focus:ring-vino-100 focus:outline-none
+           disabled:bg-stone-100 disabled:text-stone-500;
+}
+
+@utility select {
+  @apply input pr-8;
+}
+
+@utility textarea {
+  @apply input min-h-20;
+}
+
+@utility checkbox {
+  @apply size-4 rounded border-stone-300 accent-vino-700;
+}
+
+@utility field-help {
+  @apply mt-1 text-xs text-stone-500;
+}
+
+@utility field-error {
+  @apply mt-1 text-xs text-red-600;
+}
+
+/* ---------- Insignias ---------- */
+
+@utility badge {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset whitespace-nowrap;
+}
+
+@utility badge-gray {
+  @apply badge bg-stone-50 text-stone-700 ring-stone-200;
+}
+
+@utility badge-green {
+  @apply badge bg-emerald-50 text-emerald-700 ring-emerald-200;
+}
+
+@utility badge-red {
+  @apply badge bg-red-50 text-red-700 ring-red-200;
+}
+
+@utility badge-amber {
+  @apply badge bg-amber-50 text-amber-800 ring-amber-200;
+}
+
+@utility badge-blue {
+  @apply badge bg-sky-50 text-sky-700 ring-sky-200;
+}
+
+@utility badge-violet {
+  @apply badge bg-violet-50 text-violet-700 ring-violet-200;
+}
+
+@utility badge-vino {
+  @apply badge bg-vino-50 text-vino-700 ring-vino-200;
+}
+
+@utility badge-oro {
+  @apply badge bg-oro-50 text-oro-800 ring-oro-200;
+}
+
+/* ---------- Tablas ---------- */
+
+@utility table-wrap {
+  @apply overflow-x-auto;
+}
+
+@utility table {
+  @apply min-w-full text-sm;
+}
+
+/* ---------- Pestañas ---------- */
+
+@utility tabs {
+  @apply flex gap-1 border-b border-stone-200 overflow-x-auto;
+}
+
+@utility tab {
+  @apply -mb-px inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-500 border-b-2 border-transparent
+           hover:text-stone-900 cursor-pointer whitespace-nowrap;
+}
+
+@utility tab-active {
+  @apply text-vino-700! border-vino-600!;
+}
+
+/* ---------- Alertas ---------- */
+
+@utility alert {
+  @apply flex gap-3 rounded-lg p-4 text-sm ring-1 ring-inset;
+}
+
+@utility alert-info {
+  @apply alert bg-sky-50 text-sky-800 ring-sky-200;
+}
+
+@utility alert-success {
+  @apply alert bg-emerald-50 text-emerald-800 ring-emerald-200;
+}
+
+@utility alert-warning {
+  @apply alert bg-amber-50 text-amber-900 ring-amber-200;
+}
+
+@utility alert-danger {
+  @apply alert bg-red-50 text-red-800 ring-red-200;
+}
+
+/* ---------- Varios ---------- */
+
+@utility page-header {
+  @apply flex flex-wrap items-end justify-between gap-4 mb-6;
+}
+
+@utility page-title {
+  @apply text-2xl font-semibold text-stone-900;
+}
+
+@utility page-subtitle {
+  @apply text-sm text-stone-500 mt-1;
+}
+
+@utility stat-value {
+  @apply text-3xl font-semibold text-stone-900 tabular-nums;
+}
+
+@utility stat-label {
+  @apply text-xs font-medium uppercase tracking-wide text-stone-500;
+}
+
+@utility empty-state {
+  @apply flex flex-col items-center justify-center gap-2 py-12 text-center text-stone-500;
+}
+
+@utility spinner {
+  @apply inline-block size-5 animate-spin rounded-full border-2 border-stone-200 border-t-vino-700;
+}
+
+@utility avatar {
+  @apply inline-flex items-center justify-center rounded-full bg-vino-100 text-vino-800 font-semibold object-cover shrink-0;
+}
+
+@layer components {
+  .table thead th { @apply bg-stone-50 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone-500 whitespace-nowrap; }
+  .table tbody td { @apply px-4 py-3 border-t border-stone-100 align-middle; }
+  .table tbody tr:hover td { @apply bg-stone-50/70; }
 }

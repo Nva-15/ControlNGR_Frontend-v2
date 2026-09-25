@@ -1,76 +1,55 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './components/login/login';
-import { DashboardComponent } from './components/dashboard/dashboard';
-import { SolicitudesComponent } from './components/solicitudes/solicitudes';
-import { authGuard } from './guards/auth-guard';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout';
-import { EmpleadosComponent } from './components/empleados/empleados';
-import { OrganigramaComponent } from './components/organigrama/organigrama';
-import { HorariosComponent } from './components/horarios/horarios';
-import { ReportesComponent } from './components/reportes/reportes';
-import { EventosComponent } from './components/eventos/eventos';
-import { EventoEstadisticasComponent } from './components/evento-estadisticas/evento-estadisticas';
+import {
+  adminGuard, authGuard, cambioPasswordGuard, gestionGuard, inicioGuard, personalGuard
+} from './guards/auth-guard';
 
+// Las pantallas se cargan bajo demanda para que el inicio sea rapido
 export const routes: Routes = [
-  { 
-    path: 'login', 
-    component: LoginComponent, 
-    title: 'Login - Control NGR' 
-  },
-  { 
-    path: '', 
-    redirectTo: 'dashboard', 
-    pathMatch: 'full' 
-  },
-  { 
-    path: 'dashboard', 
-    component: DashboardComponent, 
-    title: 'Dashboard - Control NGR'
+  { path: 'login', component: LoginComponent, title: 'Iniciar sesión · Control NGR' },
+  {
+    path: 'cambiar-password',
+    loadComponent: () => import('./components/cambiar-password/cambiar-password').then(m => m.CambiarPasswordComponent),
+    canActivate: [cambioPasswordGuard],
+    title: 'Cambiar contraseña · Control NGR'
   },
   {
     path: '',
     component: MainLayoutComponent,
     canActivate: [authGuard],
-    children: [      
-      { 
-        path: 'solicitudes', 
-        component: SolicitudesComponent, 
-        title: 'Solicitudes - Control NGR'
-      },
-      { 
-        path: 'empleados', 
-        component: EmpleadosComponent, 
-        title: 'Gestión de Empleados'
-      },
-      {
-        path: 'organigrama',
-        component: OrganigramaComponent,
-        title: 'Organigrama'
-      },
-      {
-        path: 'horarios',
-        component: HorariosComponent,
-        title: 'Gestion de Horarios'
-      },
-      {
-        path: 'reportes',
-        component: ReportesComponent,
-        title: 'Reportes de Asistencia'
-      },
-      {
-        path: 'eventos',
-        component: EventosComponent,
-        title: 'Gestion de Eventos'
-      },
-      {
-        path: 'eventos/:id/estadisticas',
-        component: EventoEstadisticasComponent,
-        title: 'Estadisticas del Evento'
-      },
+    children: [
+      { path: '', pathMatch: 'full', canActivate: [inicioGuard], children: [] },
+
+      // Personal
+      { path: 'dashboard', canActivate: [personalGuard], title: 'Inicio · Control NGR',
+        loadComponent: () => import('./components/dashboard/dashboard').then(m => m.DashboardComponent) },
+      { path: 'perfil', canActivate: [personalGuard], title: 'Mi perfil · Control NGR',
+        loadComponent: () => import('./components/perfil/perfil').then(m => m.PerfilComponent) },
+      { path: 'saldos', canActivate: [personalGuard], title: 'Mis saldos · Control NGR',
+        loadComponent: () => import('./components/saldos/saldos').then(m => m.SaldosComponent) },
+      { path: 'solicitudes', canActivate: [personalGuard], title: 'Solicitudes · Control NGR',
+        loadComponent: () => import('./components/solicitudes/solicitudes').then(m => m.SolicitudesComponent) },
+      { path: 'eventos', canActivate: [personalGuard], title: 'Eventos · Control NGR',
+        loadComponent: () => import('./components/eventos/eventos').then(m => m.EventosComponent) },
+      { path: 'eventos/:id/estadisticas', canActivate: [personalGuard, gestionGuard], title: 'Resultados · Control NGR',
+        loadComponent: () => import('./components/evento-estadisticas/evento-estadisticas').then(m => m.EventoEstadisticasComponent) },
+      { path: 'horarios', title: 'Horarios · Control NGR',
+        loadComponent: () => import('./components/horarios/horarios').then(m => m.HorariosComponent) },
+      { path: 'organigrama', title: 'Organigrama · Control NGR',
+        loadComponent: () => import('./components/organigrama/organigrama').then(m => m.OrganigramaComponent) },
+
+      // Gestion
+      { path: 'empleados', canActivate: [gestionGuard], title: 'Empleados · Control NGR',
+        loadComponent: () => import('./components/empleados/empleados').then(m => m.EmpleadosComponent) },
+      { path: 'reportes', canActivate: [personalGuard, gestionGuard], title: 'Reportes · Control NGR',
+        loadComponent: () => import('./components/reportes/reportes').then(m => m.ReportesComponent) },
+
+      // Panel maestro
+      { path: 'admin', pathMatch: 'full', redirectTo: 'admin/saldos' },
+      { path: 'admin/:seccion', canActivate: [adminGuard], title: 'Panel maestro · Control NGR',
+        loadComponent: () => import('./components/admin/admin').then(m => m.AdminComponent) },
     ]
   },
-  { 
-    path: '**', 
-    redirectTo: '/login' 
-  }
+  { path: '**', redirectTo: '' }
 ];
