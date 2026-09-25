@@ -147,9 +147,10 @@
         <div>
           <label class="label">Rol</label>
           <select class="select" formControlName="rol">
-            @for (r of roles; track r.codigo) { <option [value]="r.codigo">{{ r.nombre }}</option> }
+            @for (r of rolesAsignables; track r.codigo) { <option [value]="r.codigo">{{ r.nombre }}</option> }
           </select>
-          @if (!puedeCrear) { <p class="field-help">Solo gerencia o el administrador cambian roles.</p> }
+          @if (editandoPropio) { <p class="field-help">Su rol y estado los cambia su jefatura.</p> }
+          @else if (!puedeCrear) { <p class="field-help">Solo gerencia o el administrador cambian roles.</p> }
         </div>
         <div>
           <label class="label">Usuario</label>

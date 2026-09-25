@@ -31,7 +31,8 @@ server {
     }
 
     # ---------- Fotos de perfil ----------
-    location /img/ {
+    # ^~ evita que la regla de archivos estaticos (.png) de abajo capture las fotos
+    location ^~ /img/ {
         proxy_pass ${BACKEND_URL};
         proxy_set_header Host $host;
         expires 1d;
