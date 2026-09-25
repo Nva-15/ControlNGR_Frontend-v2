@@ -1,5 +1,7 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ModalComponent } from '../shared/modal/modal.component';
+import { PERSONAL, rolBadge, rolLabel } from '../../utils/roles';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HorariosService } from '../../services/horarios';
 import { AuthService } from '../../services/auth';
@@ -17,9 +19,8 @@ import {
 @Component({
   selector: 'app-horarios',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
-  templateUrl: './horarios.html',
-  styleUrls: ['./horarios.css']
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, ModalComponent],
+  templateUrl: './horarios.html'
 })
 export class HorariosComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
@@ -76,24 +77,23 @@ export class HorariosComponent implements OnInit, OnDestroy {
 
   roles = [
     { value: '', label: 'Todos los roles' },
-    { value: 'supervisor', label: 'Supervisor' },
-    { value: 'tecnico', label: 'Técnico' },
-    { value: 'hd', label: 'HD' },
-    { value: 'noc', label: 'NOC' }
+    ...PERSONAL.map(r => ({ value: r as string, label: rolLabel(r) }))
   ];
 
   tiposDia = [
-    { value: 'normal', label: 'Normal', color: 'success', icon: 'bi-briefcase' },
-    { value: 'descanso', label: 'Descanso', color: 'secondary', icon: 'bi-moon-stars' },
-    { value: 'compensado', label: 'Compensado', color: 'info', icon: 'bi-calendar-check' },
-    { value: 'vacaciones', label: 'Vacaciones', color: 'warning', icon: 'bi-sun' },
-    { value: 'permiso', label: 'Permiso', color: 'primary', icon: 'bi-person-check' }
+    { value: 'normal', label: 'Laboral', clase: 'bg-white text-stone-700', icon: 'bi-briefcase' },
+    { value: 'descanso', label: 'Descanso', clase: 'bg-stone-200 text-stone-700', icon: 'bi-moon-stars' },
+    { value: 'compensado', label: 'Compensado', clase: 'bg-sky-100 text-sky-800', icon: 'bi-calendar-check' },
+    { value: 'vacaciones', label: 'Vacaciones', clase: 'bg-oro-100 text-oro-800', icon: 'bi-sun' },
+    { value: 'descanso_medico', label: 'Descanso médico', clase: 'bg-red-100 text-red-800', icon: 'bi-heart-pulse' },
+    { value: 'licencia', label: 'Licencia', clase: 'bg-violet-100 text-violet-800', icon: 'bi-file-earmark-text' },
+    { value: 'permiso', label: 'Permiso', clase: 'bg-vino-100 text-vino-800', icon: 'bi-person-check' }
   ];
 
   estadosSemana = [
-    { value: 'borrador', label: 'Borrador', class: 'bg-secondary' },
-    { value: 'activo', label: 'Activo', class: 'bg-success' },
-    { value: 'historico', label: 'Histórico', class: 'bg-dark' }
+    { value: 'borrador', label: 'Borrador', class: 'badge-gray' },
+    { value: 'activo', label: 'Activo', class: 'badge-green' },
+    { value: 'historico', label: 'Histórico', class: 'badge-blue' }
   ];
 
   constructor() {
@@ -102,12 +102,8 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    const rol = this.authService.getUserRole();
-    if (rol === 'tecnico' || rol === 'hd' || rol === 'noc') {
-      this.filtroRol = rol;
-    }
     this.cargarSemanas();
-    this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 5000);
+    this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 30000);
   }
 
   ngOnDestroy() {
@@ -164,8 +160,9 @@ export class HorariosComponent implements OnInit, OnDestroy {
     return new Date(d.setDate(diff));
   }
 
+  /** Fecha local en formato yyyy-MM-dd (no usar toISOString: cambia de dia despues de las 19:00 en Lima). */
   formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    return date.toLocaleDateString('en-CA');
   }
 
   // ========== CARGAR DATOS ==========
@@ -196,8 +193,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
 
   // Filtrar semanas visibles según rol y fechas
   filtrarSemanasVisibles(semanas: HorarioSemanalResponse[]): HorarioSemanalResponse[] {
-    const rol = this.authService.getUserRole();
-    const esRolBasico = ['tecnico', 'hd', 'noc'].includes(rol);
+    const esRolBasico = !this.tienePermiso();
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
@@ -215,7 +211,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
       }
 
       // Filtrar por fechas: mostrar semana anterior, actual y futuras
-      const fechaInicioSemana = new Date(semana.fechaInicio);
+      const fechaInicioSemana = new Date(semana.fechaInicio + 'T00:00:00');
       fechaInicioSemana.setHours(0, 0, 0, 0);
 
       // Permitir: semana anterior (solo una), semana actual y futuras
@@ -289,7 +285,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   getFechasDeSemana(): string[] {
     if (!this.semanaSeleccionada) return [];
     const fechas: string[] = [];
-    const inicio = new Date(this.semanaSeleccionada.fechaInicio);
+    const inicio = new Date(this.semanaSeleccionada.fechaInicio + 'T00:00:00');
     for (let i = 0; i < 7; i++) {
       const fecha = new Date(inicio);
       fecha.setDate(inicio.getDate() + i);
@@ -314,22 +310,16 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   esHoy(fechaStr: string): boolean {
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
     return fechaStr === hoy;
   }
 
   // ========== ESTILOS ==========
 
   getTipoDiaClass(dia: DetalleHorarioDia | null): string {
-    if (!dia) return 'sin-horario';
-    const tipo = dia.tipoDia || 'normal';
-    switch (tipo) {
-      case 'descanso': return 'bg-secondary text-white';
-      case 'compensado': return 'bg-info text-white';
-      case 'vacaciones': return 'bg-warning text-dark';
-      case 'permiso': return 'bg-primary text-white';
-      default: return 'bg-light';
-    }
+    if (!dia) return 'bg-stone-50 text-stone-400';
+    const tipo = this.tiposDia.find(t => t.value === (dia.tipoDia || 'normal'));
+    return tipo ? tipo.clase : 'bg-stone-100 text-stone-700';
   }
 
   getTipoDiaLabel(tipo: string | undefined): string {
@@ -345,31 +335,16 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   getRolLabel(rol: string): string {
-    const rolUpper = rol?.toUpperCase() || '';
-    switch (rolUpper) {
-      case 'ADMIN': return 'Admin';
-      case 'SUPERVISOR': return 'Supervisor';
-      case 'TECNICO': return 'Técnico';
-      case 'HD': return 'HD';
-      case 'NOC': return 'NOC';
-      default: return rol;
-    }
+    return rolLabel(rol);
   }
 
   getRolClass(rol: string): string {
-    switch (rol?.toLowerCase()) {
-      case 'admin': return 'badge bg-danger';
-      case 'supervisor': return 'badge bg-primary';
-      case 'tecnico': return 'badge bg-success';
-      case 'hd': return 'badge bg-info';
-      case 'noc': return 'badge bg-warning text-dark';
-      default: return 'badge bg-secondary';
-    }
+    return rolBadge(rol);
   }
 
   getEstadoClass(estado: string): string {
     const est = this.estadosSemana.find(e => e.value === estado);
-    return est ? `badge ${est.class}` : 'badge bg-secondary';
+    return est ? est.class : 'badge-gray';
   }
 
   // ========== CREAR SEMANA ==========
@@ -397,7 +372,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   onFechaInicioChange() {
     const fechaInicio = this.semanaForm.get('fechaInicio')?.value;
     if (fechaInicio) {
-      const inicio = new Date(fechaInicio);
+      const inicio = new Date(fechaInicio + 'T00:00:00');
       const fin = new Date(inicio);
       fin.setDate(inicio.getDate() + 6);
       this.semanaForm.patchValue({ fechaFin: this.formatDate(fin) });
@@ -410,11 +385,6 @@ export class HorariosComponent implements OnInit, OnDestroy {
     const formValue = this.semanaForm.value;
     const empleado = this.authService.getCurrentEmpleado();
 
-    if (!empleado?.id) {
-      this.notification.error('No se pudo obtener el usuario actual. Por favor, inicie sesión nuevamente.', 'Error');
-      return;
-    }
-
     // Convertir copiarDeId a número o undefined (evitar string "null")
     let copiarDeId: number | undefined = undefined;
     if (formValue.copiarDeId && formValue.copiarDeId !== 'null' && formValue.copiarDeId !== '') {
@@ -424,11 +394,9 @@ export class HorariosComponent implements OnInit, OnDestroy {
     const request: HorarioSemanalRequest = {
       fechaInicio: formValue.fechaInicio,
       fechaFin: formValue.fechaFin,
-      creadoPorId: empleado.id,
+      creadoPorId: empleado?.id ?? 0, // el backend usa el usuario autenticado
       copiarDeId: copiarDeId
     };
-
-    console.log('Creando semana con request:', request);
 
     this.isLoading = true;
     this.horariosService.generarSemana(request).subscribe({
@@ -448,7 +416,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   copiarSemanaActual() {
     if (!this.semanaSeleccionada) return;
 
-    const fechaInicio = new Date(this.semanaSeleccionada.fechaInicio);
+    const fechaInicio = new Date(this.semanaSeleccionada.fechaInicio + 'T00:00:00');
     fechaInicio.setDate(fechaInicio.getDate() + 7);
 
     this.isLoading = true;
@@ -800,8 +768,10 @@ export class HorariosComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Crear/editar horarios: jefaturas, supervisores, gestor y admin. */
   tienePermiso(): boolean {
-    const rol = this.authService.getUserRole();
-    return rol === 'admin' || rol === 'supervisor';
+    return this.authService.isAdmin() || this.authService.isGestion();
   }
+
+  cambiarEstadoMenu = false;
 }

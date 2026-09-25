@@ -1,8 +1,7 @@
-export interface AsistenciaRequest {
-    empleadoId: number;
-    tipo: string; // 'entrada' | 'salida'
-    fecha?: string;
-    hora?: string;
+/** La fecha y hora las pone el servidor. */
+  export interface AsistenciaRequest {
+    empleadoId?: number;
+    tipo: 'entrada' | 'salida';
     observaciones?: string;
   }
   
@@ -16,6 +15,11 @@ export interface AsistenciaRequest {
     estado: string;
     observaciones: string;
     salidaAutomatica: boolean;
+    ipEntrada?: string;
+    ipSalida?: string;
+    /** Si la entrada fue en feriado: nombre del feriado y dias de compensacion abonados. */
+    feriado?: string;
+    diasCompensacionAbonados?: number;
   }
 
   export interface ReporteAsistencia {

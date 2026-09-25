@@ -14,6 +14,11 @@ export class AsistenciaService {
     return `${this.apiConfig.apiUrl}/asistencia`;
   }
 
+  /** IP del equipo y si esta dentro de los segmentos permitidos para marcar. */
+  verificarRed(): Observable<{ ip: string; dentroDeRed: boolean; mensaje: string }> {
+    return this.http.get<{ ip: string; dentroDeRed: boolean; mensaje: string }>(`${this.apiUrl}/verificar-red`);
+  }
+
   registrarAsistencia(request: AsistenciaRequest): Observable<AsistenciaResponse> {
     return this.http.post<AsistenciaResponse>(`${this.apiUrl}/registrar`, request);
   }

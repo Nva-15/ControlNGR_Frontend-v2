@@ -1,59 +1,49 @@
-# Tiendafrontend
+# Control NGR - Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.6.
+Angular 20 · Tailwind CSS 4 · diseño con los colores del logo NGR (vino, coral, naranja y dorado).
 
-## Development server
+## Ejecutar en desarrollo
 
-To start a local development server, run:
-
-```bash
-ng serve
-```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Requiere Node 22 y el backend corriendo en `http://localhost:8080`.
 
 ```bash
-ng generate component component-name
+npm ci
+npm start          # http://localhost:4200
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Producción (Docker)
 
-```bash
-ng generate --help
+El sistema completo (MySQL + backend + este frontend) se levanta desde el repositorio del backend:
+
+```
+carpeta/
+├── ControlNGR_Backend-v2/    ← docker compose up -d --build
+└── ControlNGR_Frontend-v2/
 ```
 
-## Building
+Este repositorio aporta la imagen `nginx`, que:
 
-To build the project run:
+- sirve la aplicación compilada;
+- reenvía `/api` e `/img` al backend (que no se publica fuera de Docker);
+- envía la IP real del cliente al backend para validar los segmentos de red;
+- agrega cabeceras de seguridad (CSP estricta, `X-Frame-Options`, `nosniff`, etc.).
 
-```bash
-ng build
-```
+## Estructura
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+| Carpeta | Contenido |
+|---|---|
+| `src/app/components` | Pantallas: dashboard, solicitudes, saldos, perfil, horarios, eventos, empleados, organigrama, reportes y `admin/` (panel maestro) |
+| `src/app/components/shared` | Modal, confirmación, notificaciones, avatar y logo |
+| `src/app/services` | Llamadas a la API (`auth`, `solicitudes`, `saldos`, `admin`, …) |
+| `src/app/guards` | Acceso por sesión, cambio obligatorio de contraseña, personal, gestión y admin |
+| `src/app/utils` | Roles, formatos de fecha (siempre en hora de Lima) y utilidades |
+| `src/styles.css` | Tema de Tailwind y clases de componentes (`btn-*`, `card`, `input`, `badge-*`, …) |
+| `docker/` | Configuración de nginx |
 
-## Running unit tests
+## Roles
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+| Rol | Ve |
+|---|---|
+| `admin` | Panel maestro (saldos, usuarios, red, feriados, departamentos, roles, catálogos, parámetros), empleados, horarios y organigrama |
+| `director`, `gerente`, `jefe`, `supervisor`, `gestor` | Todo lo del personal más empleados y reportes, y aprueban solicitudes según las reglas de aprobación |
+| Resto del personal | Inicio (marcación), solicitudes, saldos, horarios, eventos y organigrama |

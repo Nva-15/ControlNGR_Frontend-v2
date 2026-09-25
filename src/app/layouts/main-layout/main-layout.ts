@@ -1,147 +1,126 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterOutlet, RouterLinkActive } from '@angular/router';
+import { Component, OnInit, OnDestroy, inject, computed } from '@angular/core';
+import { Router, RouterLink, RouterOutlet, RouterLinkActive, NavigationEnd } from '@angular/router';
+import { Subscription, filter } from 'rxjs';
 import { AuthService } from '../../services/auth';
-import { ApiConfigService } from '../../services/api-config.service';
 import { NotificacionesService } from '../../services/notificaciones';
 import { NotificacionResumen } from '../../interfaces/notificacion';
-import { Subscription } from 'rxjs';
+import { LogoComponent } from '../../components/shared/logo/logo.component';
+import { AvatarComponent } from '../../components/shared/avatar/avatar.component';
+
+interface ItemMenu {
+  ruta: string;
+  texto: string;
+  icono: string;
+  badge?: () => number;
+}
+
+interface GrupoMenu {
+  titulo?: string;
+  items: ItemMenu[];
+}
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterOutlet, RouterLinkActive],
-  templateUrl: './main-layout.html',
-  styleUrls: ['./main-layout.css']
+  imports: [RouterLink, RouterOutlet, RouterLinkActive, LogoComponent, AvatarComponent],
+  templateUrl: './main-layout.html'
 })
 export class MainLayoutComponent implements OnInit, OnDestroy {
-  private auth = inject(AuthService);
+  auth = inject(AuthService);
   private router = inject(Router);
-  private apiConfig = inject(ApiConfigService);
   private notificacionesService = inject(NotificacionesService);
 
-  currentEmpleado: any;
-  fotoUrl: string = '';
-  isMenuCollapsed = false;
-  menuMobilAbierto = false;
-
-  // Badges
+  menuMovilAbierto = false;
+  menuUsuarioAbierto = false;
   resumen: NotificacionResumen | null = null;
-  private resumenSub?: Subscription;
+  private subs: Subscription[] = [];
   private refreshInterval: any;
 
+  usuario = this.auth.usuario;
+  empleado = this.auth.empleado;
+  nombre = computed(() => this.empleado()?.nombre || this.usuario()?.username || '');
+
+  grupos: GrupoMenu[] = [];
+
   ngOnInit() {
-    this.currentEmpleado = this.auth.getCurrentEmpleado();
+    this.grupos = this.construirMenu();
 
-    if (!this.currentEmpleado) {
-      this.router.navigate(['/login']);
-      return;
-    }
+    this.subs.push(this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
+      this.menuMovilAbierto = false;
+      this.menuUsuarioAbierto = false;
+    }));
 
-    // Generar URL de foto de perfil
-    this.fotoUrl = this.getFotoUrl(
-      this.currentEmpleado?.foto,
-      this.currentEmpleado?.nombre
-    );
-
-    // Cargar badges
-    this.resumenSub = this.notificacionesService.resumen$.subscribe(
-      resumen => this.resumen = resumen
-    );
-    this.notificacionesService.cargarResumen().subscribe();
-
-    // Refrescar badges cada 5 segundos
-    this.refreshInterval = setInterval(() => {
+    if (!this.auth.isAdmin()) {
+      this.subs.push(this.notificacionesService.resumen$.subscribe(r => this.resumen = r));
       this.notificacionesService.cargarResumen().subscribe();
-    }, 5000);
+      this.refreshInterval = setInterval(() => this.notificacionesService.cargarResumen().subscribe(), 30000);
+    }
   }
 
   ngOnDestroy() {
-    this.resumenSub?.unsubscribe();
+    this.subs.forEach(s => s.unsubscribe());
     if (this.refreshInterval) clearInterval(this.refreshInterval);
   }
 
-  private getFotoUrl(fotoPath: string | undefined, nombre: string): string {
-    if (!fotoPath || fotoPath === 'img/perfil.png') {
-      return this.getAvatarPlaceholder(nombre);
+  private construirMenu(): GrupoMenu[] {
+    if (this.auth.isAdmin()) {
+      return [
+        {
+          titulo: 'Panel maestro',
+          items: [
+            { ruta: '/admin/saldos', texto: 'Saldos y carga inicial', icono: 'bi-wallet2' },
+            { ruta: '/admin/usuarios', texto: 'Usuarios y accesos', icono: 'bi-person-lock' },
+            { ruta: '/admin/red', texto: 'Segmentos de red', icono: 'bi-router' },
+            { ruta: '/admin/feriados', texto: 'Feriados', icono: 'bi-calendar-heart' },
+            { ruta: '/admin/departamentos', texto: 'Departamentos', icono: 'bi-building' },
+            { ruta: '/admin/roles', texto: 'Roles y aprobaciones', icono: 'bi-diagram-2' },
+            { ruta: '/admin/catalogos', texto: 'Tipos de solicitud', icono: 'bi-list-check' },
+            { ruta: '/admin/parametros', texto: 'Parámetros', icono: 'bi-sliders' },
+          ]
+        },
+        {
+          titulo: 'Datos del sistema',
+          items: [
+            { ruta: '/empleados', texto: 'Empleados', icono: 'bi-people' },
+            { ruta: '/horarios', texto: 'Horarios', icono: 'bi-calendar-week' },
+            { ruta: '/organigrama', texto: 'Organigrama', icono: 'bi-diagram-3' },
+          ]
+        }
+      ];
     }
 
-    if (fotoPath.startsWith('http')) {
-      return fotoPath;
+    const grupos: GrupoMenu[] = [
+      {
+        items: [
+          { ruta: '/dashboard', texto: 'Inicio', icono: 'bi-house' },
+          { ruta: '/solicitudes', texto: 'Solicitudes', icono: 'bi-send-check', badge: () => this.badgeSolicitudes() },
+          { ruta: '/saldos', texto: 'Mis saldos', icono: 'bi-wallet2' },
+          { ruta: '/horarios', texto: 'Horarios', icono: 'bi-calendar-week' },
+          { ruta: '/eventos', texto: 'Eventos', icono: 'bi-megaphone', badge: () => this.resumen?.eventosSinResponder || 0 },
+          { ruta: '/organigrama', texto: 'Organigrama', icono: 'bi-diagram-3' },
+        ]
+      }
+    ];
+    if (this.auth.isGestion()) {
+      grupos.push({
+        titulo: 'Gestión',
+        items: [
+          { ruta: '/empleados', texto: 'Empleados', icono: 'bi-people' },
+          { ruta: '/reportes', texto: 'Reportes de asistencia', icono: 'bi-bar-chart-line' },
+        ]
+      });
     }
-
-    return `${this.apiConfig.baseUrl}/${fotoPath}`;
+    return grupos;
   }
 
-  private getAvatarPlaceholder(nombre: string): string {
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=0d6efd&color=fff&size=40`;
-  }
-
-  onImageError(event: Event): void {
-    const target = event.target as HTMLImageElement;
-    target.src = this.getAvatarPlaceholder(this.currentEmpleado?.nombre || 'Usuario');
-  }
-
-  toggleMenu() {
-    this.isMenuCollapsed = !this.isMenuCollapsed;
-  }
-
-  toggleMenuMobil() {
-    this.menuMobilAbierto = !this.menuMobilAbierto;
-  }
-
-  cerrarMenuMobil() {
-    this.menuMobilAbierto = false;
+  private badgeSolicitudes(): number {
+    if (!this.resumen) return 0;
+    return this.resumen.solicitudesPendientes || 0;
   }
 
   logout() {
     this.notificacionesService.limpiar();
     this.auth.logout();
     this.router.navigate(['/login']);
-  }
-
-  isAdmin(): boolean {
-    return this.auth.isAdmin();
-  }
-
-  isSupervisor(): boolean {
-    return this.auth.isSupervisor();
-  }
-
-  isTecnico(): boolean {
-    return this.auth.isTecnico();
-  }
-
-  isHD(): boolean {
-    return this.auth.isHD();
-  }
-
-  isNOC(): boolean {
-    return this.auth.isNOC();
-  }
-
-  getRolDisplayName(): string {
-    return this.auth.getRolDisplayName();
-  }
-
-  puedeGestionarEmpleados(): boolean {
-    return this.auth.puedeGestionarEmpleados();
-  }
-
-  getUserRole(): string {
-    return this.auth.getUserRole();
-  }
-
-  // Badge helpers
-  getBadgeSolicitudes(): number {
-    if (!this.resumen) return 0;
-    if (this.isAdmin() || this.isSupervisor()) {
-      return this.resumen.solicitudesPendientes;
-    }
-    return this.resumen.solicitudesAprobadas + this.resumen.solicitudesRechazadas;
-  }
-
-  getBadgeEventos(): number {
-    return this.resumen?.eventosSinResponder || 0;
   }
 }

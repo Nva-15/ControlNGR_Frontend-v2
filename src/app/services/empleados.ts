@@ -14,6 +14,15 @@ export class EmpleadosService {
     return `${this.apiConfig.apiUrl}/empleados`;
   }
 
+  departamentos(): Observable<{ id: number; nombre: string }[]> {
+    return this.http.get<{ id: number; nombre: string }[]>(`${this.apiUrl}/departamentos`);
+  }
+
+  /** Roles asignables a empleados (codigo, nombre, nivel). */
+  roles(): Observable<{ codigo: string; nombre: string; nivel: number }[]> {
+    return this.http.get<{ codigo: string; nombre: string; nivel: number }[]>(`${this.apiUrl}/roles`);
+  }
+
   getEmpleados(): Observable<EmpleadoResponse[]> {
     return this.http.get<EmpleadoResponse[]>(this.apiUrl);
   }
@@ -22,11 +31,11 @@ export class EmpleadosService {
     return this.http.get<EmpleadoResponse>(`${this.apiUrl}/${id}`);
   }
 
-  createEmpleado(empleado: Empleado): Observable<EmpleadoResponse> {
+  createEmpleado(empleado: Partial<Empleado>): Observable<EmpleadoResponse> {
     return this.http.post<EmpleadoResponse>(this.apiUrl, empleado);
   }
 
-  updateEmpleado(id: number, empleado: Empleado): Observable<EmpleadoResponse> {
+  updateEmpleado(id: number, empleado: Partial<Empleado>): Observable<EmpleadoResponse> {
     return this.http.put<EmpleadoResponse>(`${this.apiUrl}/${id}`, empleado);
   }
 
@@ -63,10 +72,7 @@ export class EmpleadosService {
   }
 
   cambiarEstadoUsuario(id: number, estado: boolean): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/${id}/estado`, { 
-      usuarioActivo: estado,
-      activo: estado 
-    });
+    return this.http.patch(`${this.apiUrl}/${id}/estado`, { usuarioActivo: estado, activo: estado });
   }
 
   actualizarEmail(id: number, email: string): Observable<any> {

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <clipPath id="cruz">
+      <rect x="86" y="4" width="84" height="248" rx="22"/>
+      <rect x="4" y="86" width="248" height="84" rx="22"/>
+    </clipPath>
+  </defs>
+  <rect x="86" y="4" width="84" height="248" rx="22" fill="#EBC57C"/>
+  <rect x="4" y="86" width="248" height="84" rx="22" fill="#EBC57C"/>
+  <rect x="38" y="38" width="180" height="180" rx="56" fill="#E0922E"/>
+  <rect x="38" y="38" width="180" height="180" rx="56" fill="#CE5B47" clip-path="url(#cruz)"/>
+  <rect x="82" y="82" width="92" height="92" rx="30" fill="#9B1437"/>
+</svg>

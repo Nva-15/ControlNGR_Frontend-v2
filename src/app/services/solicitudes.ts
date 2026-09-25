@@ -1,13 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
-import { SolicitudResponse } from '../interfaces/solicitud';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import {
+  HistorialSolicitud, MotivoLicencia, SolicitudRequest, SolicitudResponse, TipoSolicitud
+} from '../interfaces/solicitud';
 import { ApiConfigService } from './api-config.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class SolicitudesService {
   private http = inject(HttpClient);
   private apiConfig = inject(ApiConfigService);
@@ -15,110 +14,71 @@ export class SolicitudesService {
     return `${this.apiConfig.apiUrl}/solicitudes`;
   }
 
-  crearSolicitud(solicitud: any): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/crear`, solicitud).pipe(
-      map((response: any) => {
-        if (response.solicitud) {
-          return {
-            ...response
-          };
-        }
-        return response;
-      }),
-      catchError((error: HttpErrorResponse) => {
-        return throwError(() => error.error?.error || 'Error al crear solicitud');
-      })
-    );
+  tipos(): Observable<TipoSolicitud[]> {
+    return this.http.get<TipoSolicitud[]>(`${this.apiUrl}/tipos`);
+  }
+
+  motivosLicencia(): Observable<MotivoLicencia[]> {
+    return this.http.get<MotivoLicencia[]>(`${this.apiUrl}/motivos-licencia`);
+  }
+
+  /** Si hay archivo se envia como multipart (parte "solicitud" en JSON + parte "archivo"). */
+  crear(solicitud: SolicitudRequest, archivo?: File | null): Observable<SolicitudResponse> {
+    if (archivo) {
+      const form = new FormData();
+      form.append('solicitud', new Blob([JSON.stringify(solicitud)], { type: 'application/json' }));
+      form.append('archivo', archivo, archivo.name);
+      return this.http.post<SolicitudResponse>(`${this.apiUrl}/crear`, form);
+    }
+    return this.http.post<SolicitudResponse>(`${this.apiUrl}/crear`, solicitud);
   }
 
   getMisSolicitudes(empleadoId: number): Observable<SolicitudResponse[]> {
     return this.http.get<SolicitudResponse[]>(`${this.apiUrl}/mis-solicitudes/${empleadoId}`);
   }
 
-  getPendientes(): Observable<SolicitudResponse[]> {
-    return this.http.get<SolicitudResponse[]>(`${this.apiUrl}/pendientes`);
+  /** Roles cuyas solicitudes aprueba el usuario (vacio si no aprueba). */
+  rolesACargo(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.apiUrl}/roles-a-cargo`);
+  }
+
+  /** Pendientes que el usuario puede aprobar segun su rol. */
+  getPorAprobar(): Observable<SolicitudResponse[]> {
+    return this.http.get<SolicitudResponse[]>(`${this.apiUrl}/pendientes-por-aprobar`);
   }
 
   getTodas(): Observable<SolicitudResponse[]> {
     return this.http.get<SolicitudResponse[]>(`${this.apiUrl}/todas`);
   }
 
-  getHistorial(): Observable<SolicitudResponse[]> {
-    return this.http.get<SolicitudResponse[]>(`${this.apiUrl}/historial`);
+  gestionar(id: number, estado: 'aprobado' | 'rechazado', comentarios?: string): Observable<SolicitudResponse> {
+    return this.http.put<SolicitudResponse>(`${this.apiUrl}/gestionar/${id}`, { estado, comentarios });
   }
 
-  getSolicitudById(id: number): Observable<SolicitudResponse> {
-    return this.http.get<SolicitudResponse>(`${this.apiUrl}/${id}`);
+  editar(id: number, datos: { fechaInicio?: string; fechaFin?: string; motivo?: string }): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/editar/${id}`, datos);
   }
 
-  gestionarSolicitud(id: number, estado: string, usuarioId: number, comentarios?: string): Observable<SolicitudResponse> {
-    const payload: any = { estado, usuarioId };
-    if (comentarios) {
-      payload.comentarios = comentarios;
-    }
-    return this.http.put<SolicitudResponse>(`${this.apiUrl}/gestionar/${id}`, payload);
+  eliminar(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/eliminar/${id}`);
   }
 
-  editarSolicitud(id: number, datos: any): Observable<any> {
-    return this.http.put<any>(`${this.apiUrl}/editar/${id}`, datos).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 403) {
-          return throwError(() => 'No tiene permisos para editar esta solicitud');
-        }
-        if (error.status === 401) {
-          return throwError(() => 'No autorizado. Por favor inicie sesión nuevamente');
-        }
-        return throwError(() => error.error?.error || 'Error al editar solicitud');
-      })
-    );
+  historial(id: number): Observable<HistorialSolicitud[]> {
+    return this.http.get<HistorialSolicitud[]>(`${this.apiUrl}/${id}/historial`);
+  }
+
+  /** Descarga la evidencia como Blob (requiere el token, por eso no se usa un enlace directo). */
+  evidencia(solicitudId: number, evidenciaId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${solicitudId}/evidencias/${evidenciaId}`, { responseType: 'blob' });
   }
 
   verificarConflictosPorRol(empleadoId: number, rolEmpleado: string, fechaInicio: string, fechaFin: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/verificar-conflictos-por-rol`, {
-      empleadoId,
-      rolEmpleado,
-      fechaInicio,
-      fechaFin
-    }).pipe(
-      map((response: any) => response),
-      catchError((error: HttpErrorResponse) => {
-        return throwError(() => error.error?.error || 'Error al verificar conflictos');
-      })
-    );
-  }
-  
-  verificarConflictos(empleadoId: number, fechaInicio: string, fechaFin: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/verificar-conflictos`, {
-      empleadoId,
-      fechaInicio,
-      fechaFin
-    }).pipe(
-      map((response: any) => response),
-      catchError((error: HttpErrorResponse) => {
-        return throwError(() => error.error?.error || 'Error al verificar conflictos');
-      })
-    );
+    return this.http.post(`${this.apiUrl}/verificar-conflictos-por-rol`, { empleadoId, rolEmpleado, fechaInicio, fechaFin });
   }
 
-  exportarSolicitudes(tipo: string, empleadoId?: number, formato: string = 'json'): Observable<any> {
-    let params = new HttpParams().set('formato', formato);
-    if (empleadoId) {
-      params = params.set('empleadoId', empleadoId.toString());
-    }
+  exportar(tipo: string, empleadoId?: number): Observable<any> {
+    let params = new HttpParams();
+    if (empleadoId) params = params.set('empleadoId', empleadoId);
     return this.http.get(`${this.apiUrl}/exportar/${tipo}`, { params });
-  }
-
-  eliminarSolicitud(id: number): Observable<any> {
-    return this.http.delete<any>(`${this.apiUrl}/eliminar/${id}`).pipe(
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 403) {
-          return throwError(() => error.error?.error || 'No tiene permisos para eliminar esta solicitud');
-        }
-        if (error.status === 401) {
-          return throwError(() => 'No autorizado. Por favor inicie sesión nuevamente');
-        }
-        return throwError(() => error.error?.error || 'Error al eliminar solicitud');
-      })
-    );
   }
 }

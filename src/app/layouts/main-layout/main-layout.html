@@ -1,222 +1,96 @@
-<div class="container-fluid vh-100">
-  <div class="row h-100">
-    
-    <nav class="col-md-3 col-lg-2 d-none d-md-flex flex-column bg-ngr sidebar p-0">
-      
-      <div class="text-center pt-4 pb-3">
-        <img src="/img/Logo.PNG"
-             alt="Control NGR"
-             class="img-fluid mb-2"
-             width="120"
-             height="80"
-             style="max-height: 80px; object-fit: contain;">
-        <small class="text-white-50 d-block">Sistema de Asistencia</small>
-      </div>
+<div class="min-h-screen">
+  <!-- Fondo del menu movil -->
+  @if (menuMovilAbierto) {
+    <div class="fixed inset-0 z-40 bg-stone-950/50 lg:hidden" (click)="menuMovilAbierto = false"></div>
+  }
 
-      <hr class="text-white-50 my-0 mx-3">
+  <!-- Menu lateral -->
+  <aside class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-stone-950 transition-transform duration-200 lg:translate-x-0"
+         [class.-translate-x-full]="!menuMovilAbierto">
+    <div class="flex h-16 items-center px-5">
+      <app-logo [tamano]="32" [oscuro]="true" />
+    </div>
 
-      <div class="flex-grow-1 overflow-auto py-3">
-        <ul class="nav flex-column px-2">
-          
-          <li class="nav-item">
-            <a class="nav-link text-white" routerLink="/dashboard" routerLinkActive="active">
-              <i class="bi bi-house-door me-2"></i> Dashboard
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a class="nav-link text-white" routerLink="/asistencia" routerLinkActive="active">
-              <i class="bi bi-clock me-2"></i> Asistencia
-            </a>
-          </li>
-          
-          <li class="nav-item">
-            <a class="nav-link text-white" routerLink="/horarios" routerLinkActive="active">
-              <i class="bi bi-calendar-week me-2"></i> Horarios
-            </a>
-          </li>
-          
-          <li class="nav-item">
-            <a class="nav-link text-white d-flex align-items-center" routerLink="/solicitudes" routerLinkActive="active">
-              <i class="bi bi-send-check me-2"></i> Solicitudes
-              <span class="badge-sidebar bg-warning text-dark ms-auto" *ngIf="getBadgeSolicitudes() > 0">
-                {{ getBadgeSolicitudes() }}
-              </span>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a class="nav-link text-white" routerLink="/organigrama" routerLinkActive="active">
-              <i class="bi bi-diagram-3 me-2"></i> Organigrama
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a class="nav-link text-white d-flex align-items-center" routerLink="/eventos" routerLinkActive="active">
-              <i class="bi bi-calendar-check me-2"></i> Mis Eventos
-              <span class="badge-sidebar bg-info ms-auto" *ngIf="getBadgeEventos() > 0">
-                {{ getBadgeEventos() }}
-              </span>
-            </a>
-          </li>
-
-          <ng-container *ngIf="isAdmin() || isSupervisor()">
-            <li class="nav-item mt-4 mb-2 ps-3">
-              <span class="text-warning small fw-bold text-uppercase ls-1">Administración</span>
-            </li>
-
-            <li class="nav-item">
-              <a class="nav-link text-white" routerLink="/empleados" routerLinkActive="active">
-                <i class="bi bi-people me-2"></i> Empleados
-              </a>
-            </li>
-
-            <li class="nav-item">
-              <a class="nav-link text-white" routerLink="/reportes" routerLinkActive="active">
-                <i class="bi bi-file-earmark-bar-graph me-2"></i> Reportes
-              </a>
-            </li>
-
-            <li class="nav-item">
-              <a class="nav-link text-white" routerLink="/eventos" routerLinkActive="active"
-                 [queryParams]="{modo: 'admin'}">
-                <i class="bi bi-calendar-event me-2"></i> Gestión Eventos
-              </a>
-            </li>
-          </ng-container>
-
-        </ul>
-      </div>
-
-      <div class="p-3 bg-primary-dark border-top border-white-50">
-        <div class="d-flex align-items-center mb-2">
-           <img [src]="fotoUrl"
-               (error)="onImageError($event)"
-               class="rounded-circle border border-white me-2 bg-white"
-               width="40"
-               height="40"
-               loading="eager"
-               decoding="async"
-               style="object-fit: cover;">
-               
-           <div class="overflow-hidden">
-             <div class="text-white fw-bold text-truncate" style="font-size: 0.9rem;">
-               {{ currentEmpleado?.nombre?.split(' ')[0] }}
-             </div>
-             <div class="text-white-50 small" style="font-size: 0.75rem;">
-               {{ currentEmpleado?.rol | uppercase }}
-             </div>
-           </div>
+    <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-4">
+      @for (grupo of grupos; track $index) {
+        <div>
+          @if (grupo.titulo) {
+            <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-stone-500">{{ grupo.titulo }}</p>
+          }
+          <ul class="space-y-0.5">
+            @for (item of grupo.items; track item.ruta) {
+              <li>
+                <a [routerLink]="item.ruta" routerLinkActive="bg-white/10! text-white! [&>i]:text-oro-300!"
+                   class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-400 transition hover:bg-white/5 hover:text-white">
+                  <i class="bi text-base text-stone-500 group-hover:text-stone-300" [class]="item.icono"></i>
+                  <span class="flex-1">{{ item.texto }}</span>
+                  @if (item.badge && item.badge() > 0) {
+                    <span class="rounded-full bg-vino-600 px-2 py-0.5 text-[11px] font-semibold text-white">{{ item.badge() }}</span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
         </div>
-        <button class="btn btn-outline-light btn-sm w-100" (click)="logout()">
-          <i class="bi bi-box-arrow-right me-1"></i> Salir
-        </button>
-      </div>
-
+      }
     </nav>
 
-    <main class="col-md-9 ms-sm-auto col-lg-10 px-0 bg-light h-100 overflow-auto">
-      
-      <!-- Header mobile con hamburguesa -->
-      <div class="d-md-none bg-ngr-header p-3 text-white d-flex justify-content-between align-items-center sticky-top shadow-sm" style="z-index: 1050;">
-        <img src="/img/Logo.PNG"
-             alt="Control NGR"
-             width="52"
-             height="35"
-             class="d-inline-block"
-             style="object-fit: contain;">
-        <button class="btn btn-outline-light btn-sm border-0" (click)="toggleMenuMobil()" style="font-size: 1.4rem; line-height: 1;">
-          <i class="bi" [class.bi-list]="!menuMobilAbierto" [class.bi-x-lg]="menuMobilAbierto"></i>
+    <div class="border-t border-white/10 p-3">
+      <div class="flex items-center gap-3 rounded-lg px-2 py-2">
+        <app-avatar [nombre]="nombre()" [foto]="empleado()?.foto" [tamano]="34" />
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-medium text-white">{{ nombre() }}</p>
+          <p class="truncate text-xs text-stone-400">{{ auth.getRolDisplayName() }}</p>
+        </div>
+        <button type="button" class="btn-icon text-stone-400! hover:bg-white/10! hover:text-white!" (click)="logout()" title="Cerrar sesión">
+          <i class="bi bi-box-arrow-right"></i>
         </button>
       </div>
+    </div>
+  </aside>
 
-      <!-- Menu mobile desplegable -->
-      <div class="d-md-none menu-mobil-overlay"
-           *ngIf="menuMobilAbierto"
-           (click)="cerrarMenuMobil()">
-      </div>
-      <div class="d-md-none menu-mobil-panel" [class.menu-mobil-abierto]="menuMobilAbierto">
-        <!-- Info usuario -->
-        <div class="d-flex align-items-center p-3 border-bottom" style="background: rgba(0,0,0,0.1);">
-          <img [src]="fotoUrl"
-               (error)="onImageError($event)"
-               class="rounded-circle border border-white me-2"
-               width="36" height="36"
-               style="object-fit: cover;">
-          <div class="overflow-hidden">
-            <div class="text-white fw-bold text-truncate" style="font-size: 0.9rem;">{{ currentEmpleado?.nombre?.split(' ')[0] }}</div>
-            <div class="text-white-50 small">{{ currentEmpleado?.rol | uppercase }}</div>
+  <!-- Contenido -->
+  <div class="lg:pl-64">
+    <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-stone-200/70 bg-white/85 px-4 backdrop-blur sm:px-6">
+      <button type="button" class="btn-icon lg:hidden" (click)="menuMovilAbierto = true" aria-label="Abrir menú">
+        <i class="bi bi-list text-xl"></i>
+      </button>
+      <div class="flex-1"></div>
+
+      <div class="relative">
+        <button type="button" class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-stone-100"
+                (click)="menuUsuarioAbierto = !menuUsuarioAbierto">
+          <app-avatar [nombre]="nombre()" [foto]="empleado()?.foto" [tamano]="30" />
+          <span class="hidden text-sm font-medium text-stone-700 sm:block">{{ nombre() }}</span>
+          <i class="bi bi-chevron-down text-xs text-stone-400"></i>
+        </button>
+        @if (menuUsuarioAbierto) {
+          <div class="fixed inset-0 z-10" (click)="menuUsuarioAbierto = false"></div>
+          <div class="absolute right-0 z-20 mt-2 w-60 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
+            <div class="border-b border-stone-100 px-4 py-3">
+              <p class="truncate text-sm font-semibold">{{ nombre() }}</p>
+              <p class="truncate text-xs text-stone-500">{{ auth.getRolDisplayName() }} · {{ usuario()?.username }}</p>
+            </div>
+            <div class="p-1">
+              @if (empleado()) {
+                <a routerLink="/perfil" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-stone-50">
+                  <i class="bi bi-person text-stone-500"></i> Mi perfil
+                </a>
+              }
+              <a routerLink="/cambiar-password" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-stone-50">
+                <i class="bi bi-key text-stone-500"></i> Cambiar contraseña
+              </a>
+              <button type="button" (click)="logout()" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-700 hover:bg-red-50">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+              </button>
+            </div>
           </div>
-        </div>
-
-        <!-- Links -->
-        <ul class="nav flex-column py-2 px-2">
-          <li class="nav-item">
-            <a class="nav-link text-white" routerLink="/dashboard" routerLinkActive="active" (click)="cerrarMenuMobil()">
-              <i class="bi bi-house-door me-2"></i> Dashboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white" routerLink="/horarios" routerLinkActive="active" (click)="cerrarMenuMobil()">
-              <i class="bi bi-calendar-week me-2"></i> Horarios
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white d-flex align-items-center" routerLink="/solicitudes" routerLinkActive="active" (click)="cerrarMenuMobil()">
-              <i class="bi bi-send-check me-2"></i> Solicitudes
-              <span class="badge-sidebar bg-warning text-dark ms-auto" *ngIf="getBadgeSolicitudes() > 0">
-                {{ getBadgeSolicitudes() }}
-              </span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white" routerLink="/organigrama" routerLinkActive="active" (click)="cerrarMenuMobil()">
-              <i class="bi bi-diagram-3 me-2"></i> Organigrama
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-white d-flex align-items-center" routerLink="/eventos" routerLinkActive="active" (click)="cerrarMenuMobil()">
-              <i class="bi bi-calendar-check me-2"></i> Mis Eventos
-              <span class="badge-sidebar bg-info ms-auto" *ngIf="getBadgeEventos() > 0">
-                {{ getBadgeEventos() }}
-              </span>
-            </a>
-          </li>
-
-          <ng-container *ngIf="isAdmin() || isSupervisor()">
-            <li class="nav-item mt-3 mb-1 ps-3">
-              <span class="text-warning small fw-bold text-uppercase" style="letter-spacing: 1px;">Administracion</span>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link text-white" routerLink="/empleados" routerLinkActive="active" (click)="cerrarMenuMobil()">
-                <i class="bi bi-people me-2"></i> Empleados
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link text-white" routerLink="/reportes" routerLinkActive="active" (click)="cerrarMenuMobil()">
-                <i class="bi bi-file-earmark-bar-graph me-2"></i> Reportes
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link text-white" routerLink="/eventos" routerLinkActive="active"
-                 [queryParams]="{modo: 'admin'}" (click)="cerrarMenuMobil()">
-                <i class="bi bi-calendar-event me-2"></i> Gestion Eventos
-              </a>
-            </li>
-          </ng-container>
-        </ul>
-
-        <!-- Cerrar sesion -->
-        <div class="p-3 mt-auto border-top" style="background: rgba(0,0,0,0.15);">
-          <button class="btn btn-outline-light btn-sm w-100" (click)="logout()">
-            <i class="bi bi-box-arrow-right me-1"></i> Cerrar Sesion
-          </button>
-        </div>
+        }
       </div>
-      
-      <div class="p-4">
-        <router-outlet></router-outlet>
-      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+      <router-outlet />
     </main>
   </div>
 </div>

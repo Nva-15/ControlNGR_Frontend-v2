@@ -1,0 +1,68 @@
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Mi perfil</h1>
+    <p class="page-subtitle">Sus datos laborales y su presentación en el organigrama.</p>
+  </div>
+  <a routerLink="/cambiar-password" class="btn-secondary"><i class="bi bi-key"></i> Cambiar contraseña</a>
+</div>
+
+@if (!perfil) {
+  <div class="flex justify-center py-16"><span class="spinner"></span></div>
+} @else {
+  <div class="grid gap-6 lg:grid-cols-3">
+    <section class="card p-6 text-center">
+      <div class="flex justify-center">
+        @if (previsualizacion) {
+          <img [src]="previsualizacion" alt="Vista previa" class="size-32 rounded-full object-cover ring-4 ring-vino-100" />
+        } @else {
+          <app-avatar [nombre]="perfil.nombre" [foto]="perfil.foto" [tamano]="128" />
+        }
+      </div>
+      <h2 class="mt-4 text-lg font-semibold">{{ perfil.nombre }}</h2>
+      <p class="text-stone-500">{{ perfil.cargo }}</p>
+      <span class="badge-vino mt-2">{{ rolLabel(perfil.rol) }}</span>
+
+      <div class="mt-6">
+        @if (archivo) {
+          <div class="flex justify-center gap-2">
+            <button class="btn-primary btn-sm" [disabled]="subiendoFoto" (click)="subirFoto()"><i class="bi bi-upload"></i> Guardar foto</button>
+            <button class="btn-secondary btn-sm" [disabled]="subiendoFoto" (click)="cancelarFoto()">Cancelar</button>
+          </div>
+        } @else {
+          <label class="btn-secondary btn-sm">
+            <i class="bi bi-camera"></i> Cambiar foto
+            <input type="file" class="hidden" accept="image/jpeg,image/png,image/gif,image/bmp" (change)="seleccionarFoto($event)" />
+          </label>
+        }
+      </div>
+    </section>
+
+    <section class="card lg:col-span-2">
+      <div class="card-header"><h3 class="card-title">Información laboral</h3></div>
+      <dl class="card-body grid gap-5 sm:grid-cols-2">
+        <div><dt class="label">DNI</dt><dd class="font-medium">{{ perfil.dni }}</dd></div>
+        <div><dt class="label">Usuario</dt><dd class="font-medium">{{ perfil.username }}</dd></div>
+        <div><dt class="label">Departamento</dt><dd class="font-medium">{{ perfil.departamentoNombre || '—' }}</dd></div>
+        <div><dt class="label">Correo</dt><dd class="font-medium">{{ perfil.email || '—' }}</dd></div>
+        <div><dt class="label">Fecha de ingreso</dt><dd class="font-medium">{{ fechaCorta(perfil.ingreso) }}</dd></div>
+        <div><dt class="label">Cumpleaños</dt><dd class="font-medium">{{ fechaCorta(perfil.cumpleanos) }}</dd></div>
+      </dl>
+      <div class="border-t border-stone-100 p-5">
+        <form (ngSubmit)="guardar()" class="space-y-4">
+          <div>
+            <label class="label" for="descripcion">Sobre mí</label>
+            <textarea id="descripcion" name="descripcion" class="textarea" rows="3" maxlength="500" [(ngModel)]="descripcion"
+                      placeholder="Una breve presentación para el organigrama"></textarea>
+          </div>
+          <div>
+            <label class="label" for="hobby">Pasatiempos</label>
+            <input id="hobby" name="hobby" class="input" maxlength="200" [(ngModel)]="hobby" placeholder="Ej.: fútbol, música" />
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" class="btn-primary" [disabled]="guardando"><i class="bi bi-check2"></i> Guardar cambios</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+}
