@@ -19,8 +19,8 @@ El sistema completo (MySQL + backend + este frontend) se levanta desde el reposi
 
 ```
 carpeta/
-├── ControlNGR_Backend-v3/    ← docker compose up -d --build
-└── ControlNGR_Frontend-v3/
+├── ControlNGR_Backend-v2/    ← docker compose up -d --build
+└── ControlNGR_Frontend-v2/
 ```
 
 Este repositorio aporta la imagen `nginx`, que:
