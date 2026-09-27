@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
-import { EstadoFacial } from '../interfaces/facial';
+import { EstadoFacial, PruebaMarcacion, PruebaRegistro, ResumenFacial } from '../interfaces/facial';
 
 type FaceApi = typeof import('face-api.js');
 
@@ -55,6 +55,22 @@ export class FacialService {
   /** Ids de los empleados con rostro registrado (jefaturas y admin). */
   registrados(): Observable<number[]> {
     return this.http.get<number[]>(`${this.apiUrl}/registrados`);
+  }
+
+  // ==================== PRUEBAS (panel admin) ====================
+
+  resumenAdmin(): Observable<ResumenFacial> {
+    return this.http.get<ResumenFacial>(`${this.apiUrl}/admin/resumen`);
+  }
+
+  /** A quien reconoce el sistema con este rostro. No registra asistencia. */
+  probarMarcacion(descriptor: number[], empleadoId?: number | null): Observable<PruebaMarcacion> {
+    return this.http.post<PruebaMarcacion>(`${this.apiUrl}/admin/probar-marcacion`, { descriptor, empleadoId: empleadoId || null });
+  }
+
+  /** Calidad de las capturas de un registro y si el rostro ya pertenece a alguien. No guarda nada. */
+  probarRegistro(descriptores: number[][]): Observable<PruebaRegistro> {
+    return this.http.post<PruebaRegistro>(`${this.apiUrl}/admin/probar-registro`, { descriptores });
   }
 
   // ==================== DETECCION ====================

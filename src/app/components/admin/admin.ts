@@ -10,10 +10,12 @@ import { AdminDepartamentosComponent } from './secciones/departamentos';
 import { AdminRolesComponent } from './secciones/roles';
 import { AdminCatalogosComponent } from './secciones/catalogos';
 import { AdminParametrosComponent } from './secciones/parametros';
+import { AdminFacialComponent } from './secciones/facial';
 
 const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   saldos: { titulo: 'Saldos y carga inicial', descripcion: 'Días de vacaciones y de compensación que se deben a cada empleado.' },
   usuarios: { titulo: 'Usuarios y accesos', descripcion: 'Roles, activación y restablecimiento de contraseñas.' },
+  facial: { titulo: 'Reconocimiento facial', descripcion: 'Rostros registrados y pruebas de marcación y de registro, sin afectar la asistencia.' },
   red: { titulo: 'Segmentos de red', descripcion: 'Redes desde las que se permite marcar asistencia.' },
   feriados: { titulo: 'Feriados', descripcion: 'Feriados nacionales (sector privado). Trabajar un feriado abona días de compensación.' },
   departamentos: { titulo: 'Departamentos', descripcion: 'Áreas de la organización y sus responsables.' },
@@ -28,7 +30,8 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   standalone: true,
   imports: [
     AdminSaldosComponent, AdminUsuariosComponent, AdminRedComponent, AdminFeriadosComponent,
-    AdminDepartamentosComponent, AdminRolesComponent, AdminCatalogosComponent, AdminParametrosComponent
+    AdminDepartamentosComponent, AdminRolesComponent, AdminCatalogosComponent, AdminParametrosComponent,
+    AdminFacialComponent
   ],
   template: `
     <div class="page-header">
@@ -41,6 +44,7 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
     @switch (seccion()) {
       @case ('saldos') { <app-admin-saldos /> }
       @case ('usuarios') { <app-admin-usuarios /> }
+      @case ('facial') { <app-admin-facial /> }
       @case ('red') { <app-admin-red /> }
       @case ('feriados') { <app-admin-feriados /> }
       @case ('departamentos') { <app-admin-departamentos /> }
