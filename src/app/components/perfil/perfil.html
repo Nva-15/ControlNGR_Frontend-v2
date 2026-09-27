@@ -64,5 +64,58 @@
         </form>
       </div>
     </section>
+
+    <!-- Reconocimiento facial -->
+    <section class="card lg:col-span-3">
+      <div class="card-header">
+        <h3 class="card-title"><i class="bi bi-person-bounding-box text-vino-700"></i> Reconocimiento facial</h3>
+        @if (estadoFacial?.registrado) {
+          <span class="badge-green"><i class="bi bi-check-circle"></i> Registrado</span>
+        } @else if (estadoFacial) {
+          <span class="badge-amber"><i class="bi bi-exclamation-circle"></i> Pendiente</span>
+        }
+      </div>
+      <div class="card-body">
+        @if (!estadoFacial) {
+          <div class="flex justify-center py-4"><span class="spinner"></span></div>
+        } @else if (estadoFacial.registrado) {
+          <p>Su rostro está registrado desde el {{ fechaCorta(estadoFacial.registradoEl) }}. Al marcar entrada o salida, el sistema verificará su identidad con la cámara.</p>
+          <p class="field-help">Si necesita volver a registrarlo (por ejemplo, por un cambio de apariencia), pida a su jefatura o al administrador que lo restablezca.</p>
+        } @else {
+          <p>
+            @if (estadoFacial.obligatorio) {
+              <b>Para marcar asistencia debe registrar su rostro.</b>
+            }
+            El registro toma unos segundos: mire a la cámara, parpadee con normalidad y mueva levemente la cabeza mientras se toman {{ estadoFacial.muestrasRequeridas }} capturas.
+          </p>
+          <label class="mt-4 flex items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm">
+            <input type="checkbox" class="checkbox mt-0.5" name="consentimiento" [(ngModel)]="consentimiento" />
+            <span>
+              Autorizo el registro y uso de los rasgos de mi rostro (dato biométrico) <b>únicamente para verificar mi identidad al marcar asistencia</b>,
+              conforme a la Ley N.° 29733 de Protección de Datos Personales. No se guardan fotos, solo una representación numérica del rostro,
+              y puedo solicitar su eliminación a mi jefatura.
+            </span>
+          </label>
+          <div class="mt-4 flex justify-end">
+            <button type="button" class="btn-primary" [disabled]="!consentimiento" (click)="abrirRegistroRostro()">
+              <i class="bi bi-camera"></i> Registrar mi rostro
+            </button>
+          </div>
+        }
+      </div>
+    </section>
   </div>
 }
+
+<app-modal [abierto]="registrandoRostro" titulo="Registrar mi rostro" subtitulo="Mire a la cámara con buena iluminación"
+           icono="bi-person-bounding-box" [cerrarAlClicFuera]="false" (cerrar)="registrandoRostro = false">
+  @if (registrandoRostro) {
+    <app-camara-facial [muestras]="estadoFacial?.muestrasRequeridas || 5" (capturado)="rostroCapturado($event)" />
+    @if (guardandoRostro) {
+      <p class="mt-3 flex items-center gap-2 text-sm text-stone-600"><span class="spinner size-4!"></span> Guardando…</p>
+    }
+  }
+  <div footer>
+    <button type="button" class="btn-secondary" [disabled]="guardandoRostro" (click)="registrandoRostro = false">Cancelar</button>
+  </div>
+</app-modal>

@@ -9,13 +9,15 @@ import { ApiConfigService } from '../../services/api-config.service';
 import { EmpleadoResponse } from '../../interfaces/empleado';
 import { ModalComponent } from '../shared/modal/modal.component';
 import { AvatarComponent } from '../shared/avatar/avatar.component';
+import { CamaraFacialComponent } from '../shared/camara-facial/camara-facial.component';
+import { FacialService } from '../../services/facial';
 import { fechaCorta, hoyIso, mensajeError } from '../../utils/format';
 import { puedeAsignarRol, rolBadge, rolLabel } from '../../utils/roles';
 
 @Component({
   selector: 'app-empleados',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, ModalComponent, AvatarComponent],
+  imports: [ReactiveFormsModule, FormsModule, ModalComponent, AvatarComponent, CamaraFacialComponent],
   templateUrl: './empleados.html'
 })
 export class EmpleadosComponent implements OnInit {
@@ -26,6 +28,14 @@ export class EmpleadosComponent implements OnInit {
   private notification = inject(NotificationService);
   private http = inject(HttpClient);
   private api = inject(ApiConfigService);
+  private facial = inject(FacialService);
+
+  // Reconocimiento facial
+  conRostro = new Set<number>();
+  rostroPara: EmpleadoResponse | null = null;
+  rostroConsentimiento = false;
+  rostroCapturando = false;
+  rostroGuardando = false;
 
   empleados: EmpleadoResponse[] = [];
   departamentos: { id: number; nombre: string }[] = [];
@@ -86,6 +96,7 @@ export class EmpleadosComponent implements OnInit {
   }
 
   cargar() {
+    this.facial.registrados().subscribe({ next: ids => this.conRostro = new Set(ids), error: () => this.conRostro = new Set() });
     this.empService.getEmpleados().subscribe({
       next: d => { this.empleados = d.sort((a, b) => a.nombre.localeCompare(b.nombre)); this.cargando = false; },
       error: e => { this.cargando = false; this.notification.error(mensajeError(e)); }
@@ -268,6 +279,56 @@ export class EmpleadosComponent implements OnInit {
     if (!ok) return;
     this.empService.cambiarEstadoUsuario(e.id!, activar).subscribe({
       next: () => { this.notification.success('Estado actualizado.'); this.cargar(); },
+      error: err => this.notification.error(mensajeError(err))
+    });
+  }
+
+  // ==================== RECONOCIMIENTO FACIAL ====================
+
+  tieneRostro(e: EmpleadoResponse): boolean {
+    return this.conRostro.has(e.id!);
+  }
+
+  /** Registro en persona: el colaborador esta presente frente a la camara y acepta. */
+  abrirRegistroRostro(e: EmpleadoResponse) {
+    this.rostroPara = e;
+    this.rostroConsentimiento = false;
+    this.rostroCapturando = false;
+    this.rostroGuardando = false;
+  }
+
+  cerrarRegistroRostro() {
+    this.rostroPara = null;
+    this.rostroCapturando = false;
+  }
+
+  rostroCapturado(descriptores: number[][]) {
+    const e = this.rostroPara;
+    if (!e) return;
+    this.rostroGuardando = true;
+    this.facial.registrarPara(e.id!, descriptores, this.rostroConsentimiento).subscribe({
+      next: () => {
+        this.notification.success(`Rostro de ${e.nombre} registrado.`, 'Reconocimiento facial');
+        this.conRostro.add(e.id!);
+        this.cerrarRegistroRostro();
+      },
+      error: err => {
+        this.rostroGuardando = false;
+        this.rostroCapturando = false;
+        this.notification.error(mensajeError(err, 'No se pudo registrar el rostro'), 'Reconocimiento facial', 8000);
+      }
+    });
+  }
+
+  async restablecerRostro(e: EmpleadoResponse) {
+    const ok = await this.notification.confirm({
+      title: 'Restablecer rostro',
+      message: `Se borrará el rostro registrado de ${e.nombre}. Deberá registrarlo de nuevo para poder marcar asistencia.`,
+      confirmText: 'Restablecer', type: 'warning'
+    });
+    if (!ok) return;
+    this.facial.restablecer(e.id!).subscribe({
+      next: () => { this.conRostro.delete(e.id!); this.notification.success('Rostro restablecido.'); },
       error: err => this.notification.error(mensajeError(err))
     });
   }

@@ -3,6 +3,8 @@
     empleadoId?: number;
     tipo: 'entrada' | 'salida';
     observaciones?: string;
+    /** Descriptor facial (128 valores) capturado al marcar; el servidor lo compara con el registrado. */
+    descriptor?: number[];
   }
   
   export interface AsistenciaResponse {

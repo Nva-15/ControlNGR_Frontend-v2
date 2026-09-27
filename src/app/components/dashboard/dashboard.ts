@@ -13,12 +13,15 @@ import { Evento, RespuestaEventoRequest } from '../../interfaces/evento';
 import { AsistenciaResponse } from '../../interfaces/asistencia';
 import { DetalleSaldos } from '../../interfaces/saldo';
 import { ModalComponent } from '../shared/modal/modal.component';
+import { CamaraFacialComponent } from '../shared/camara-facial/camara-facial.component';
+import { FacialService } from '../../services/facial';
+import { EstadoFacial } from '../../interfaces/facial';
 import { dias, diaSemanaLima, horaCorta, hoyIso, mensajeError, ZONA } from '../../utils/format';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [FormsModule, RouterLink, ModalComponent],
+  imports: [FormsModule, RouterLink, ModalComponent, CamaraFacialComponent],
   templateUrl: './dashboard.html'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
@@ -29,6 +32,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private eventosService = inject(EventosService);
   private notificacionesService = inject(NotificacionesService);
   private saldosService = inject(SaldosService);
+  private facial = inject(FacialService);
 
   empleado = this.auth.empleado;
   ahora = new Date();
@@ -41,6 +45,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   marcando = false;
   observaciones = '';
   red: { ip: string; dentroDeRed: boolean; mensaje: string } | null = null;
+
+  // Reconocimiento facial
+  estadoFacial: EstadoFacial | null = null;
+  /** Marcacion en curso con camara abierta. */
+  marcacionFacial: 'entrada' | 'salida' | null = null;
 
   // Saldos
   saldos: DetalleSaldos | null = null;
@@ -66,13 +75,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.cargarAsistencia();
     this.verificarRed();
+    this.cargarEstadoFacial();
     this.cargarSaldos();
     this.cargarHorario();
     this.cargarEventos();
     this.mostrarAvisosDeInicio();
     this.reloj = setInterval(() => this.ahora = new Date(), 1000);
     this.refresco = setInterval(() => {
-      if (!this.eventoSeleccionado && !this.marcando) {
+      if (!this.eventoSeleccionado && !this.marcando && !this.marcacionFacial) {
         this.cargarAsistencia(false);
         this.cargarEventos();
       }
@@ -142,11 +152,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get puedeMarcarEntrada(): boolean {
-    return this.dentroDeRed && !this.asistenciaHoy?.horaEntrada;
+    return this.dentroDeRed && !this.faltaRegistroFacial && !this.asistenciaHoy?.horaEntrada;
   }
 
   get puedeMarcarSalida(): boolean {
-    return this.dentroDeRed && !!this.asistenciaHoy?.horaEntrada && !this.asistenciaHoy?.horaSalida;
+    return this.dentroDeRed && !this.faltaRegistroFacial
+      && !!this.asistenciaHoy?.horaEntrada && !this.asistenciaHoy?.horaSalida;
+  }
+
+  // ==================== RECONOCIMIENTO FACIAL ====================
+
+  cargarEstadoFacial() {
+    this.facial.miEstado().subscribe({ next: (e) => this.estadoFacial = e, error: () => this.estadoFacial = null });
+  }
+
+  /** La marcacion usa la camara si hay rostro registrado o si es obligatoria. */
+  get requiereRostro(): boolean {
+    return !!this.estadoFacial && (this.estadoFacial.registrado || this.estadoFacial.obligatorio);
+  }
+
+  /** Marcacion facial obligatoria y el colaborador aun no registra su rostro. */
+  get faltaRegistroFacial(): boolean {
+    return !!this.estadoFacial && this.estadoFacial.obligatorio && !this.estadoFacial.registrado;
+  }
+
+  cancelarMarcacionFacial() {
+    this.marcacionFacial = null;
+  }
+
+  rostroCapturado(descriptores: number[][]) {
+    const tipo = this.marcacionFacial;
+    if (!tipo) return;
+    // Pequena pausa para mostrar "Rostro capturado" antes de cerrar la camara
+    setTimeout(() => {
+      this.marcacionFacial = null;
+      this.enviarMarcacion(tipo, descriptores[0]);
+    }, 400);
   }
 
   get turnoHoy(): HorarioDia | null {
@@ -155,9 +196,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   async marcar(tipo: 'entrada' | 'salida') {
-    if (this.marcando) return;
+    if (this.marcando || this.marcacionFacial) return;
     if (this.red && !this.red.dentroDeRed) {
       this.notification.error(`Está fuera de red (IP ${this.red.ip}). No se puede marcar asistencia desde este equipo.`, 'Fuera de red');
+      return;
+    }
+    if (this.faltaRegistroFacial) {
+      this.notification.warning('Registre su rostro en Mi perfil para poder marcar asistencia.', 'Rostro no registrado');
+      return;
+    }
+    if (this.requiereRostro) {
+      // La captura del rostro es la confirmacion de la marcacion
+      this.marcacionFacial = tipo;
       return;
     }
     const confirmado = await this.notification.confirm({
@@ -166,17 +216,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
       confirmText: tipo === 'entrada' ? 'Marcar entrada' : 'Marcar salida',
       type: tipo === 'entrada' ? 'success' : 'warning'
     });
-    if (!confirmado) return;
+    if (confirmado) this.enviarMarcacion(tipo);
+  }
 
+  private enviarMarcacion(tipo: 'entrada' | 'salida', descriptor?: number[]) {
     this.marcando = true;
-    this.asistenciaService.registrarAsistencia({ tipo, observaciones: this.observaciones.trim() || undefined }).subscribe({
+    this.asistenciaService.registrarAsistencia({
+      tipo, observaciones: this.observaciones.trim() || undefined, descriptor
+    }).subscribe({
       next: (res) => {
         this.marcando = false;
         this.observaciones = '';
         this.asistenciaHoy = res;
         const hora = horaCorta(tipo === 'entrada' ? res.horaEntrada : res.horaSalida);
         this.notification.success(
-          tipo === 'entrada' ? `Entrada registrada a las ${hora}.` : `Salida registrada a las ${hora}.`,
+          (tipo === 'entrada' ? `Entrada registrada a las ${hora}.` : `Salida registrada a las ${hora}.`)
+            + (descriptor ? ' Identidad verificada.' : ''),
           tipo === 'entrada' ? '¡Buen día de trabajo!' : '¡Hasta pronto!'
         );
         if (res.feriado) {
@@ -189,7 +244,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       error: (e) => {
         this.marcando = false;
         if (e.error?.fueraDeRed) this.verificarRed();
-        this.notification.error(mensajeError(e, 'No se pudo registrar la asistencia'), 'No se registró la marcación', 7000);
+        const codigo = e.error?.codigoFacial;
+        if (codigo === 'NO_REGISTRADO' || codigo === 'FALTA_ROSTRO') this.cargarEstadoFacial();
+        const titulo = codigo === 'NO_COINCIDE' ? 'Rostro no reconocido' : 'No se registró la marcación';
+        this.notification.error(mensajeError(e, 'No se pudo registrar la asistencia'), titulo, 7000);
         this.cargarAsistencia(false);
       }
     });

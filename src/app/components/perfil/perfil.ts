@@ -6,6 +6,10 @@ import { AuthService } from '../../services/auth';
 import { ApiConfigService } from '../../services/api-config.service';
 import { NotificationService } from '../../services/notification.service';
 import { AvatarComponent } from '../shared/avatar/avatar.component';
+import { ModalComponent } from '../shared/modal/modal.component';
+import { CamaraFacialComponent } from '../shared/camara-facial/camara-facial.component';
+import { FacialService } from '../../services/facial';
+import { EstadoFacial } from '../../interfaces/facial';
 import { fechaCorta, mensajeError } from '../../utils/format';
 import { rolLabel } from '../../utils/roles';
 
@@ -13,7 +17,7 @@ import { rolLabel } from '../../utils/roles';
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [FormsModule, RouterLink, AvatarComponent],
+  imports: [FormsModule, RouterLink, AvatarComponent, ModalComponent, CamaraFacialComponent],
   templateUrl: './perfil.html'
 })
 export class PerfilComponent implements OnInit {
@@ -21,6 +25,7 @@ export class PerfilComponent implements OnInit {
   private http = inject(HttpClient);
   private api = inject(ApiConfigService);
   private notification = inject(NotificationService);
+  private facial = inject(FacialService);
 
   perfil: any = null;
   descripcion = '';
@@ -30,11 +35,49 @@ export class PerfilComponent implements OnInit {
   previsualizacion: string | null = null;
   archivo: File | null = null;
 
+  // Reconocimiento facial
+  estadoFacial: EstadoFacial | null = null;
+  consentimiento = false;
+  registrandoRostro = false;
+  guardandoRostro = false;
+
   readonly fechaCorta = fechaCorta;
   readonly rolLabel = rolLabel;
 
   ngOnInit() {
     this.cargar();
+    this.cargarEstadoFacial();
+  }
+
+  // ==================== RECONOCIMIENTO FACIAL ====================
+
+  cargarEstadoFacial() {
+    this.facial.miEstado().subscribe({ next: (e) => this.estadoFacial = e, error: () => this.estadoFacial = null });
+  }
+
+  abrirRegistroRostro() {
+    if (!this.consentimiento) {
+      this.notification.warning('Debe aceptar el uso de su rostro para registrarlo.');
+      return;
+    }
+    this.registrandoRostro = true;
+  }
+
+  rostroCapturado(descriptores: number[][]) {
+    this.guardandoRostro = true;
+    this.facial.registrar(descriptores, this.consentimiento).subscribe({
+      next: (estado) => {
+        this.guardandoRostro = false;
+        this.registrandoRostro = false;
+        this.estadoFacial = estado;
+        this.notification.success('Su rostro quedó registrado. Ya puede marcar asistencia con reconocimiento facial.', 'Rostro registrado');
+      },
+      error: (e) => {
+        this.guardandoRostro = false;
+        this.registrandoRostro = false;
+        this.notification.error(mensajeError(e, 'No se pudo registrar el rostro'), 'Reconocimiento facial', 8000);
+      }
+    });
   }
 
   cargar() {

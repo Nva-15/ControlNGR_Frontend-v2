@@ -54,6 +54,17 @@
           </div>
         }
 
+        @if (faltaRegistroFacial) {
+          <div class="alert-warning mb-5">
+            <i class="bi bi-person-bounding-box text-lg"></i>
+            <div>
+              <p class="font-semibold">Registre su rostro para marcar asistencia</p>
+              <p>La marcación de entrada y salida se hace con reconocimiento facial.</p>
+              <a routerLink="/perfil" class="btn-primary btn-sm mt-3"><i class="bi bi-camera"></i> Registrar mi rostro</a>
+            </div>
+          </div>
+        }
+
         <div class="grid gap-4 sm:grid-cols-3">
           <div class="rounded-xl bg-stone-50 p-4">
             <p class="stat-label">Turno de hoy</p>
@@ -83,13 +94,16 @@
         <div class="mt-5 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
           <input type="text" class="input" placeholder="Observación (opcional)" [(ngModel)]="observaciones" maxlength="250" />
           <button type="button" class="btn-success" (click)="marcar('entrada')" [disabled]="!puedeMarcarEntrada || marcando">
-            <i class="bi bi-box-arrow-in-right"></i> Marcar entrada
+            <i class="bi" [class.bi-person-bounding-box]="requiereRostro" [class.bi-box-arrow-in-right]="!requiereRostro"></i> Marcar entrada
           </button>
           <button type="button" class="btn-primary" (click)="marcar('salida')" [disabled]="!puedeMarcarSalida || marcando">
-            <i class="bi bi-box-arrow-right"></i> Marcar salida
+            <i class="bi" [class.bi-person-bounding-box]="requiereRostro" [class.bi-box-arrow-right]="!requiereRostro"></i> Marcar salida
           </button>
         </div>
-        <p class="field-help mt-3">La hora se registra con el reloj del servidor. Solo puede marcar en días programados como laborales.</p>
+        <p class="field-help mt-3">
+          La hora se registra con el reloj del servidor. Solo puede marcar en días programados como laborales.
+          @if (requiereRostro) { Al marcar se verificará su identidad con la cámara. }
+        </p>
       }
     </div>
   </section>
@@ -234,4 +248,16 @@
       }
     </div>
   }
+</app-modal>
+
+<!-- Marcacion con reconocimiento facial -->
+<app-modal [abierto]="!!marcacionFacial" [titulo]="marcacionFacial === 'salida' ? 'Marcar salida' : 'Marcar entrada'"
+           subtitulo="Mire a la cámara para verificar su identidad" icono="bi-person-bounding-box"
+           [cerrarAlClicFuera]="false" (cerrar)="cancelarMarcacionFacial()">
+  @if (marcacionFacial) {
+    <app-camara-facial [muestras]="1" (capturado)="rostroCapturado($event)" />
+  }
+  <div footer>
+    <button type="button" class="btn-secondary" (click)="cancelarMarcacionFacial()">Cancelar</button>
+  </div>
 </app-modal>
