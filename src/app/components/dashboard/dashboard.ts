@@ -120,10 +120,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  verificandoRed = false;
+
   verificarRed() {
+    this.verificandoRed = true;
     this.asistenciaService.verificarRed().subscribe({
-      next: (r) => this.red = r,
-      error: () => this.red = null
+      next: (r) => { this.red = r; this.verificandoRed = false; },
+      error: () => { this.red = null; this.verificandoRed = false; }
     });
   }
 
@@ -133,12 +136,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return { texto: 'Jornada completa', clase: 'badge-blue' };
   }
 
+  /** Solo se marca si el servidor confirmó que el equipo está en un segmento permitido. */
+  get dentroDeRed(): boolean {
+    return this.red?.dentroDeRed === true;
+  }
+
   get puedeMarcarEntrada(): boolean {
-    return !this.asistenciaHoy?.horaEntrada;
+    return this.dentroDeRed && !this.asistenciaHoy?.horaEntrada;
   }
 
   get puedeMarcarSalida(): boolean {
-    return !!this.asistenciaHoy?.horaEntrada && !this.asistenciaHoy?.horaSalida;
+    return this.dentroDeRed && !!this.asistenciaHoy?.horaEntrada && !this.asistenciaHoy?.horaSalida;
   }
 
   get turnoHoy(): HorarioDia | null {
