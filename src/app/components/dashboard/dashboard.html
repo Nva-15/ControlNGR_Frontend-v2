@@ -35,6 +35,21 @@
             <div>
               <p class="font-semibold">Está fuera de red</p>
               <p>Solo puede marcar desde la red de la oficina o la VPN. IP detectada: <span class="font-mono">{{ red.ip }}</span></p>
+              <button type="button" class="btn-secondary btn-sm mt-3" (click)="verificarRed()" [disabled]="verificandoRed">
+                <i class="bi bi-arrow-clockwise"></i> {{ verificandoRed ? 'Verificando…' : 'Verificar de nuevo' }}
+              </button>
+            </div>
+          </div>
+        } @else if (!red) {
+          <div class="alert-warning mb-5">
+            <i class="bi bi-wifi text-lg"></i>
+            <div>
+              <p>{{ verificandoRed ? 'Verificando la red…' : 'No se pudo verificar la red. La marcación está deshabilitada.' }}</p>
+              @if (!verificandoRed) {
+                <button type="button" class="btn-secondary btn-sm mt-3" (click)="verificarRed()">
+                  <i class="bi bi-arrow-clockwise"></i> Verificar de nuevo
+                </button>
+              }
             </div>
           </div>
         }
