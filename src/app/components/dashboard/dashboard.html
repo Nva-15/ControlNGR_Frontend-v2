@@ -68,7 +68,9 @@
         <div class="grid gap-4 sm:grid-cols-3">
           <div class="rounded-xl bg-stone-50 p-4">
             <p class="stat-label">Turno de hoy</p>
-            @if (turnoHoy) {
+            @if (horarioFlexible) {
+              <p class="mt-1 text-lg font-semibold">Horario flexible</p>
+            } @else if (turnoHoy) {
               @if ((!turnoHoy.tipoDia || turnoHoy.tipoDia === 'normal') && !turnoHoy.horaEntrada) {
                 <p class="mt-1 text-lg font-semibold text-stone-400">Sin turno</p>
               } @else if (!turnoHoy.tipoDia || turnoHoy.tipoDia === 'normal') {
@@ -101,7 +103,8 @@
           </button>
         </div>
         <p class="field-help mt-3">
-          La hora se registra con el reloj del servidor. Solo puede marcar en días programados como laborales.
+          La hora se registra con el reloj del servidor.
+          @if (horarioFlexible) { Su cargo tiene horario flexible. } @else { Solo puede marcar en días programados como laborales. }
           @if (requiereRostro) { Al marcar se verificará su identidad con la cámara. }
         </p>
       }
@@ -153,7 +156,11 @@
     @if (cargandoHorario) {
       <div class="flex justify-center py-8"><span class="spinner"></span></div>
     } @else if (!tieneHorario()) {
-      <div class="empty-state"><i class="bi bi-calendar-x text-3xl"></i><p>Aún no tiene un horario asignado para esta semana.</p></div>
+      @if (horarioFlexible) {
+        <div class="empty-state"><i class="bi bi-calendar2-check text-3xl"></i><p>Su cargo tiene horario flexible: puede marcar cualquier día.</p></div>
+      } @else {
+        <div class="empty-state"><i class="bi bi-calendar-x text-3xl"></i><p>Aún no tiene un horario asignado para esta semana.</p></div>
+      }
     } @else {
       <div class="table-wrap">
         <table class="table">
@@ -218,6 +225,11 @@
            [subtitulo]="tipoLabel(eventoSeleccionado?.tipoEvento || '')" (cerrar)="eventoSeleccionado = null">
   @if (eventoSeleccionado; as ev) {
     @if (ev.descripcion) { <p class="whitespace-pre-line text-stone-700">{{ ev.descripcion }}</p> }
+    @if (enlaceSeguro(ev.enlace); as url) {
+      <a [href]="url" target="_blank" rel="noopener noreferrer" class="btn-primary mt-4 w-full sm:w-auto">
+        <i class="bi bi-box-arrow-up-right"></i> Ingresar
+      </a>
+    }
     <div class="mt-5">
       @switch (ev.tipoEvento) {
         @case ('SI_NO') {

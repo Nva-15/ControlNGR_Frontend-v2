@@ -9,6 +9,8 @@ export interface Evento {
   rolesVisibles: string[];
   permiteComentarios: boolean;
   requiereRespuesta: boolean;
+  /** Enlace opcional para ingresar con un clic (reunion virtual, formulario...). */
+  enlace?: string | null;
   creadoPorId?: number;
   creadoPorNombre?: string;
   fechaCreacion?: string;
@@ -79,6 +81,7 @@ export interface EventoRequest {
   permiteComentarios: boolean;
   requiereRespuesta: boolean;
   opciones?: string[];
+  enlace?: string;
 }
 
 export interface RespuestaEventoRequest {

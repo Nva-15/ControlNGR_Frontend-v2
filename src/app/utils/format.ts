@@ -51,3 +51,9 @@ export function dias(valor?: number | null): string {
   if (valor === null || valor === undefined) return '0';
   return Number.isInteger(+valor) ? String(+valor) : (+valor).toFixed(1);
 }
+
+/** Solo se muestran como enlace direcciones http(s) (nunca "javascript:" u otros esquemas). */
+export function enlaceSeguro(enlace?: string | null): string | null {
+  const e = (enlace || '').trim();
+  return /^https?:\/\/[^\s<>"']+$/i.test(e) ? e : null;
+}

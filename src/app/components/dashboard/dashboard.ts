@@ -16,7 +16,7 @@ import { ModalComponent } from '../shared/modal/modal.component';
 import { CamaraFacialComponent } from '../shared/camara-facial/camara-facial.component';
 import { FacialService } from '../../services/facial';
 import { EstadoFacial } from '../../interfaces/facial';
-import { dias, diaSemanaLima, horaCorta, hoyIso, mensajeError, ZONA } from '../../utils/format';
+import { dias, diaSemanaLima, enlaceSeguro, horaCorta, hoyIso, mensajeError, ZONA } from '../../utils/format';
 
 @Component({
   selector: 'app-dashboard',
@@ -70,6 +70,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   enviandoRespuesta = false;
 
   readonly horaCorta = horaCorta;
+  readonly enlaceSeguro = enlaceSeguro;
   readonly dias = dias;
 
   ngOnInit() {
@@ -158,6 +159,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   get puedeMarcarSalida(): boolean {
     return this.dentroDeRed && !this.faltaRegistroFacial
       && !!this.asistenciaHoy?.horaEntrada && !this.asistenciaHoy?.horaSalida;
+  }
+
+  /** Director, gerente y jefe no tienen horario: marcan cualquier dia. */
+  get horarioFlexible(): boolean {
+    return this.auth.isGerencia();
   }
 
   // ==================== RECONOCIMIENTO FACIAL ====================
