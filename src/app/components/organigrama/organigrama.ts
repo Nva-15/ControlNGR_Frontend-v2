@@ -3,7 +3,7 @@ import { EmpleadosService } from '../../services/empleados';
 import { EmpleadoResponse } from '../../interfaces/empleado';
 import { AvatarComponent } from '../shared/avatar/avatar.component';
 import { ModalComponent } from '../shared/modal/modal.component';
-import { rolBadge, rolLabel, ROLES } from '../../utils/roles';
+import { ROLES } from '../../utils/roles';
 
 interface Nivel {
   titulo: string;
@@ -32,8 +32,6 @@ export class OrganigramaComponent implements OnInit {
   cumpleanos: Cumple[] = [];
   seleccionado: EmpleadoResponse | null = null;
 
-  readonly rolLabel = rolLabel;
-  readonly rolBadge = rolBadge;
 
   ngOnInit() {
     this.empService.getEmpleados().subscribe({
