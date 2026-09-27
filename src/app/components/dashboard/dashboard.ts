@@ -43,13 +43,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   asistenciaHoy: AsistenciaResponse | null = null;
   cargandoAsistencia = true;
   marcando = false;
-  observaciones = '';
   red: { ip: string; dentroDeRed: boolean; mensaje: string } | null = null;
 
   // Reconocimiento facial
   estadoFacial: EstadoFacial | null = null;
   /** Marcacion en curso con camara abierta. */
   marcacionFacial: 'entrada' | 'salida' | null = null;
+
+  /** Marcacion ya registrada: se muestra la hora y se ofrece dejar un mensaje al supervisor. */
+  marcacionRegistrada: { tipo: 'entrada' | 'salida'; asistencia: AsistenciaResponse; facial: boolean } | null = null;
+  mensaje = '';
+  enviandoMensaje = false;
+  readonly largoMensaje = 300;
 
   // Saldos
   saldos: DetalleSaldos | null = null;
@@ -83,7 +88,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.mostrarAvisosDeInicio();
     this.reloj = setInterval(() => this.ahora = new Date(), 1000);
     this.refresco = setInterval(() => {
-      if (!this.eventoSeleccionado && !this.marcando && !this.marcacionFacial) {
+      if (!this.eventoSeleccionado && !this.marcando && !this.marcacionFacial && !this.marcacionRegistrada) {
         this.cargarAsistencia(false);
         this.cargarEventos();
       }
@@ -183,17 +188,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   cancelarMarcacionFacial() {
+    if (this.marcando) return;
     this.marcacionFacial = null;
   }
 
+  /** La marcacion se registra en cuanto se captura el rostro (el mensaje es opcional y posterior). */
   rostroCapturado(descriptores: number[][]) {
     const tipo = this.marcacionFacial;
     if (!tipo) return;
-    // Pequena pausa para mostrar "Rostro capturado" antes de cerrar la camara
-    setTimeout(() => {
-      this.marcacionFacial = null;
-      this.enviarMarcacion(tipo, descriptores[0]);
-    }, 400);
+    this.enviarMarcacion(tipo, descriptores[0]);
   }
 
   get turnoHoy(): HorarioDia | null {
@@ -227,19 +230,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private enviarMarcacion(tipo: 'entrada' | 'salida', descriptor?: number[]) {
     this.marcando = true;
-    this.asistenciaService.registrarAsistencia({
-      tipo, observaciones: this.observaciones.trim() || undefined, descriptor
-    }).subscribe({
+    this.asistenciaService.registrarAsistencia({ tipo, descriptor }).subscribe({
       next: (res) => {
         this.marcando = false;
-        this.observaciones = '';
+        this.marcacionFacial = null;
         this.asistenciaHoy = res;
-        const hora = horaCorta(tipo === 'entrada' ? res.horaEntrada : res.horaSalida);
-        this.notification.success(
-          (tipo === 'entrada' ? `Entrada registrada a las ${hora}.` : `Salida registrada a las ${hora}.`)
-            + (descriptor ? ' Identidad verificada.' : ''),
-          tipo === 'entrada' ? '¡Buen día de trabajo!' : '¡Hasta pronto!'
-        );
+        this.mensaje = '';
+        this.enviandoMensaje = false;
+        this.marcacionRegistrada = { tipo, asistencia: res, facial: !!descriptor };
         if (res.feriado) {
           this.notification.info(
             `Hoy es feriado (${res.feriado}). Se abonaron ${dias(res.diasCompensacionAbonados)} día(s) a su saldo de compensación.`,
@@ -249,6 +247,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       },
       error: (e) => {
         this.marcando = false;
+        this.marcacionFacial = null;
         if (e.error?.fueraDeRed) this.verificarRed();
         const codigo = e.error?.codigoFacial;
         if (codigo === 'NO_REGISTRADO' || codigo === 'FALTA_ROSTRO') this.cargarEstadoFacial();
@@ -257,6 +256,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.cargarAsistencia(false);
       }
     });
+  }
+
+  /** Hora que quedo registrada (reloj del servidor). */
+  get horaRegistrada(): string {
+    const m = this.marcacionRegistrada;
+    if (!m) return '';
+    return (m.tipo === 'entrada' ? m.asistencia.horaEntrada : m.asistencia.horaSalida) || '';
+  }
+
+  enviarMensaje() {
+    const m = this.marcacionRegistrada;
+    const texto = this.mensaje.trim();
+    if (!m || !texto || this.enviandoMensaje) return;
+    this.enviandoMensaje = true;
+    this.asistenciaService.enviarMensaje(m.asistencia.id, m.tipo, texto).subscribe({
+      next: (res) => {
+        this.asistenciaHoy = res;
+        this.notification.success('Su supervisor podrá ver el mensaje.', 'Mensaje enviado');
+        this.cerrarMarcacionRegistrada();
+      },
+      error: (e) => {
+        this.enviandoMensaje = false;
+        this.notification.error(mensajeError(e, 'No se pudo enviar el mensaje'));
+      }
+    });
+  }
+
+  cerrarMarcacionRegistrada() {
+    this.marcacionRegistrada = null;
+    this.mensaje = '';
+    this.enviandoMensaje = false;
   }
 
   // ==================== SALDOS ====================

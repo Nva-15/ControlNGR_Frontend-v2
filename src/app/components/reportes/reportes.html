@@ -48,7 +48,7 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Colaborador</th><th>Fecha</th><th>Programado</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Retraso</th><th>Observaciones</th></tr>
+          <tr><th>Colaborador</th><th>Fecha</th><th>Programado</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Retraso</th><th>Mensaje del colaborador</th><th>Observaciones</th></tr>
         </thead>
         <tbody>
           @for (r of reporteFiltrado; track $index) {
@@ -62,6 +62,15 @@
               </td>
               <td><span [class]="getEstadoBadgeClass(r.estado)">{{ estadoTexto(r.estado) }}</span></td>
               <td class="tabular-nums">@if (r.minutosRetraso) { <span class="text-amber-700">{{ formatRetraso(r.minutosRetraso) }}</span> } @else { — }</td>
+              <td class="max-w-xs text-sm" data-mensaje>
+                @if (r.mensajeEntrada) {
+                  <p class="line-clamp-2" [title]="r.mensajeEntrada"><i class="bi bi-chat-left-text text-emerald-600"></i> <span class="text-stone-500">Entrada:</span> {{ r.mensajeEntrada }}</p>
+                }
+                @if (r.mensajeSalida) {
+                  <p class="line-clamp-2" [title]="r.mensajeSalida"><i class="bi bi-chat-left-text text-vino-600"></i> <span class="text-stone-500">Salida:</span> {{ r.mensajeSalida }}</p>
+                }
+                @if (!r.mensajeEntrada && !r.mensajeSalida) { <span class="text-stone-400">—</span> }
+              </td>
               <td class="max-w-xs truncate text-stone-500" [title]="r.observaciones || ''">{{ r.observaciones || '' }}</td>
             </tr>
           }

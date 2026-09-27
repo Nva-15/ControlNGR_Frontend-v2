@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
 import {
-  Departamento, Feriado, Parametro, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
+  Departamento, Feriado, Parametro, PersonalReporte, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
 } from '../interfaces/admin';
 import { MotivoLicencia, TipoSolicitud } from '../interfaces/solicitud';
 import { FeriadoLaborado, MovimientoSaldo, TipoSaldo } from '../interfaces/saldo';
@@ -21,6 +21,14 @@ export class AdminService {
   parametros(): Observable<Parametro[]> { return this.http.get<Parametro[]>(`${this.url}/parametros`); }
   actualizarParametro(clave: string, valor: string): Observable<Parametro> {
     return this.http.put<Parametro>(`${this.url}/parametros/${clave}`, { valor });
+  }
+
+  // Personal incluido en el reporte de asistencia
+  personalReporte(): Observable<PersonalReporte[]> {
+    return this.http.get<PersonalReporte[]>(`${this.url}/reporte-asistencia/personal`);
+  }
+  guardarPersonalReporte(incluidos: number[]): Observable<PersonalReporte[]> {
+    return this.http.put<PersonalReporte[]>(`${this.url}/reporte-asistencia/personal`, { incluidos });
   }
 
   /** IP con la que el servidor ve a este equipo. */

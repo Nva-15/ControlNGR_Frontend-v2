@@ -259,6 +259,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
       { header: 'H. Real', dataKey: 'horaReal' },
       { header: 'Estado', dataKey: 'estado' },
       { header: 'Min. Retraso', dataKey: 'minutosRetraso' },
+      { header: 'Mensaje', dataKey: 'mensaje' },
       { header: 'Observaciones', dataKey: 'observaciones' }
     ];
 
@@ -282,7 +283,14 @@ export class ReportesComponent implements OnInit, OnDestroy {
       horaReal: this.formatHora(r.horaEntradaReal),
       estado: r.estado,
       minutosRetraso: r.minutosRetraso !== null && r.minutosRetraso > 0 ? this.formatRetraso(r.minutosRetraso) : '-',
+      mensaje: this.mensajeTexto(r),
       observaciones: r.observaciones || ''
     }));
+  }
+
+  /** Mensajes que el colaborador dejo al marcar. */
+  mensajeTexto(r: ReporteAsistencia): string {
+    return [r.mensajeEntrada ? `Entrada: ${r.mensajeEntrada}` : '', r.mensajeSalida ? `Salida: ${r.mensajeSalida}` : '']
+      .filter(Boolean).join(' | ');
   }
 }

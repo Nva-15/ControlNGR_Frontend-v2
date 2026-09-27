@@ -22,6 +22,9 @@
     /** Si la entrada fue en feriado: nombre del feriado y dias de compensacion abonados. */
     feriado?: string;
     diasCompensacionAbonados?: number;
+    /** Justificacion del empleado para su supervisor. */
+    mensajeEntrada?: string | null;
+    mensajeSalida?: string | null;
   }
 
   export interface ReporteAsistencia {
@@ -41,4 +44,6 @@
     turno: string | null;
     observaciones: string | null;
     salidaAutomatica: boolean | null;
+    mensajeEntrada?: string | null;
+    mensajeSalida?: string | null;
   }

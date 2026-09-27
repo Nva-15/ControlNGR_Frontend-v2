@@ -81,6 +81,11 @@ export class EmpleadosComponent implements OnInit {
   }
 
   get puedeCrear(): boolean {
+    return this.auth.puedeCrearEmpleados();
+  }
+
+  /** Cambiar rol, usuario y contraseña (administrador y gerencia). */
+  get gestionaAcceso(): boolean {
     return this.auth.puedeGestionarAcceso();
   }
 
@@ -144,6 +149,24 @@ export class EmpleadosComponent implements OnInit {
     });
   }
 
+  /** Un empleado inactivo no puede ingresar al sistema: se desmarca y bloquea "Puede ingresar". */
+  private vincularEstado(form: FormGroup) {
+    const activo = form.get('activo')!;
+    const acceso = form.get('usuarioActivo')!;
+    const aplicar = (valor: boolean, cambio: boolean) => {
+      if (activo.disabled) return;
+      if (!valor) {
+        acceso.setValue(false, { emitEvent: false });
+        acceso.disable({ emitEvent: false });
+      } else {
+        if (acceso.disabled) acceso.enable({ emitEvent: false });
+        if (cambio) acceso.setValue(true, { emitEvent: false });
+      }
+    };
+    aplicar(!!activo.value, false);
+    activo.valueChanges.subscribe(v => aplicar(!!v, true));
+  }
+
   cambiarTipoDoc() {
     const ctrl = this.form.get('dni')!;
     const patron = this.form.value.tipoDoc === 'CE' ? /^\d{9,12}$/ : /^\d{8}$/;
@@ -154,6 +177,7 @@ export class EmpleadosComponent implements OnInit {
   nuevo() {
     this.editando = null;
     this.form = this.crearForm();
+    this.vincularEstado(this.form);
     this.fotoArchivo = null;
     this.fotoPreview = null;
     this.formAbierto = true;
@@ -172,7 +196,7 @@ export class EmpleadosComponent implements OnInit {
     this.cambiarTipoDoc();
     this.form.get('dni')!.disable();
     this.form.get('tipoDoc')!.disable();
-    if (!this.puedeCrear || this.esPropio(e)) {
+    if (!this.gestionaAcceso || this.esPropio(e)) {
       this.form.get('rol')!.disable();
       this.form.get('username')!.disable();
     }
@@ -181,6 +205,7 @@ export class EmpleadosComponent implements OnInit {
       ['cargo', 'nivel', 'departamentoId', 'ingreso', 'activo', 'usuarioActivo']
         .forEach(c => this.form.get(c)!.disable());
     }
+    this.vincularEstado(this.form);
     this.fotoArchivo = null;
     this.fotoPreview = null;
     this.formAbierto = true;
@@ -219,15 +244,14 @@ export class EmpleadosComponent implements OnInit {
       hobby: v.hobby?.trim() || '', descripcion: v.descripcion?.trim() || '',
       activo: v.activo, usuarioActivo: v.usuarioActivo
     };
-    if (this.puedeCrear && !this.editandoPropio) {
-      datos.rol = v.rol;
-      if (v.username?.trim()) datos.username = v.username.trim();
-    }
+    if (this.puedeCrear && !this.editandoPropio) datos.rol = v.rol;
+    if (this.gestionaAcceso && !this.editandoPropio && v.username?.trim()) datos.username = v.username.trim();
+    if (!v.activo) datos.usuarioActivo = false;
 
     this.guardando = true;
     const peticion = this.editando
       ? this.empService.updateEmpleado(this.editando.id!, datos)
-      : this.empService.createEmpleado({ ...datos, dni: v.dni.trim(), password: v.password?.trim() || undefined });
+      : this.empService.createEmpleado({ ...datos, dni: v.dni.trim(), password: (this.gestionaAcceso && v.password?.trim()) || undefined });
 
     peticion.subscribe({
       next: (res: any) => {
@@ -262,7 +286,7 @@ export class EmpleadosComponent implements OnInit {
     this.guardando = false;
     this.formAbierto = false;
     this.notification.success(nuevo
-      ? 'Empleado registrado. Su usuario es el DNI y deberá cambiar la contraseña al ingresar.'
+      ? 'Empleado registrado. Deberá cambiar la contraseña inicial en su primer ingreso.'
       : 'Empleado actualizado.');
     this.cargar();
   }

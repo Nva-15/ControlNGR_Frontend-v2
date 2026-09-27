@@ -72,8 +72,11 @@ export function puedeAdministrar(rolEditor?: string | null, rolObjetivo?: string
 
 /** Mismo criterio que el backend (Roles.puedeAsignarRol). */
 export function puedeAsignarRol(rolEditor?: string | null, rolNuevo?: string | null): boolean {
-  if ((rolEditor || '').toLowerCase() === ROLES.ADMIN) return true;
-  return esGerencia(rolEditor) && rango(rolNuevo) < rango(rolEditor);
+  const editor = (rolEditor || '').toLowerCase();
+  if (editor === ROLES.ADMIN) return true;
+  if (esGerencia(editor)) return rango(rolNuevo) < rango(editor);
+  // El supervisor registra personal operativo a su cargo
+  return editor === ROLES.SUPERVISOR && (OPERATIVOS as string[]).includes((rolNuevo || '').toLowerCase());
 }
 
 /** Clase de insignia por rol. */
