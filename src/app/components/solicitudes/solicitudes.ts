@@ -198,9 +198,15 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
     return this.disponible !== null && this.diasSolicitados > this.disponible;
   }
 
+  /** Las solicitudes solo se registran desde hoy en adelante. */
+  fechaPasada(fecha: string): boolean {
+    return !!fecha && fecha < this.hoy;
+  }
+
   get puedeEnviar(): boolean {
     const t = this.tipoSeleccionado;
     return !!t && this.diasSolicitados > 0 && !this.excedeSaldo && !this.enviando
+      && !this.fechaPasada(this.form.fechaInicio) && !this.fechaPasada(this.form.fechaFin)
       && (!t.requiereEvidencia || !!this.archivo)
       && (!t.requiereMotivoLicencia || !!this.form.motivoLicenciaId);
   }
@@ -314,6 +320,10 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
     if (!this.editando) return;
     if (!this.edicion.fechaInicio || !this.edicion.fechaFin || this.edicion.fechaFin < this.edicion.fechaInicio) {
       this.notification.warning('Revise las fechas.');
+      return;
+    }
+    if (this.fechaPasada(this.edicion.fechaInicio) || this.fechaPasada(this.edicion.fechaFin)) {
+      this.notification.warning('Las fechas deben ser hoy o posteriores.');
       return;
     }
     this.gestionando = true;

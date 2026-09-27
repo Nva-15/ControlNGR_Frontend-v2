@@ -76,7 +76,7 @@
                     } @else {
                       <button class="btn-icon" title="Registrar rostro en persona" (click)="abrirRegistroRostro(e)"><i class="bi bi-person-bounding-box"></i></button>
                     }
-                    @if (puedeCrear) {
+                    @if (gestionaAcceso) {
                       <button class="btn-icon" title="Restablecer contraseña" (click)="abrirReset(e)"><i class="bi bi-key"></i></button>
                     }
                     <button class="btn-icon" [title]="e.activo ? 'Desactivar' : 'Activar'" (click)="cambiarEstado(e)">
@@ -162,24 +162,36 @@
             @for (r of rolesAsignables; track r.codigo) { <option [value]="r.codigo">{{ r.nombre }}</option> }
           </select>
           @if (editandoPropio) { <p class="field-help">Su rol y estado los cambia su jefatura.</p> }
-          @else if (!puedeCrear) { <p class="field-help">Solo gerencia o el administrador cambian roles.</p> }
+          @else if (editando && !gestionaAcceso) { <p class="field-help">Solo gerencia o el administrador cambian roles.</p> }
         </div>
-        <div>
-          <label class="label">Usuario</label>
-          <input class="input" formControlName="username" [placeholder]="editando ? '' : 'Por defecto: el DNI'" />
-        </div>
-        @if (!editando) {
+        @if (gestionaAcceso || editando) {
           <div>
-            <label class="label">Contraseña inicial</label>
-            <input class="input" formControlName="password" placeholder="Por defecto: el DNI" autocomplete="new-password" />
-            <p class="field-help">Deberá cambiarla en su primer ingreso.</p>
+            <label class="label">Usuario</label>
+            <input class="input" formControlName="username" [placeholder]="editando ? '' : 'Por defecto: el DNI'" />
           </div>
+        }
+        @if (!editando) {
+          @if (gestionaAcceso) {
+            <div>
+              <label class="label">Contraseña inicial</label>
+              <input class="input" formControlName="password" placeholder="Por defecto: Soporte26$" autocomplete="new-password" />
+              <p class="field-help">Deberá cambiarla en su primer ingreso.</p>
+            </div>
+          } @else {
+            <div class="sm:col-span-2 rounded-lg bg-stone-50 px-4 py-3 text-sm text-stone-600">
+              <i class="bi bi-info-circle"></i> Usuario: <b>el DNI</b>. Contraseña inicial: <b class="font-mono">Soporte26$</b>
+              (deberá cambiarla en su primer ingreso).
+            </div>
+          }
         }
       </div>
       <div class="mt-4 flex flex-wrap gap-6">
         <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="checkbox" formControlName="activo" /> Empleado activo</label>
         <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="checkbox" formControlName="usuarioActivo" /> Puede ingresar al sistema</label>
       </div>
+      @if (!form.getRawValue().activo) {
+        <p class="field-help mt-2">Un empleado inactivo no puede ingresar al sistema ni marcar asistencia.</p>
+      }
     </fieldset>
 
     <fieldset>

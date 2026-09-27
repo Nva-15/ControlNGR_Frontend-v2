@@ -145,9 +145,14 @@ export class AuthService {
     return this.rol() === ROLES.SUPERVISOR;
   }
 
-  /** Crear empleados y cambiar rol/usuario/contraseña. */
+  /** Cambiar rol, usuario y contraseña de los empleados. */
   puedeGestionarAcceso(): boolean {
     return this.isAdmin() || this.isGerencia();
+  }
+
+  /** Registrar empleados nuevos (el supervisor solo personal operativo). */
+  puedeCrearEmpleados(): boolean {
+    return this.puedeGestionarAcceso() || this.isSupervisor();
   }
 
   puedeGestionarEmpleados(): boolean {

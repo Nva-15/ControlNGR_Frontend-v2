@@ -76,3 +76,13 @@ export interface SaldoEmpleado {
   vacaciones: SaldoResumen;
   compensacion: SaldoResumen;
 }
+
+/** Personal con horario y si aparece en el reporte de asistencia. */
+export interface PersonalReporte {
+  id: number;
+  nombre: string;
+  cargo?: string;
+  rol?: string;
+  foto?: string;
+  enReporte: boolean;
+}

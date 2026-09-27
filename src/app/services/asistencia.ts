@@ -23,6 +23,11 @@ export class AsistenciaService {
     return this.http.post<AsistenciaResponse>(`${this.apiUrl}/registrar`, request);
   }
 
+  /** Breve justificacion para el supervisor sobre una marcacion ya registrada. */
+  enviarMensaje(id: number, tipo: 'entrada' | 'salida', mensaje: string): Observable<AsistenciaResponse> {
+    return this.http.put<AsistenciaResponse>(`${this.apiUrl}/${id}/mensaje`, { tipo, mensaje });
+  }
+
   getAsistencias(): Observable<AsistenciaResponse[]> {
     return this.http.get<AsistenciaResponse[]>(this.apiUrl);
   }

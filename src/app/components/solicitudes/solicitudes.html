@@ -140,13 +140,16 @@
             <div class="grid gap-4 sm:grid-cols-2">
               <div>
                 <label class="label" for="inicio">Desde</label>
-                <input id="inicio" name="inicio" type="date" class="input" [(ngModel)]="form.fechaInicio" (change)="onFechasCambiadas()" required />
+                <input id="inicio" name="inicio" type="date" class="input" [min]="hoy" [(ngModel)]="form.fechaInicio" (change)="onFechasCambiadas()" required />
               </div>
               <div>
                 <label class="label" for="fin">Hasta</label>
-                <input id="fin" name="fin" type="date" class="input" [min]="form.fechaInicio" [(ngModel)]="form.fechaFin" (change)="onFechasCambiadas()" required />
+                <input id="fin" name="fin" type="date" class="input" [min]="form.fechaInicio || hoy" [(ngModel)]="form.fechaFin" (change)="onFechasCambiadas()" required />
               </div>
             </div>
+            @if (fechaPasada(form.fechaInicio) || fechaPasada(form.fechaFin)) {
+              <p class="field-error">Las fechas deben ser hoy o posteriores.</p>
+            }
 
             @if (t.requiereMotivoLicencia) {
               <div>
@@ -371,8 +374,8 @@
 <app-modal [abierto]="!!editando" titulo="Editar solicitud" [subtitulo]="editando?.tipoNombre || ''" (cerrar)="editando = null">
   <div class="space-y-4">
     <div class="grid gap-4 sm:grid-cols-2">
-      <div><label class="label">Desde</label><input type="date" class="input" [(ngModel)]="edicion.fechaInicio" /></div>
-      <div><label class="label">Hasta</label><input type="date" class="input" [min]="edicion.fechaInicio" [(ngModel)]="edicion.fechaFin" /></div>
+      <div><label class="label">Desde</label><input type="date" class="input" [min]="hoy" [(ngModel)]="edicion.fechaInicio" /></div>
+      <div><label class="label">Hasta</label><input type="date" class="input" [min]="edicion.fechaInicio || hoy" [(ngModel)]="edicion.fechaFin" /></div>
     </div>
     <div><label class="label">Comentario</label><textarea class="textarea" rows="3" [(ngModel)]="edicion.motivo"></textarea></div>
   </div>
