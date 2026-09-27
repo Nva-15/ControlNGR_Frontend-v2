@@ -10,7 +10,7 @@ import { EmpleadoResponse } from '../../interfaces/empleado';
 import { ModalComponent } from '../shared/modal/modal.component';
 import { AvatarComponent } from '../shared/avatar/avatar.component';
 import { fechaCorta, hoyIso, mensajeError } from '../../utils/format';
-import { rolBadge, rolLabel } from '../../utils/roles';
+import { puedeAsignarRol, rolBadge, rolLabel } from '../../utils/roles';
 
 @Component({
   selector: 'app-empleados',
@@ -72,6 +72,17 @@ export class EmpleadosComponent implements OnInit {
 
   get puedeCrear(): boolean {
     return this.auth.puedeGestionarAcceso();
+  }
+
+  /** Roles que el usuario puede asignar (más el rol actual del empleado que se edita). */
+  get rolesAsignables() {
+    const actual = this.editando?.rol;
+    return this.roles.filter(r => r.codigo === actual || puedeAsignarRol(this.auth.rol(), r.codigo));
+  }
+
+  /** Editando su propio registro: solo datos personales. */
+  get editandoPropio(): boolean {
+    return !!this.editando && this.esPropio(this.editando);
   }
 
   cargar() {
@@ -150,9 +161,14 @@ export class EmpleadosComponent implements OnInit {
     this.cambiarTipoDoc();
     this.form.get('dni')!.disable();
     this.form.get('tipoDoc')!.disable();
-    if (!this.puedeCrear) {
+    if (!this.puedeCrear || this.esPropio(e)) {
       this.form.get('rol')!.disable();
       this.form.get('username')!.disable();
+    }
+    if (this.esPropio(e)) {
+      // Rol, estado, cargo, área y fecha de ingreso los cambia su jefatura
+      ['cargo', 'nivel', 'departamentoId', 'ingreso', 'activo', 'usuarioActivo']
+        .forEach(c => this.form.get(c)!.disable());
     }
     this.fotoArchivo = null;
     this.fotoPreview = null;
@@ -192,7 +208,7 @@ export class EmpleadosComponent implements OnInit {
       hobby: v.hobby?.trim() || '', descripcion: v.descripcion?.trim() || '',
       activo: v.activo, usuarioActivo: v.usuarioActivo
     };
-    if (this.puedeCrear) {
+    if (this.puedeCrear && !this.editandoPropio) {
       datos.rol = v.rol;
       if (v.username?.trim()) datos.username = v.username.trim();
     }
