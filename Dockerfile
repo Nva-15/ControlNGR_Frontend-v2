@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
+# Limita la memoria de Node para equipos con poca RAM asignada a Docker
+ENV NODE_OPTIONS=--max-old-space-size=1024
 RUN npx ng build --configuration production
 
 # ---------- Etapa 2: servir con nginx ----------
