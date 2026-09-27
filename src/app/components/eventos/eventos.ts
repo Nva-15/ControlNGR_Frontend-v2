@@ -9,6 +9,7 @@ import { EventosService } from '../../services/eventos';
 import { NotificationService } from '../../services/notification.service';
 import { ApiConfigService } from '../../services/api-config.service';
 import { Evento, EventoRequest, RespuestaEventoRequest } from '../../interfaces/evento';
+import { enlaceSeguro } from '../../utils/format';
 
 @Component({
   selector: 'app-eventos',
@@ -295,7 +296,8 @@ export class EventosComponent implements OnInit, OnDestroy {
       rolesVisibles: [...PERSONAL],
       permiteComentarios: true,
       requiereRespuesta: true,
-      opciones: []
+      opciones: [],
+      enlace: ''
     };
   }
 
@@ -317,7 +319,8 @@ export class EventosComponent implements OnInit, OnDestroy {
       rolesVisibles: evento.rolesVisibles || [],
       permiteComentarios: evento.permiteComentarios,
       requiereRespuesta: evento.requiereRespuesta,
-      opciones: evento.opciones?.map(o => o.textoOpcion) || []
+      opciones: evento.opciones?.map(o => o.textoOpcion) || [],
+      enlace: evento.enlace || ''
     };
     this.eventoEditId = evento.id || null;
     this.mostrarModalEvento = true;
@@ -381,7 +384,15 @@ export class EventosComponent implements OnInit, OnDestroy {
     return true;
   }
 
+  readonly enlaceSeguro = enlaceSeguro;
+
   async guardarEvento() {
+    const enlace = (this.eventoEdit.enlace || '').trim();
+    if (enlace && !enlaceSeguro(enlace)) {
+      this.notification.error('El enlace debe ser una dirección web completa que empiece con https:// o http://', 'Validacion');
+      return;
+    }
+    this.eventoEdit.enlace = enlace;
     if (!this.eventoEdit.titulo.trim()) {
       this.notification.error('El titulo es requerido', 'Validacion');
       return;

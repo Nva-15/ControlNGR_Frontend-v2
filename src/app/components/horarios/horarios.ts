@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../shared/modal/modal.component';
-import { PERSONAL, rolBadge, rolLabel } from '../../utils/roles';
+import { PERSONAL, esGerencia, rolBadge, rolLabel } from '../../utils/roles';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HorariosService } from '../../services/horarios';
 import { AuthService } from '../../services/auth';
@@ -77,7 +77,8 @@ export class HorariosComponent implements OnInit, OnDestroy {
 
   roles = [
     { value: '', label: 'Todos los roles' },
-    ...PERSONAL.map(r => ({ value: r as string, label: rolLabel(r) }))
+    // Director, gerente y jefe no tienen horario
+    ...PERSONAL.filter(r => !esGerencia(r)).map(r => ({ value: r as string, label: rolLabel(r) }))
   ];
 
   tiposDia = [
