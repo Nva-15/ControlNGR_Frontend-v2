@@ -35,7 +35,7 @@ Este repositorio aporta la imagen `nginx`, que:
 
 | Carpeta | Contenido |
 |---|---|
-| `src/app/components` | Pantallas: dashboard, solicitudes, saldos, perfil, horarios, eventos, empleados, organigrama, reportes y `admin/` (panel maestro) |
+| `src/app/components` | Pantallas: dashboard, solicitudes, saldos, perfil, horarios, eventos, empleados, organigrama, reportes y `admin/` (panel maestro, incluida la sección *Reconocimiento facial* con pruebas de marcación y de registro) |
 | `src/app/components/shared` | Modal, confirmación, notificaciones, avatar, logo y `camara-facial` (captura del rostro) |
 | `public/models` | Modelos de face-api.js (detector, puntos del rostro y reconocimiento) |
 | `src/app/services` | Llamadas a la API (`auth`, `solicitudes`, `saldos`, `admin`, …) |
