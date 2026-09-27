@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AdminService } from '../../../services/admin';
 import { NotificationService } from '../../../services/notification.service';
 import { ReglaAprobacion, TipoUsuario } from '../../../interfaces/admin';
@@ -8,14 +9,14 @@ import { mensajeError } from '../../../utils/format';
 @Component({
   selector: 'app-admin-roles',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `
     <div class="grid gap-6 xl:grid-cols-5">
       <section class="card xl:col-span-3">
         <div class="card-header"><h3 class="card-title">Roles</h3></div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Rol</th><th>Nivel</th><th class="text-center">Registra solicitudes</th><th class="text-center">Marca asistencia</th><th class="text-center">Activo</th></tr></thead>
+            <thead><tr><th>Rol</th><th>Nivel</th><th class="text-center">Registra solicitudes</th><th class="text-center">Activo</th></tr></thead>
             <tbody>
               @for (t of roles; track t.id) {
                 <tr>
@@ -24,11 +25,10 @@ import { mensajeError } from '../../../utils/format';
                     <p class="font-mono text-xs text-stone-500">{{ t.codigo }}</p>
                   </td>
                   @if (t.esSistema) {
-                    <td colspan="4" class="text-xs text-stone-500">Cuenta técnica del panel maestro (no editable)</td>
+                    <td colspan="3" class="text-xs text-stone-500">Cuenta técnica del panel maestro (no editable)</td>
                   } @else {
                     <td><input type="number" class="input w-20 py-1!" [(ngModel)]="t.nivelJerarquia" (change)="guardarRol(t)" /></td>
                     <td class="text-center"><input type="checkbox" class="checkbox" [(ngModel)]="t.puedeSolicitar" (change)="guardarRol(t)" /></td>
-                    <td class="text-center"><input type="checkbox" class="checkbox" [(ngModel)]="t.marcaAsistencia" (change)="guardarRol(t)" /></td>
                     <td class="text-center"><input type="checkbox" class="checkbox" [(ngModel)]="t.activo" (change)="guardarRol(t)" /></td>
                   }
                 </tr>
@@ -36,6 +36,7 @@ import { mensajeError } from '../../../utils/format';
             </tbody>
           </table>
         </div>
+        <p class="field-help px-5 pb-4 pt-2">Quién marca asistencia y quién trabaja con horario se configura en <a routerLink="/admin/asistencia" class="font-medium text-vino-700 hover:underline">Asistencia y horarios</a>.</p>
       </section>
 
       <section class="card xl:col-span-2">

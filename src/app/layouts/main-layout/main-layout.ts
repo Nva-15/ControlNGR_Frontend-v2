@@ -71,7 +71,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
             { ruta: '/admin/saldos', texto: 'Saldos y carga inicial', icono: 'bi-wallet2' },
             { ruta: '/admin/usuarios', texto: 'Usuarios y accesos', icono: 'bi-person-lock' },
             { ruta: '/admin/facial', texto: 'Reconocimiento facial', icono: 'bi-person-bounding-box' },
-            { ruta: '/admin/asistencia', texto: 'Reporte de asistencia', icono: 'bi-clipboard-check' },
+            { ruta: '/admin/asistencia', texto: 'Asistencia y horarios', icono: 'bi-clipboard-check' },
             { ruta: '/admin/red', texto: 'Segmentos de red', icono: 'bi-router' },
             { ruta: '/admin/feriados', texto: 'Feriados', icono: 'bi-calendar-heart' },
             { ruta: '/admin/departamentos', texto: 'Departamentos', icono: 'bi-building' },

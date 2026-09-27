@@ -77,12 +77,25 @@ export interface SaldoEmpleado {
   compensacion: SaldoResumen;
 }
 
-/** Personal con horario y si aparece en el reporte de asistencia. */
-export interface PersonalReporte {
-  id: number;
+/** Rol del personal con su configuracion de asistencia (GET /api/empleados/roles). */
+export interface RolPersonal {
+  codigo: string;
   nombre: string;
-  cargo?: string;
-  rol?: string;
-  foto?: string;
-  enReporte: boolean;
+  nivel: number;
+  /** Marca entrada y salida. */
+  marcaAsistencia: boolean;
+  /** Trabaja con horario: aparece en Horarios y en el reporte de asistencia. Si marca sin horario, es flexible. */
+  conHorario: boolean;
+}
+
+/** Configuracion de asistencia de un rol en el panel admin. */
+export interface RolAsistencia {
+  id: number;
+  codigo: string;
+  nombre: string;
+  activo: boolean;
+  marcaAsistencia: boolean;
+  conHorario: boolean;
+  /** Empleados activos con este rol. */
+  empleados: number;
 }

@@ -28,6 +28,8 @@
     <div class="card-body">
       @if (cargandoAsistencia) {
         <div class="flex justify-center py-8"><span class="spinner"></span></div>
+      } @else if (!marcaAsistencia) {
+        <div class="empty-state" data-no-marca><i class="bi bi-person-slash text-3xl"></i><p>Su rol no registra asistencia.</p></div>
       } @else {
         @if (red && !red.dentroDeRed) {
           <div class="alert-danger mb-5">
@@ -103,7 +105,7 @@
         </div>
         <p class="field-help mt-3">
           La hora se registra con el reloj del servidor.
-          @if (horarioFlexible) { Su cargo tiene horario flexible. } @else { Solo puede marcar en días programados como laborales. }
+          @if (horarioFlexible) { Su cargo tiene horario flexible. } @else { Solo puede marcar en días programados como laborales@if (config) {; tolerancia de {{ config.toleranciaMinutos }} min}. }
           @if (requiereRostro) { Al marcar se verificará su identidad con la cámara. }
           Después de marcar podrá dejar un mensaje a su supervisor.
         </p>
@@ -155,12 +157,12 @@
     </div>
     @if (cargandoHorario) {
       <div class="flex justify-center py-8"><span class="spinner"></span></div>
+    } @else if (!marcaAsistencia) {
+      <div class="empty-state"><i class="bi bi-calendar2 text-3xl"></i><p>Su rol no trabaja con horario.</p></div>
+    } @else if (horarioFlexible) {
+      <div class="empty-state" data-horario-flexible><i class="bi bi-calendar2-check text-3xl"></i><p>Su cargo tiene horario flexible: puede marcar cualquier día.</p></div>
     } @else if (!tieneHorario()) {
-      @if (horarioFlexible) {
-        <div class="empty-state"><i class="bi bi-calendar2-check text-3xl"></i><p>Su cargo tiene horario flexible: puede marcar cualquier día.</p></div>
-      } @else {
-        <div class="empty-state"><i class="bi bi-calendar-x text-3xl"></i><p>Aún no tiene un horario asignado para esta semana.</p></div>
-      }
+      <div class="empty-state"><i class="bi bi-calendar-x text-3xl"></i><p>Aún no tiene un horario asignado para esta semana.</p></div>
     } @else {
       <div class="table-wrap">
         <table class="table">

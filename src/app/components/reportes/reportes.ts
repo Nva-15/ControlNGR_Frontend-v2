@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AsistenciaService } from '../../services/asistencia';
 import { AuthService } from '../../services/auth';
+import { EmpleadosService } from '../../services/empleados';
 import { ExportService } from '../../services/export';
 import { NotificationService } from '../../services/notification.service';
 import { ReporteAsistencia } from '../../interfaces/asistencia';
-import { PERSONAL, rolBadge, rolLabel } from '../../utils/roles';
+import { rolBadge, rolLabel } from '../../utils/roles';
 
 @Component({
   selector: 'app-reportes',
@@ -17,6 +18,7 @@ import { PERSONAL, rolBadge, rolLabel } from '../../utils/roles';
 export class ReportesComponent implements OnInit, OnDestroy {
   private asistenciaService = inject(AsistenciaService);
   private authService = inject(AuthService);
+  private empleadosService = inject(EmpleadosService);
   private exportService = inject(ExportService);
   private notification = inject(NotificationService);
 
@@ -32,10 +34,8 @@ export class ReportesComponent implements OnInit, OnDestroy {
   filtroRol = '';
   filtroEstado = '';
 
-  roles = [
-    { value: '', label: 'Todos los roles' },
-    ...PERSONAL.map(r => ({ value: r as string, label: rolLabel(r) }))
-  ];
+  /** Solo los roles que trabajan con horario (los únicos que aparecen en el reporte). */
+  roles: { value: string; label: string }[] = [{ value: '', label: 'Todos los roles' }];
 
   estados = [
     { value: '', label: 'Todos los estados' },
@@ -63,6 +63,10 @@ export class ReportesComponent implements OnInit, OnDestroy {
     this.fechaHoy = this.formatDate(now);
     this.fechaInicio = this.fechaHoy;
     this.fechaFin = this.fechaHoy;
+    this.empleadosService.rolesConHorario().subscribe({
+      next: r => this.roles = [{ value: '', label: 'Todos los roles' }, ...r.map(x => ({ value: x.codigo, label: x.nombre }))],
+      error: () => { /* se mantiene "Todos los roles" */ }
+    });
     this.cargarReporte();
     this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 60000);
   }
@@ -225,6 +229,10 @@ export class ReportesComponent implements OnInit, OnDestroy {
     this.filtroEstado = '';
     this.fechaInicio = this.fechaHoy;
     this.fechaFin = this.fechaHoy;
+    this.empleadosService.rolesConHorario().subscribe({
+      next: r => this.roles = [{ value: '', label: 'Todos los roles' }, ...r.map(x => ({ value: x.codigo, label: x.nombre }))],
+      error: () => { /* se mantiene "Todos los roles" */ }
+    });
     this.cargarReporte();
   }
 
