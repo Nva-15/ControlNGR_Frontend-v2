@@ -5,3 +5,5 @@ docker/* text eol=lf
 *.jpg binary
 *.ico binary
 *.woff2 binary
+# Pesos de los modelos de reconocimiento facial: nunca convertir finales de linea
+public/models/*-shard* binary

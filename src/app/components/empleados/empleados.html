@@ -40,7 +40,7 @@
   } @else {
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Colaborador</th><th>DNI</th><th>Departamento</th><th>Rol</th><th>Ingreso</th><th>Estado</th><th class="text-right">Acciones</th></tr></thead>
+        <thead><tr><th>Colaborador</th><th>DNI</th><th>Departamento</th><th>Rol</th><th>Ingreso</th><th>Estado</th><th>Rostro</th><th class="text-right">Acciones</th></tr></thead>
         <tbody>
           @for (e of filtrados; track e.id) {
             <tr>
@@ -59,11 +59,23 @@
               <td class="text-stone-600">{{ fechaCorta(e.ingreso) }}</td>
               <td><span [class]="e.activo ? 'badge-green' : 'badge-gray'">{{ e.activo ? 'Activo' : 'Inactivo' }}</span></td>
               <td>
+                @if (tieneRostro(e)) {
+                  <span class="badge-green" title="Rostro registrado"><i class="bi bi-person-check"></i> Registrado</span>
+                } @else {
+                  <span class="badge-gray" title="Aún no registra su rostro">Pendiente</span>
+                }
+              </td>
+              <td>
                 <div class="flex justify-end gap-1">
                   @if (puedeEditar(e)) {
                     <button class="btn-icon" title="Editar" (click)="editar(e)"><i class="bi bi-pencil"></i></button>
                   }
                   @if (puedeAdministrar(e)) {
+                    @if (tieneRostro(e)) {
+                      <button class="btn-icon" title="Restablecer rostro" (click)="restablecerRostro(e)"><i class="bi bi-person-x"></i></button>
+                    } @else {
+                      <button class="btn-icon" title="Registrar rostro en persona" (click)="abrirRegistroRostro(e)"><i class="bi bi-person-bounding-box"></i></button>
+                    }
                     @if (puedeCrear) {
                       <button class="btn-icon" title="Restablecer contraseña" (click)="abrirReset(e)"><i class="bi bi-key"></i></button>
                     }
@@ -196,5 +208,32 @@
   <div footer class="flex gap-2">
     <button class="btn-secondary" (click)="resetDe = null">Cancelar</button>
     <button class="btn-primary" [disabled]="resetClave.length < 8" (click)="confirmarReset()">Restablecer</button>
+  </div>
+</app-modal>
+
+<!-- Registro de rostro en persona -->
+<app-modal [abierto]="!!rostroPara" titulo="Registrar rostro" [subtitulo]="rostroPara?.nombre || ''" icono="bi-person-bounding-box"
+           [cerrarAlClicFuera]="false" (cerrar)="cerrarRegistroRostro()">
+  @if (rostroPara) {
+    @if (!rostroCapturando) {
+      <p class="text-sm">El colaborador debe estar frente a la cámara de este equipo. Se tomarán varias capturas de su rostro.</p>
+      <label class="mt-4 flex items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm">
+        <input type="checkbox" class="checkbox mt-0.5" [(ngModel)]="rostroConsentimiento" />
+        <span>{{ rostroPara.nombre }} está presente y <b>autoriza</b> el registro y uso de los rasgos de su rostro únicamente para verificar su identidad al marcar asistencia (Ley N.° 29733).</span>
+      </label>
+    } @else {
+      <app-camara-facial [muestras]="5" (capturado)="rostroCapturado($event)" />
+      @if (rostroGuardando) {
+        <p class="mt-3 flex items-center gap-2 text-sm text-stone-600"><span class="spinner size-4!"></span> Guardando…</p>
+      }
+    }
+  }
+  <div footer>
+    <button type="button" class="btn-secondary" [disabled]="rostroGuardando" (click)="cerrarRegistroRostro()">Cancelar</button>
+    @if (!rostroCapturando) {
+      <button type="button" class="btn-primary" [disabled]="!rostroConsentimiento" (click)="rostroCapturando = true">
+        <i class="bi bi-camera"></i> Iniciar captura
+      </button>
+    }
   </div>
 </app-modal>

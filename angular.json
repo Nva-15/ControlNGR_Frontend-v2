@@ -29,6 +29,7 @@
             ],
             "scripts": [],
             "allowedCommonJsDependencies": [
+                  "node-fetch",
               "file-saver",
               "html2canvas",
               "canvg",
