@@ -79,6 +79,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   readonly dias = dias;
 
   ngOnInit() {
+    this.cargarConfiguracion();
     this.cargarAsistencia();
     this.verificarRed();
     this.cargarEstadoFacial();
@@ -166,9 +167,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
       && !!this.asistenciaHoy?.horaEntrada && !this.asistenciaHoy?.horaSalida;
   }
 
-  /** Director, gerente y jefe no tienen horario: marcan cualquier dia. */
+  /** Configuracion de su rol (panel admin → Asistencia y horarios). */
+  config: { marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number } | null = null;
+
+  /** Su rol marca asistencia (mientras carga se asume que si). */
+  get marcaAsistencia(): boolean {
+    return this.config?.marcaAsistencia !== false;
+  }
+
+  /** Su rol marca sin horario: marca cualquier dia y no tiene tardanzas. */
   get horarioFlexible(): boolean {
-    return this.auth.isGerencia();
+    return !!this.config && this.config.marcaAsistencia && !this.config.conHorario;
+  }
+
+  cargarConfiguracion() {
+    this.asistenciaService.miConfiguracion().subscribe({ next: c => this.config = c, error: () => this.config = null });
   }
 
   // ==================== RECONOCIMIENTO FACIAL ====================

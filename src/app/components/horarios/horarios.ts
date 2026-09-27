@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../shared/modal/modal.component';
-import { PERSONAL, esGerencia, rolBadge, rolLabel } from '../../utils/roles';
+import { rolBadge, rolLabel } from '../../utils/roles';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HorariosService } from '../../services/horarios';
+import { EmpleadosService } from '../../services/empleados';
 import { AuthService } from '../../services/auth';
 import { NotificationService } from '../../services/notification.service';
 import { ExportService } from '../../services/export';
@@ -26,6 +27,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private horariosService = inject(HorariosService);
   private authService = inject(AuthService);
+  private empleadosService = inject(EmpleadosService);
   private notification = inject(NotificationService);
   private exportService = inject(ExportService);
 
@@ -75,11 +77,8 @@ export class HorariosComponent implements OnInit, OnDestroy {
     'domingo': 'Dom'
   };
 
-  roles = [
-    { value: '', label: 'Todos los roles' },
-    // Director, gerente y jefe no tienen horario
-    ...PERSONAL.filter(r => !esGerencia(r)).map(r => ({ value: r as string, label: rolLabel(r) }))
-  ];
+  /** Solo los roles que trabajan con horario (configurable en el panel admin → Asistencia y horarios). */
+  roles: { value: string; label: string }[] = [{ value: '', label: 'Todos los roles' }];
 
   tiposDia = [
     { value: 'normal', label: 'Laboral', clase: 'bg-white text-stone-700', icon: 'bi-briefcase' },
@@ -103,6 +102,10 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.empleadosService.rolesConHorario().subscribe({
+      next: r => this.roles = [{ value: '', label: 'Todos los roles' }, ...r.map(x => ({ value: x.codigo, label: x.nombre }))],
+      error: () => { /* se mantiene "Todos los roles" */ }
+    });
     this.cargarSemanas();
     this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 30000);
   }

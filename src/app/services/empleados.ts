@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { Empleado, EmpleadoResponse } from '../interfaces/empleado';
 import { ApiConfigService } from './api-config.service';
+import { RolPersonal } from '../interfaces/admin';
 
 @Injectable({
   providedIn: 'root'
@@ -19,8 +20,14 @@ export class EmpleadosService {
   }
 
   /** Roles asignables a empleados (codigo, nombre, nivel). */
-  roles(): Observable<{ codigo: string; nombre: string; nivel: number }[]> {
-    return this.http.get<{ codigo: string; nombre: string; nivel: number }[]>(`${this.apiUrl}/roles`);
+  /** Roles del personal con su configuracion de asistencia. */
+  roles(): Observable<RolPersonal[]> {
+    return this.http.get<RolPersonal[]>(`${this.apiUrl}/roles`);
+  }
+
+  /** Roles que trabajan con horario: los unicos que aparecen en Horarios y en el reporte de asistencia. */
+  rolesConHorario(): Observable<RolPersonal[]> {
+    return this.roles().pipe(map(r => r.filter(x => x.conHorario)));
   }
 
   getEmpleados(): Observable<EmpleadoResponse[]> {

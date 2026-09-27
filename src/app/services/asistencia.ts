@@ -23,6 +23,11 @@ export class AsistenciaService {
     return this.http.post<AsistenciaResponse>(`${this.apiUrl}/registrar`, request);
   }
 
+  /** Si su rol marca asistencia, si trabaja con horario (o es flexible) y la tolerancia vigente. */
+  miConfiguracion(): Observable<{ marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number }> {
+    return this.http.get<{ marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number }>(`${this.apiUrl}/mi-configuracion`);
+  }
+
   /** Breve justificacion para el supervisor sobre una marcacion ya registrada. */
   enviarMensaje(id: number, tipo: 'entrada' | 'salida', mensaje: string): Observable<AsistenciaResponse> {
     return this.http.put<AsistenciaResponse>(`${this.apiUrl}/${id}/mensaje`, { tipo, mensaje });

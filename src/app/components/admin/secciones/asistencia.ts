@@ -2,26 +2,85 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../services/admin';
 import { NotificationService } from '../../../services/notification.service';
-import { PersonalReporte } from '../../../interfaces/admin';
-import { AvatarComponent } from '../../shared/avatar/avatar.component';
+import { RolAsistencia } from '../../../interfaces/admin';
 import { mensajeError } from '../../../utils/format';
-import { rolBadge, rolLabel } from '../../../utils/roles';
 
 const TOLERANCIA = 'TOLERANCIA_TARDANZA_MINUTOS';
 
-/** Tolerancia de tardanza y personal que aparece en el reporte de asistencia. */
+/**
+ * Asistencia y horarios por rol: quién marca, quién trabaja con horario (aparece en Horarios y en el
+ * reporte de asistencia) y la tolerancia de tardanza.
+ */
 @Component({
   selector: 'app-admin-asistencia',
   standalone: true,
-  imports: [FormsModule, AvatarComponent],
+  imports: [FormsModule],
   template: `
-    <div class="card p-5">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Configuración por rol</h3>
+      </div>
+      <div class="grid gap-3 border-b border-stone-100 px-5 py-4 text-sm text-stone-600 md:grid-cols-3">
+        <p><span class="badge-green">Con horario</span> Marca asistencia, recibe horario y aparece en el <b>reporte de asistencia</b> (con tardanzas).</p>
+        <p><span class="badge-oro">Horario flexible</span> Marca asistencia cualquier día, sin horario ni tardanzas. No aparece en Horarios ni en el reporte.</p>
+        <p><span class="badge-gray">No marca</span> No registra asistencia. No aparece en Horarios ni en el reporte.</p>
+      </div>
+
+      @if (cargando) {
+        <div class="flex justify-center py-12"><span class="spinner"></span></div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Rol</th>
+                <th class="text-center">Empleados activos</th>
+                <th class="text-center">Marca asistencia</th>
+                <th class="text-center">Horario y reporte de asistencia</th>
+                <th>Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of roles; track r.id) {
+                <tr [attr.data-rol]="r.codigo">
+                  <td>
+                    <p class="font-medium">{{ r.nombre }}</p>
+                    <p class="font-mono text-xs text-stone-500">{{ r.codigo }}@if (!r.activo) { · inactivo }</p>
+                  </td>
+                  <td class="text-center tabular-nums">{{ r.empleados }}</td>
+                  <td class="text-center">
+                    <input type="checkbox" class="checkbox" data-marca [checked]="r.marcaAsistencia" [disabled]="guardando === r.id"
+                           (change)="cambiar(r, { marcaAsistencia: !r.marcaAsistencia })" />
+                  </td>
+                  <td class="text-center">
+                    <input type="checkbox" class="checkbox" data-horario [checked]="r.conHorario" [disabled]="guardando === r.id || !r.marcaAsistencia"
+                           [title]="r.marcaAsistencia ? '' : 'Primero marque Marca asistencia'"
+                           (change)="cambiar(r, { conHorario: !r.conHorario })" />
+                  </td>
+                  <td>
+                    @if (!r.marcaAsistencia) { <span class="badge-gray">No marca</span> }
+                    @else if (r.conHorario) { <span class="badge-green">Con horario</span> }
+                    @else { <span class="badge-oro">Horario flexible</span> }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="field-help px-5 pb-4 pt-2">
+          Los cambios se aplican de inmediato en Horarios, en el reporte de asistencia (y su filtro de roles) y al marcar.
+          Los horarios ya creados de un rol que pasa a flexible se conservan, pero dejan de usarse.
+        </p>
+      }
+    </div>
+
+    <div class="card mt-6 p-5">
       <div class="grid items-center gap-4 md:grid-cols-[1fr_10rem_auto]">
         <div>
           <p class="font-medium text-stone-900">Tolerancia de tardanza</p>
           <p class="text-xs text-stone-500">
             Minutos después de la hora de entrada programada en los que la marcación aún cuenta como puntual.
-            Pasado ese tiempo se registra como tardanza (también en el reporte).
+            Solo se aplica a los roles con horario, al marcar y en el reporte.
           </p>
         </div>
         <div class="flex items-center gap-2">
@@ -34,73 +93,48 @@ const TOLERANCIA = 'TOLERANCIA_TARDANZA_MINUTOS';
       </div>
       @if (!toleranciaValida) { <p class="field-error mt-2">Ingrese un número entero entre 0 y 120.</p> }
     </div>
-
-    <div class="card mt-6">
-      <div class="flex flex-wrap items-center gap-3 border-b border-stone-100 px-5 py-4">
-        <div class="min-w-60 flex-1">
-          <p class="font-medium text-stone-900">Personal incluido en el reporte de asistencia</p>
-          <p class="text-xs text-stone-500">
-            Marque a quiénes se les aplica el reporte. Director, gerente y jefe tienen horario flexible y no figuran.
-            {{ seleccionados.size }} de {{ personal.length }} seleccionados.
-          </p>
-        </div>
-        <input class="input w-60" placeholder="Buscar por nombre o cargo" [(ngModel)]="busqueda" />
-        <button class="btn-secondary btn-sm" (click)="marcarTodos(true)">Marcar todos</button>
-        <button class="btn-secondary btn-sm" (click)="marcarTodos(false)">Quitar todos</button>
-      </div>
-
-      @if (cargando) {
-        <div class="flex justify-center py-12"><span class="spinner"></span></div>
-      } @else if (!personal.length) {
-        <div class="empty-state"><i class="bi bi-people text-4xl"></i><p>No hay personal con horario.</p></div>
-      } @else {
-        <ul class="divide-y divide-stone-100">
-          @for (p of filtrados; track p.id) {
-            <li>
-              <label class="flex cursor-pointer items-center gap-3 px-5 py-3 hover:bg-stone-50" [attr.data-personal]="p.id">
-                <input type="checkbox" class="checkbox" [checked]="seleccionados.has(p.id)" (change)="alternar(p.id)" />
-                <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="32" />
-                <div class="min-w-0 flex-1">
-                  <p class="truncate font-medium">{{ p.nombre }}</p>
-                  <p class="truncate text-xs text-stone-500">{{ p.cargo }}</p>
-                </div>
-                <span [class]="rolBadge(p.rol)">{{ rolLabel(p.rol) }}</span>
-              </label>
-            </li>
-          }
-        </ul>
-      }
-
-      <div class="flex justify-end gap-2 border-t border-stone-100 px-5 py-4">
-        <button class="btn-secondary" [disabled]="!hayCambios || guardando" (click)="deshacer()">Deshacer</button>
-        <button class="btn-primary" data-guardar-personal [disabled]="!hayCambios || guardando" (click)="guardarPersonal()">
-          @if (guardando) { <span class="spinner size-4! border-white/40! border-t-white!"></span> }
-          Guardar selección
-        </button>
-      </div>
-    </div>
   `
 })
 export class AdminAsistenciaComponent implements OnInit {
   private admin = inject(AdminService);
   private notification = inject(NotificationService);
 
-  readonly rolBadge = rolBadge;
-  readonly rolLabel = rolLabel;
+  roles: RolAsistencia[] = [];
+  cargando = true;
+  guardando: number | null = null;
 
   tolerancia: number | string = '';
   toleranciaActual = '';
   guardandoTolerancia = false;
 
-  personal: PersonalReporte[] = [];
-  seleccionados = new Set<number>();
-  busqueda = '';
-  cargando = true;
-  guardando = false;
-
   ngOnInit() {
+    this.cargarRoles();
     this.cargarTolerancia();
-    this.cargarPersonal();
+  }
+
+  cargarRoles() {
+    this.admin.rolesAsistencia().subscribe({
+      next: r => { this.roles = r; this.cargando = false; },
+      error: e => { this.cargando = false; this.notification.error(mensajeError(e)); }
+    });
+  }
+
+  cambiar(r: RolAsistencia, cambios: { marcaAsistencia?: boolean; conHorario?: boolean }) {
+    this.guardando = r.id;
+    this.admin.configurarRolAsistencia(r.id, cambios).subscribe({
+      next: roles => {
+        this.roles = roles;
+        this.guardando = null;
+        const n = roles.find(x => x.id === r.id)!;
+        const estado = !n.marcaAsistencia ? 'no marca asistencia' : n.conHorario ? 'marca con horario y aparece en el reporte' : 'marca con horario flexible';
+        this.notification.success(`${n.nombre}: ${estado}.`);
+      },
+      error: e => {
+        this.guardando = null;
+        this.notification.error(mensajeError(e));
+        this.cargarRoles();
+      }
+    });
   }
 
   get toleranciaValida(): boolean {
@@ -130,59 +164,6 @@ export class AdminAsistenciaComponent implements OnInit {
         this.notification.success(`Tolerancia de tardanza: ${p.valor} minuto(s).`);
       },
       error: e => { this.guardandoTolerancia = false; this.notification.error(mensajeError(e)); }
-    });
-  }
-
-  cargarPersonal() {
-    this.cargando = true;
-    this.admin.personalReporte().subscribe({
-      next: p => this.aplicar(p),
-      error: e => { this.cargando = false; this.notification.error(mensajeError(e)); }
-    });
-  }
-
-  private aplicar(p: PersonalReporte[]) {
-    this.personal = p;
-    this.seleccionados = new Set(p.filter(x => x.enReporte).map(x => x.id));
-    this.cargando = false;
-  }
-
-  get filtrados(): PersonalReporte[] {
-    const q = this.busqueda.trim().toLowerCase();
-    return q ? this.personal.filter(p => p.nombre.toLowerCase().includes(q) || (p.cargo || '').toLowerCase().includes(q))
-             : this.personal;
-  }
-
-  get hayCambios(): boolean {
-    return this.personal.some(p => p.enReporte !== this.seleccionados.has(p.id));
-  }
-
-  alternar(id: number) {
-    if (this.seleccionados.has(id)) this.seleccionados.delete(id);
-    else this.seleccionados.add(id);
-    this.seleccionados = new Set(this.seleccionados);
-  }
-
-  /** Marca o quita a todos los que se ven con el filtro actual. */
-  marcarTodos(incluir: boolean) {
-    const s = new Set(this.seleccionados);
-    this.filtrados.forEach(p => incluir ? s.add(p.id) : s.delete(p.id));
-    this.seleccionados = s;
-  }
-
-  deshacer() {
-    this.seleccionados = new Set(this.personal.filter(x => x.enReporte).map(x => x.id));
-  }
-
-  guardarPersonal() {
-    this.guardando = true;
-    this.admin.guardarPersonalReporte([...this.seleccionados]).subscribe({
-      next: p => {
-        this.guardando = false;
-        this.aplicar(p);
-        this.notification.success('Personal del reporte de asistencia actualizado.');
-      },
-      error: e => { this.guardando = false; this.notification.error(mensajeError(e)); }
     });
   }
 }
