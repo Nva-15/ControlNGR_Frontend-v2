@@ -28,7 +28,7 @@ import { mensajeError } from '../../../utils/format';
                 <td>{{ nombreEmpleado(d.responsableId) }}</td>
                 <td class="tabular-nums">{{ cantidad(d.id) }}</td>
                 <td><span [class]="d.activo ? 'badge-green' : 'badge-gray'">{{ d.activo ? 'Activo' : 'Inactivo' }}</span></td>
-                <td class="text-right"><button class="btn-icon" (click)="abrir(d)"><i class="bi bi-pencil"></i></button></td>
+                <td class="text-right"><button class="btn-icon hover:bg-amber-50! hover:text-amber-600!" title="Editar" (click)="abrir(d)"><i class="bi bi-pencil-square"></i></button></td>
               </tr>
             }
           </tbody>

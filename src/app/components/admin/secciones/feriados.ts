@@ -40,8 +40,8 @@ import { mensajeError } from '../../../utils/format';
                 <td><span [class]="f.activo ? 'badge-green' : 'badge-gray'">{{ f.activo ? 'Activo' : 'Inactivo' }}</span></td>
                 <td>
                   <div class="flex justify-end gap-1">
-                    <button class="btn-icon" title="Editar" (click)="abrir(f)"><i class="bi bi-pencil"></i></button>
-                    <button class="btn-icon hover:bg-red-50! hover:text-red-600!" title="Eliminar" (click)="eliminar(f)"><i class="bi bi-trash"></i></button>
+                    <button class="btn-icon hover:bg-amber-50! hover:text-amber-600!" title="Editar" (click)="abrir(f)"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn-icon hover:bg-red-100! hover:text-red-700!" title="Eliminar" (click)="eliminar(f)"><i class="bi bi-trash3"></i></button>
                   </div>
                 </td>
               </tr>

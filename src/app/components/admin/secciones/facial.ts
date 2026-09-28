@@ -167,7 +167,12 @@ type Prueba = 'marcacion' | 'registro';
                     <div class="flex justify-end gap-1">
                       @if (e.registrado) {
                         <button class="btn-icon" title="Probar marcación con este colaborador" (click)="probarCon(e)"><i class="bi bi-person-check"></i></button>
-                        <button class="btn-icon hover:bg-red-50! hover:text-red-600!" title="Restablecer rostro" (click)="restablecer(e)"><i class="bi bi-person-x"></i></button>
+                        <button class="btn-icon hover:bg-sky-50! hover:text-sky-600!" title="Restablecer rostro registrado" (click)="restablecer(e)">
+                          <span class="relative inline-flex">
+                            <i class="bi bi-person-bounding-box"></i>
+                            <i class="bi bi-arrow-counterclockwise absolute -bottom-1.5 -right-2 rounded-full bg-white text-[10px] leading-none"></i>
+                          </span>
+                        </button>
                       }
                     </div>
                   </td>
