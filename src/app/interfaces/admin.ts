@@ -99,3 +99,21 @@ export interface RolAsistencia {
   /** Empleados activos con este rol. */
   empleados: number;
 }
+
+/** Resultado (o vista previa) de copiar los feriados de un año a otro. */
+export interface CopiaFeriados {
+  origen: number;
+  destino: number;
+  creados: number;
+  items: {
+    id: number;
+    descripcion: string;
+    tipo: string;
+    activo: boolean;
+    fechaOrigen: string;
+    fechaNueva: string | null;
+    /** Jueves o Viernes Santo: la fecha se recalcula con la Pascua. */
+    movil: boolean;
+    estado: 'nuevo' | 'existe' | 'fecha_ocupada' | 'fecha_invalida' | 'copiado' | 'no_seleccionado';
+  }[];
+}
