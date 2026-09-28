@@ -17,7 +17,7 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   saldos: { titulo: 'Saldos y carga inicial', descripcion: 'Días de vacaciones y de compensación que se deben a cada empleado.' },
   usuarios: { titulo: 'Usuarios y accesos', descripcion: 'Roles, activación y restablecimiento de contraseñas.' },
   facial: { titulo: 'Reconocimiento facial', descripcion: 'Rostros registrados y pruebas de marcación y de registro, sin afectar la asistencia.' },
-  asistencia: { titulo: 'Asistencia y horarios', descripcion: 'Qué roles marcan asistencia, cuáles trabajan con horario y aparecen en el reporte, y la tolerancia de tardanza.' },
+  asistencia: { titulo: 'Asistencia y horarios', descripcion: 'Qué roles marcan asistencia, cuáles trabajan con horario y aparecen en el reporte, la tolerancia de tardanza y la salida automática.' },
   red: { titulo: 'Segmentos de red', descripcion: 'Redes desde las que se permite marcar asistencia.' },
   feriados: { titulo: 'Feriados', descripcion: 'Feriados nacionales (sector privado). Trabajar un feriado abona días de compensación.' },
   departamentos: { titulo: 'Departamentos', descripcion: 'Áreas de la organización y sus responsables.' },

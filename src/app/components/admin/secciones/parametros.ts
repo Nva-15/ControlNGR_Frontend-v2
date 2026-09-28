@@ -12,6 +12,7 @@ const NOMBRES: Record<string, string> = {
   VALIDAR_IP_MARCACION: 'Validar red al marcar asistencia',
   TOLERANCIA_TARDANZA_MINUTOS: 'Tolerancia de tardanza (minutos)',
   EVIDENCIA_MAX_MB: 'Tamaño máximo de evidencia (MB)',
+  SALIDA_AUTOMATICA_HORAS: 'Salida automática (horas después de la entrada)',
 };
 
 @Component({

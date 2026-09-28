@@ -5,7 +5,15 @@ import { NotificationService } from '../../../services/notification.service';
 import { RolAsistencia } from '../../../interfaces/admin';
 import { mensajeError } from '../../../utils/format';
 
-const TOLERANCIA = 'TOLERANCIA_TARDANZA_MINUTOS';
+interface CampoParametro {
+  clave: string;
+  titulo: string;
+  ayuda: string;
+  unidad: string;
+  min: number;
+  max: number;
+  porDefecto: string;
+}
 
 /**
  * Asistencia y horarios por rol: quién marca, quién trabaja con horario (aparece en Horarios y en el
@@ -74,24 +82,25 @@ const TOLERANCIA = 'TOLERANCIA_TARDANZA_MINUTOS';
       }
     </div>
 
-    <div class="card mt-6 p-5">
-      <div class="grid items-center gap-4 md:grid-cols-[1fr_10rem_auto]">
-        <div>
-          <p class="font-medium text-stone-900">Tolerancia de tardanza</p>
-          <p class="text-xs text-stone-500">
-            Minutos después de la hora de entrada programada en los que la marcación aún cuenta como puntual.
-            Solo se aplica a los roles con horario, al marcar y en el reporte.
-          </p>
+    <div class="card mt-6 divide-y divide-stone-100">
+      @for (c of campos; track c.clave) {
+        <div class="p-5" [attr.data-parametro]="c.clave">
+          <div class="grid items-center gap-4 md:grid-cols-[1fr_10rem_auto]">
+            <div>
+              <p class="font-medium text-stone-900">{{ c.titulo }}</p>
+              <p class="text-xs text-stone-500">{{ c.ayuda }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="number" [min]="c.min" [max]="c.max" step="1" class="input" [(ngModel)]="valores[c.clave]" />
+              <span class="text-sm text-stone-500">{{ c.unidad }}</span>
+            </div>
+            <button class="btn-primary btn-sm" data-guardar
+                    [disabled]="guardandoParametro === c.clave || !valido(c) || '' + valores[c.clave] === actuales[c.clave]"
+                    (click)="guardarParametro(c)">Guardar</button>
+          </div>
+          @if (!valido(c)) { <p class="field-error mt-2">Ingrese un número entero entre {{ c.min }} y {{ c.max }}.</p> }
         </div>
-        <div class="flex items-center gap-2">
-          <input type="number" min="0" max="120" step="1" class="input" data-tolerancia [(ngModel)]="tolerancia" />
-          <span class="text-sm text-stone-500">min</span>
-        </div>
-        <button class="btn-primary btn-sm" data-guardar-tolerancia
-                [disabled]="guardandoTolerancia || !toleranciaValida || '' + tolerancia === toleranciaActual"
-                (click)="guardarTolerancia()">Guardar</button>
-      </div>
-      @if (!toleranciaValida) { <p class="field-error mt-2">Ingrese un número entero entre 0 y 120.</p> }
+      }
     </div>
   `
 })
@@ -103,13 +112,19 @@ export class AdminAsistenciaComponent implements OnInit {
   cargando = true;
   guardando: number | null = null;
 
-  tolerancia: number | string = '';
-  toleranciaActual = '';
-  guardandoTolerancia = false;
+  readonly campos: CampoParametro[] = [
+    { clave: 'TOLERANCIA_TARDANZA_MINUTOS', titulo: 'Tolerancia de tardanza', unidad: 'min', min: 0, max: 120, porDefecto: '10',
+      ayuda: 'Minutos después de la hora de entrada programada en los que la marcación aún cuenta como puntual. Solo se aplica a los roles con horario, al marcar y en el reporte.' },
+    { clave: 'SALIDA_AUTOMATICA_HORAS', titulo: 'Salida automática', unidad: 'horas', min: 1, max: 23, porDefecto: '12',
+      ayuda: 'Si el colaborador no marca su salida, el sistema la registra sola estas horas después de la entrada (por ejemplo, entrada 17:00 → salida 05:00 del día siguiente). Queda marcada como "automática" en el reporte.' },
+  ];
+  valores: Record<string, number | string> = {};
+  actuales: Record<string, string> = {};
+  guardandoParametro: string | null = null;
 
   ngOnInit() {
     this.cargarRoles();
-    this.cargarTolerancia();
+    this.cargarParametros();
   }
 
   cargarRoles() {
@@ -137,33 +152,35 @@ export class AdminAsistenciaComponent implements OnInit {
     });
   }
 
-  get toleranciaValida(): boolean {
-    const n = Number(this.tolerancia);
-    return this.tolerancia !== '' && this.tolerancia !== null && Number.isInteger(n) && n >= 0 && n <= 120;
+  valido(c: CampoParametro): boolean {
+    const v = this.valores[c.clave];
+    const n = Number(v);
+    return v !== '' && v !== null && v !== undefined && Number.isInteger(n) && n >= c.min && n <= c.max;
   }
 
-  cargarTolerancia() {
+  cargarParametros() {
     this.admin.parametros().subscribe({
       next: ps => {
-        const p = ps.find(x => x.clave === TOLERANCIA);
-        this.toleranciaActual = p?.valor ?? '10';
-        this.tolerancia = this.toleranciaActual;
+        for (const c of this.campos) {
+          this.actuales[c.clave] = ps.find(x => x.clave === c.clave)?.valor ?? c.porDefecto;
+          this.valores[c.clave] = this.actuales[c.clave];
+        }
       },
       error: e => this.notification.error(mensajeError(e))
     });
   }
 
-  guardarTolerancia() {
-    if (!this.toleranciaValida) return;
-    this.guardandoTolerancia = true;
-    this.admin.actualizarParametro(TOLERANCIA, String(Number(this.tolerancia))).subscribe({
+  guardarParametro(c: CampoParametro) {
+    if (!this.valido(c)) return;
+    this.guardandoParametro = c.clave;
+    this.admin.actualizarParametro(c.clave, String(Number(this.valores[c.clave]))).subscribe({
       next: p => {
-        this.guardandoTolerancia = false;
-        this.toleranciaActual = p.valor;
-        this.tolerancia = p.valor;
-        this.notification.success(`Tolerancia de tardanza: ${p.valor} minuto(s).`);
+        this.guardandoParametro = null;
+        this.actuales[c.clave] = p.valor;
+        this.valores[c.clave] = p.valor;
+        this.notification.success(`${c.titulo}: ${p.valor} ${c.unidad === 'min' ? 'minuto(s)' : 'hora(s)'}.`);
       },
-      error: e => { this.guardandoTolerancia = false; this.notification.error(mensajeError(e)); }
+      error: e => { this.guardandoParametro = null; this.notification.error(mensajeError(e)); }
     });
   }
 }
