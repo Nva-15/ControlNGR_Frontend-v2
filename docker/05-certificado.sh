@@ -19,6 +19,17 @@ SAN="DNS:localhost,IP:127.0.0.1"
 [ -n "$SERVIDOR_IP" ] && SAN="$SAN,IP:$SERVIDOR_IP"
 [ -n "$SERVIDOR_NOMBRE" ] && SAN="$SAN,DNS:$SERVIDOR_NOMBRE"
 
+PUERTO=""
+[ -n "$HTTPS_PORT" ] && [ "$HTTPS_PORT" != "443" ] && PUERTO=":$HTTPS_PORT"
+if [ -n "$SERVIDOR_IP" ]; then
+    echo "certificado: enlace para los usuarios -> https://$SERVIDOR_IP$PUERTO"
+else
+    echo "certificado: AVISO - SERVIDOR_IP no esta configurada: el certificado solo sirve para localhost/127.0.0.1"
+    echo "certificado: y las demas PCs veran 'La conexion no es privada'. En Windows inicie el sistema con"
+    echo "certificado:   powershell -ExecutionPolicy Bypass -File .\\scripts\\iniciar.ps1"
+    echo "certificado: (detecta la IP de este equipo y la guarda en .env) o complete SERVIDOR_IP en .env"
+fi
+
 # Certificado propio de TI: no se toca
 if [ -s "$CRT" ] && [ -s "$KEY" ] && [ ! -f "$MARCA" ]; then
     echo "certificado: usando el certificado existente en $DIR"
