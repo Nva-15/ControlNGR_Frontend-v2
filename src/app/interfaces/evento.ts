@@ -82,6 +82,8 @@ export interface EventoRequest {
   requiereRespuesta: boolean;
   opciones?: string[];
   enlace?: string;
+  /** Se publica al guardar y empieza en ese momento (hora del servidor). */
+  iniciarAhora?: boolean;
 }
 
 export interface RespuestaEventoRequest {
