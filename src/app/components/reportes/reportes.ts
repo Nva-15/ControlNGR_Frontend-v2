@@ -8,6 +8,7 @@ import { ExportService } from '../../services/export';
 import { NotificationService } from '../../services/notification.service';
 import { ReporteAsistencia } from '../../interfaces/asistencia';
 import { rolBadge, rolLabel } from '../../utils/roles';
+import { hoyIso } from '../../utils/format';
 
 @Component({
   selector: 'app-reportes',
@@ -59,8 +60,8 @@ export class ReportesComponent implements OnInit, OnDestroy {
   private intervaloAutoRefresh: any;
 
   ngOnInit(): void {
-    const now = new Date();
-    this.fechaHoy = this.formatDate(now);
+    // Fecha de Lima (no la del reloj de la PC), igual que el resto del sistema
+    this.fechaHoy = hoyIso();
     this.fechaInicio = this.fechaHoy;
     this.fechaFin = this.fechaHoy;
     this.empleadosService.rolesConHorario().subscribe({

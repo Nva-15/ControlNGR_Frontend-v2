@@ -114,7 +114,7 @@ export class EmpleadosComponent implements OnInit {
       (this.filtroEstado === 'todos' || (this.filtroEstado === 'activos') === !!e.activo) &&
       (!this.filtroDepartamento || e.departamentoId === this.filtroDepartamento) &&
       (!this.filtroRol || e.rol === this.filtroRol) &&
-      (!q || e.nombre.toLowerCase().includes(q) || e.dni.includes(q) || (e.cargo || '').toLowerCase().includes(q)));
+      (!q || e.nombre.toLowerCase().includes(q) || (e.dni || '').includes(q) || (e.cargo || '').toLowerCase().includes(q)));
   }
 
   // ==================== PERMISOS ====================
@@ -187,8 +187,8 @@ export class EmpleadosComponent implements OnInit {
     this.editando = e;
     this.form = this.crearForm();
     this.form.patchValue({
-      tipoDoc: e.dni.length === 8 ? 'DNI' : 'CE',
-      dni: e.dni, nombre: e.nombre, cargo: e.cargo, departamentoId: e.departamentoId ?? null,
+      tipoDoc: (e.dni || '').length > 8 ? 'CE' : 'DNI',
+      dni: e.dni || '', nombre: e.nombre, cargo: e.cargo, departamentoId: e.departamentoId ?? null,
       nivel: e.nivel || 'tecnico', rol: e.rol, email: e.email || '', cumpleanos: e.cumpleanos || '',
       ingreso: e.ingreso || '', username: e.username || '', hobby: e.hobby || '', descripcion: e.descripcion || '',
       activo: !!e.activo, usuarioActivo: !!e.usuarioActivo
@@ -387,7 +387,7 @@ export class EmpleadosComponent implements OnInit {
 
   private filas() {
     return this.filtrados.map(e => ({
-      Nombre: e.nombre, DNI: e.dni, Cargo: e.cargo, Departamento: e.departamentoNombre || '',
+      Nombre: e.nombre, DNI: e.dni || '', Cargo: e.cargo, Departamento: e.departamentoNombre || '',
       Rol: rolLabel(e.rol), Correo: e.email || '', Ingreso: fechaCorta(e.ingreso), Cumpleaños: fechaCorta(e.cumpleanos),
       Estado: e.activo ? 'Activo' : 'Inactivo'
     }));

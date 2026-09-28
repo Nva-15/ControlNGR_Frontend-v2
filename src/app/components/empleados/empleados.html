@@ -53,7 +53,7 @@
                   </div>
                 </div>
               </td>
-              <td class="tabular-nums text-stone-600">{{ e.dni }}</td>
+              <td class="tabular-nums text-stone-600" [title]="e.dni ? '' : 'Solo lo ven el colaborador y quienes lo administran'">{{ e.dni || '—' }}</td>
               <td class="text-stone-600">{{ e.departamentoNombre || '—' }}</td>
               <td><span [class]="rolBadge(e.rol)">{{ rolLabel(e.rol) }}</span></td>
               <td class="text-stone-600">{{ fechaCorta(e.ingreso) }}</td>

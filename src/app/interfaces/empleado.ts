@@ -23,7 +23,8 @@ export interface Empleado {
 /** Empleado tal como lo devuelve la API. */
 export interface EmpleadoResponse {
   id?: number;
-  dni: string;
+  /** Solo llega para el propio colaborador, quienes lo administran y el admin. */
+  dni?: string;
   nombre: string;
   cargo: string;
   nivel: string;
