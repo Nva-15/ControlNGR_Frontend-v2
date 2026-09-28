@@ -297,14 +297,24 @@ export class EventosComponent implements OnInit, OnDestroy {
       permiteComentarios: true,
       requiereRespuesta: true,
       opciones: [],
-      enlace: ''
+      enlace: '',
+      iniciarAhora: false
     };
+  }
+
+  /** Estado del evento que se edita (null al crear). */
+  private estadoEditado: string | null = null;
+
+  /** "Publicar ahora" solo al crear o al editar un borrador (uno ya publicado conserva su inicio). */
+  get puedePublicarAhora(): boolean {
+    return !this.eventoEditId || this.estadoEditado === 'BORRADOR';
   }
 
   abrirModalCrear() {
     this.actualizarFechaMinima();
     this.eventoEdit = this.nuevoEvento();
     this.eventoEditId = null;
+    this.estadoEditado = null;
     this.mostrarModalEvento = true;
   }
 
@@ -320,8 +330,10 @@ export class EventosComponent implements OnInit, OnDestroy {
       permiteComentarios: evento.permiteComentarios,
       requiereRespuesta: evento.requiereRespuesta,
       opciones: evento.opciones?.map(o => o.textoOpcion) || [],
-      enlace: evento.enlace || ''
+      enlace: evento.enlace || '',
+      iniciarAhora: false
     };
+    this.estadoEditado = evento.estado;
     this.eventoEditId = evento.id || null;
     this.mostrarModalEvento = true;
   }
@@ -364,6 +376,15 @@ export class EventosComponent implements OnInit, OnDestroy {
   validarFechas(): boolean {
     const ahora = new Date();
 
+    if (this.eventoEdit.iniciarAhora) {
+      // Empieza al guardar: solo se revisa que el fin sea posterior a este momento
+      if (this.eventoEdit.fechaFin && new Date(this.eventoEdit.fechaFin) <= ahora) {
+        this.notification.error('La fecha de fin debe ser posterior a este momento', 'Validacion');
+        return false;
+      }
+      return true;
+    }
+
     if (this.eventoEdit.fechaInicio) {
       const fechaInicio = new Date(this.eventoEdit.fechaInicio);
       if (fechaInicio < ahora) {
@@ -401,7 +422,7 @@ export class EventosComponent implements OnInit, OnDestroy {
       this.notification.error('La descripcion es requerida', 'Validacion');
       return;
     }
-    if (!this.eventoEdit.fechaInicio) {
+    if (!this.eventoEdit.iniciarAhora && !this.eventoEdit.fechaInicio) {
       this.notification.error('La fecha de inicio es requerida', 'Validacion');
       return;
     }
@@ -414,21 +435,25 @@ export class EventosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Validar fechas solo para eventos nuevos
-    if (!this.eventoEditId && !this.validarFechas()) {
+    // Validar fechas en eventos nuevos y al publicar ahora
+    if ((!this.eventoEditId || this.eventoEdit.iniciarAhora) && !this.validarFechas()) {
       return;
     }
+    const publicaAhora = !!this.eventoEdit.iniciarAhora;
+    const datos = { ...this.eventoEdit };
+    if (publicaAhora) delete datos.fechaInicio;
 
     this.isGuardando = true;
 
     const observable = this.eventoEditId
-      ? this.eventosService.actualizarEvento(this.eventoEditId, this.eventoEdit)
-      : this.eventosService.crearEvento(this.eventoEdit);
+      ? this.eventosService.actualizarEvento(this.eventoEditId, datos)
+      : this.eventosService.crearEvento(datos);
 
     observable.subscribe({
       next: () => {
         this.notification.success(
-          this.eventoEditId ? 'Evento actualizado' : 'Evento creado',
+          publicaAhora ? 'Evento publicado: ya está visible para las personas asignadas.'
+            : this.eventoEditId ? 'Evento actualizado' : 'Evento creado',
           'Exitoso'
         );
         this.cargarEventos();
