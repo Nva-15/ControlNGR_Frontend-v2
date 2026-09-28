@@ -127,7 +127,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.asistenciaService.getAsistenciasPorEmpleado(id).subscribe({
       next: (data) => {
         const hoy = hoyIso();
-        this.asistenciaHoy = data.find(a => a.fecha?.toString().substring(0, 10) === hoy) || null;
+        const ayer = new Date(Date.now() - 86_400_000).toLocaleDateString('en-CA', { timeZone: ZONA });
+        const dia = (a: AsistenciaResponse) => a.fecha?.toString().substring(0, 10);
+        // Turno que empezo ayer y sigue abierto (cruza la medianoche): se muestra para poder marcar la salida.
+        // Pasadas las horas de salida automatica el sistema lo cierra solo y deja de aparecer.
+        this.asistenciaHoy = data.find(a => dia(a) === hoy)
+          || data.find(a => dia(a) === ayer && !!a.horaEntrada && !a.horaSalida)
+          || null;
         this.cargandoAsistencia = false;
       },
       error: () => {
@@ -150,7 +156,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   get estado(): { texto: string; clase: string } {
     if (!this.asistenciaHoy?.horaEntrada) return { texto: 'Sin marcar', clase: 'badge-amber' };
     if (!this.asistenciaHoy.horaSalida) return { texto: 'En jornada', clase: 'badge-green' };
+    if (this.asistenciaHoy.salidaAutomatica) return { texto: 'Salida automática', clase: 'badge-gray' };
     return { texto: 'Jornada completa', clase: 'badge-blue' };
+  }
+
+  /** La jornada mostrada empezo ayer (turno que cruza la medianoche). */
+  get jornadaDeAyer(): boolean {
+    const f = this.asistenciaHoy?.fecha?.toString().substring(0, 10);
+    return !!f && f !== hoyIso();
   }
 
   /** Solo se marca si el servidor confirmó que el equipo está en un segmento permitido. */
@@ -168,7 +181,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   /** Configuracion de su rol (panel admin → Asistencia y horarios). */
-  config: { marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number } | null = null;
+  config: { marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number; horasSalidaAutomatica: number } | null = null;
 
   /** Su rol marca asistencia (mientras carga se asume que si). */
   get marcaAsistencia(): boolean {

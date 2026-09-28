@@ -87,11 +87,15 @@
           <div class="rounded-xl bg-stone-50 p-4">
             <p class="stat-label">Entrada</p>
             <p class="mt-1 text-lg font-semibold tabular-nums">{{ horaCorta(asistenciaHoy?.horaEntrada) }}</p>
+            @if (jornadaDeAyer) { <span class="badge-gray mt-1" data-jornada-ayer>Desde ayer</span> }
             @if (asistenciaHoy?.estado === 'tardanza') { <span class="badge-amber mt-1">Tardanza</span> }
           </div>
           <div class="rounded-xl bg-stone-50 p-4">
             <p class="stat-label">Salida</p>
             <p class="mt-1 text-lg font-semibold tabular-nums">{{ horaCorta(asistenciaHoy?.horaSalida) }}</p>
+            @if (asistenciaHoy?.salidaAutomatica) {
+              <span class="badge-gray mt-1" data-salida-automatica title="No marcó su salida: el sistema la registró automáticamente">Automática</span>
+            }
           </div>
         </div>
 
@@ -108,6 +112,7 @@
           @if (horarioFlexible) { Su cargo tiene horario flexible. } @else { Solo puede marcar en días programados como laborales@if (config) {; tolerancia de {{ config.toleranciaMinutos }} min}. }
           @if (requiereRostro) { Al marcar se verificará su identidad con la cámara. }
           Después de marcar podrá dejar un mensaje a su supervisor.
+          @if (config) { Si no marca su salida, se registrará automáticamente {{ config.horasSalidaAutomatica }} h después de la entrada. }
         </p>
       }
     </div>
