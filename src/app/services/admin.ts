@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
 import {
-  Departamento, Feriado, Parametro, RolAsistencia, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
+  CopiaFeriados, Departamento, Feriado, Parametro, RolAsistencia, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
 } from '../interfaces/admin';
 import { MotivoLicencia, TipoSolicitud } from '../interfaces/solicitud';
 import { FeriadoLaborado, MovimientoSaldo, TipoSaldo } from '../interfaces/saldo';
@@ -54,6 +54,10 @@ export class AdminService {
                 : this.http.post<Feriado>(`${this.url}/feriados`, f);
   }
   eliminarFeriado(id: number): Observable<any> { return this.http.delete(`${this.url}/feriados/${id}`); }
+  /** Copia los feriados de un año a otro (simular = solo vista previa). */
+  copiarFeriados(origen: number, destino: number, simular: boolean, ids?: number[]): Observable<CopiaFeriados> {
+    return this.http.post<CopiaFeriados>(`${this.url}/feriados/copiar`, { origen, destino, simular, ids });
+  }
 
   // Departamentos
   departamentos(): Observable<Departamento[]> { return this.http.get<Departamento[]>(`${this.url}/departamentos`); }
