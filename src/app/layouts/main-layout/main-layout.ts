@@ -6,6 +6,7 @@ import { NotificacionesService } from '../../services/notificaciones';
 import { NotificacionResumen } from '../../interfaces/notificacion';
 import { LogoComponent } from '../../components/shared/logo/logo.component';
 import { AvatarComponent } from '../../components/shared/avatar/avatar.component';
+import { BotonTemaComponent } from '../../components/shared/boton-tema/boton-tema.component';
 
 interface ItemMenu {
   ruta: string;
@@ -22,7 +23,7 @@ interface GrupoMenu {
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterLink, RouterOutlet, RouterLinkActive, LogoComponent, AvatarComponent],
+  imports: [RouterLink, RouterOutlet, RouterLinkActive, LogoComponent, AvatarComponent, BotonTemaComponent],
   templateUrl: './main-layout.html'
 })
 export class MainLayoutComponent implements OnInit, OnDestroy {

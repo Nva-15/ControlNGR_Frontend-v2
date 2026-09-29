@@ -7,6 +7,7 @@ import { TipoUsuario, UsuarioAdmin } from '../../../interfaces/admin';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { mensajeError } from '../../../utils/format';
 import { rolBadge } from '../../../utils/roles';
+import { normalizar, opciones } from '../../../utils/filtros';
 
 @Component({
   selector: 'app-admin-usuarios',
@@ -14,10 +15,24 @@ import { rolBadge } from '../../../utils/roles';
   imports: [FormsModule, RouterLink, ModalComponent],
   template: `
     <div class="mb-4 flex flex-wrap items-center gap-3">
-      <div class="relative min-w-64 flex-1">
+      <div class="relative min-w-48 flex-1">
         <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
         <input class="input pl-9!" placeholder="Buscar usuario o nombre" [(ngModel)]="busqueda" />
       </div>
+      <select class="select w-64" [(ngModel)]="filtroDepartamento" aria-label="Filtrar por departamento">
+        <option value="">Todos los departamentos</option>
+        @for (d of departamentos; track d) { <option [value]="d">{{ d }}</option> }
+      </select>
+      <select class="select w-44" [(ngModel)]="filtroRol" aria-label="Filtrar por rol">
+        <option value="">Todos los roles</option>
+        @for (r of roles; track r[0]) { <option [value]="r[0]">{{ r[1] }}</option> }
+      </select>
+      <select class="select w-40" [(ngModel)]="filtroEstado" aria-label="Filtrar por estado">
+        <option value="todos">Todos los estados</option>
+        <option value="activos">Activos</option>
+        <option value="inactivos">Inactivos</option>
+      </select>
+      @if (hayFiltros) { <button class="btn-ghost btn-sm" (click)="limpiarFiltros()"><i class="bi bi-x-lg"></i> Limpiar</button> }
       <a routerLink="/empleados" class="btn-primary"><i class="bi bi-person-plus"></i> Registrar empleado</a>
     </div>
     <div class="card">
@@ -61,6 +76,8 @@ import { rolBadge } from '../../../utils/roles';
           </tbody>
         </table>
       </div>
+      @if (!filtrados.length) { <div class="empty-state"><i class="bi bi-funnel text-3xl"></i><p>No hay usuarios con esos filtros.</p></div> }
+      <p class="border-t border-stone-100 px-4 py-2 text-xs text-stone-500">{{ filtrados.length }} de {{ usuarios.length }} usuarios</p>
     </div>
 
     <app-modal [abierto]="!!reset" titulo="Restablecer contraseña" [subtitulo]="reset?.u?.empleadoNombre || reset?.u?.username || ''" (cerrar)="reset = null">
@@ -87,6 +104,11 @@ export class AdminUsuariosComponent implements OnInit {
   usuarios: UsuarioAdmin[] = [];
   rolesPersonal: TipoUsuario[] = [];
   busqueda = '';
+  filtroDepartamento = '';
+  filtroRol = '';
+  filtroEstado: 'activos' | 'inactivos' | 'todos' = 'todos';
+  departamentos: string[] = [];
+  roles: [string, string][] = [];
   reset: { u: UsuarioAdmin; clave: string } | null = null;
   readonly rolBadge = rolBadge;
 
@@ -96,13 +118,26 @@ export class AdminUsuariosComponent implements OnInit {
   }
 
   cargar() {
-    this.admin.usuarios().subscribe(u => this.usuarios = u.sort((a, b) => (a.empleadoNombre || '').localeCompare(b.empleadoNombre || '')));
+    this.admin.usuarios().subscribe(u => {
+      this.usuarios = u.sort((a, b) => (a.empleadoNombre || '').localeCompare(b.empleadoNombre || ''));
+      this.departamentos = opciones(this.usuarios, x => x.departamento);
+      const nombres = new Map(this.usuarios.map(x => [x.rol, x.rolNombre] as [string, string]));
+      this.roles = [...nombres].sort((a, b) => a[1].localeCompare(b[1]));
+    });
   }
 
   get filtrados() {
-    const q = this.busqueda.trim().toLowerCase();
-    return q ? this.usuarios.filter(u => u.username.includes(q) || (u.empleadoNombre || '').toLowerCase().includes(q)) : this.usuarios;
+    const q = normalizar(this.busqueda.trim());
+    return this.usuarios.filter(u =>
+      (!q || normalizar(u.username).includes(q) || normalizar(u.empleadoNombre).includes(q)) &&
+      (!this.filtroDepartamento || u.departamento === this.filtroDepartamento) &&
+      (!this.filtroRol || u.rol === this.filtroRol) &&
+      (this.filtroEstado === 'todos' || (this.filtroEstado === 'activos') === u.activo));
   }
+
+  get hayFiltros() { return !!(this.busqueda.trim() || this.filtroDepartamento || this.filtroRol || this.filtroEstado !== 'todos'); }
+
+  limpiarFiltros() { this.busqueda = ''; this.filtroDepartamento = ''; this.filtroRol = ''; this.filtroEstado = 'todos'; }
 
   async cambiarRol(u: UsuarioAdmin, rol: string) {
     const anterior = u.rol;

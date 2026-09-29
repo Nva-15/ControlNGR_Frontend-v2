@@ -17,6 +17,7 @@ export interface EmpleadoFacial {
   cargo?: string;
   foto?: string;
   rol?: string;
+  departamento?: string;
   registrado?: boolean;
   muestras?: number;
   registradoEl?: string | null;

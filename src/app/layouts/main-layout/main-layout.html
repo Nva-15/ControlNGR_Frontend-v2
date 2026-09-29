@@ -1,11 +1,11 @@
 <div class="min-h-screen">
   <!-- Fondo del menu movil -->
   @if (menuMovilAbierto) {
-    <div class="fixed inset-0 z-40 bg-stone-950/50 lg:hidden" (click)="menuMovilAbierto = false"></div>
+    <div class="tema-fijo fixed inset-0 z-40 bg-stone-950/50 lg:hidden" (click)="menuMovilAbierto = false"></div>
   }
 
   <!-- Menu lateral -->
-  <aside class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-stone-950 transition-transform duration-200 lg:translate-x-0"
+  <aside class="fixed inset-y-0 left-0 z-50 tema-fijo flex w-64 flex-col bg-stone-950 transition-transform duration-200 lg:translate-x-0"
          [class.-translate-x-full]="!menuMovilAbierto">
     <div class="flex h-16 items-center px-5">
       <app-logo [tamano]="32" [oscuro]="true" />
@@ -51,11 +51,12 @@
 
   <!-- Contenido -->
   <div class="lg:pl-64">
-    <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-stone-200/70 bg-white/85 px-4 backdrop-blur sm:px-6">
+    <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-stone-200/70 bg-superficie/85 px-4 backdrop-blur sm:px-6">
       <button type="button" class="btn-icon lg:hidden" (click)="menuMovilAbierto = true" aria-label="Abrir menú">
         <i class="bi bi-list text-xl"></i>
       </button>
       <div class="flex-1"></div>
+      <app-boton-tema />
 
       <div class="relative">
         <button type="button" class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-stone-100"
@@ -66,7 +67,7 @@
         </button>
         @if (menuUsuarioAbierto) {
           <div class="fixed inset-0 z-10" (click)="menuUsuarioAbierto = false"></div>
-          <div class="absolute right-0 z-20 mt-2 w-60 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
+          <div class="absolute right-0 z-20 mt-2 w-60 overflow-hidden rounded-xl border border-stone-200 bg-superficie shadow-lg">
             <div class="border-b border-stone-100 px-4 py-3">
               <p class="truncate text-sm font-semibold">{{ nombre() }}</p>
               <p class="truncate text-xs text-stone-500">{{ auth.getRolDisplayName() }} · {{ usuario()?.username }}</p>

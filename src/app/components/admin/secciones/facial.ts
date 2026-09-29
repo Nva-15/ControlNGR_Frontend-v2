@@ -8,6 +8,7 @@ import { ModalComponent } from '../../shared/modal/modal.component';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { CamaraFacialComponent } from '../../shared/camara-facial/camara-facial.component';
 import { fechaCorta, mensajeError } from '../../../utils/format';
+import { normalizar, opciones } from '../../../utils/filtros';
 
 type Prueba = 'marcacion' | 'registro';
 
@@ -143,7 +144,22 @@ type Prueba = 'marcacion' | 'registro';
       <section class="card mt-6">
         <div class="card-header">
           <h3 class="card-title">Colaboradores que marcan asistencia</h3>
-          <input class="input w-56" placeholder="Buscar…" [(ngModel)]="busqueda" name="busqueda" />
+        </div>
+        <div class="flex flex-wrap items-center gap-3 border-b border-stone-100 px-5 py-3">
+          <div class="relative min-w-56 flex-1">
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
+            <input class="input pl-9!" placeholder="Buscar por nombre" [(ngModel)]="busqueda" name="busqueda" />
+          </div>
+          <select class="select w-64" [(ngModel)]="filtroDepartamento" name="filtroDepartamento" aria-label="Filtrar por departamento">
+            <option value="">Todos los departamentos</option>
+            @for (d of departamentos; track d) { <option [value]="d">{{ d }}</option> }
+          </select>
+          <select class="select w-40" [(ngModel)]="filtroRostro" name="filtroRostro" aria-label="Filtrar por rostro">
+            <option value="">Rostro: todos</option>
+            <option value="registrado">Registrados</option>
+            <option value="pendiente">Pendientes</option>
+          </select>
+          @if (hayFiltros) { <button class="btn-ghost btn-sm" (click)="limpiarFiltros()"><i class="bi bi-x-lg"></i> Limpiar</button> }
         </div>
         <div class="table-wrap">
           <table class="table">
@@ -154,7 +170,7 @@ type Prueba = 'marcacion' | 'registro';
                   <td>
                     <div class="flex items-center gap-3">
                       <app-avatar [nombre]="e.nombre" [foto]="e.foto" [tamano]="32" />
-                      <div class="min-w-0"><p class="truncate font-medium">{{ e.nombre }}</p><p class="truncate text-xs text-stone-500">{{ e.cargo }}</p></div>
+                      <div class="min-w-0"><p class="truncate font-medium">{{ e.nombre }}</p><p class="truncate text-xs text-stone-500">{{ e.cargo }}@if (e.departamento) { · {{ e.departamento }} }</p></div>
                     </div>
                   </td>
                   <td>
@@ -170,7 +186,7 @@ type Prueba = 'marcacion' | 'registro';
                         <button class="btn-icon accion-rostro" title="Restablecer rostro registrado" (click)="restablecer(e)">
                           <span class="relative inline-flex">
                             <i class="bi bi-person-bounding-box"></i>
-                            <i class="bi bi-arrow-counterclockwise absolute -bottom-1.5 -right-2 rounded-full bg-white text-[10px] leading-none"></i>
+                            <i class="bi bi-arrow-counterclockwise absolute -bottom-1.5 -right-2 rounded-full bg-superficie text-[10px] leading-none"></i>
                           </span>
                         </button>
                       }
@@ -178,7 +194,7 @@ type Prueba = 'marcacion' | 'registro';
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="5"><div class="empty-state">No hay colaboradores con esa búsqueda.</div></td></tr>
+                <tr><td colspan="5"><div class="empty-state">No hay colaboradores con esos filtros.</div></td></tr>
               }
             </tbody>
           </table>
@@ -208,6 +224,9 @@ export class AdminFacialComponent implements OnInit {
 
   resumen: ResumenFacial | null = null;
   busqueda = '';
+  filtroDepartamento = '';
+  filtroRostro: '' | 'registrado' | 'pendiente' = '';
+  departamentos: string[] = [];
   compararCon: number | null = null;
   prueba: Prueba | null = null;
   procesando = false;
@@ -222,7 +241,7 @@ export class AdminFacialComponent implements OnInit {
 
   cargar() {
     this.facial.resumenAdmin().subscribe({
-      next: r => this.resumen = r,
+      next: r => { this.resumen = r; this.departamentos = opciones(r.empleados || [], e => e.departamento); },
       error: e => this.notification.error(mensajeError(e), 'Reconocimiento facial')
     });
   }
@@ -232,9 +251,16 @@ export class AdminFacialComponent implements OnInit {
   }
 
   get filtrados(): EmpleadoFacial[] {
-    const q = this.busqueda.trim().toLowerCase();
-    return (this.resumen?.empleados || []).filter(e => !q || e.nombre.toLowerCase().includes(q));
+    const q = normalizar(this.busqueda.trim());
+    return (this.resumen?.empleados || []).filter(e =>
+      (!q || normalizar(e.nombre).includes(q)) &&
+      (!this.filtroDepartamento || e.departamento === this.filtroDepartamento) &&
+      (!this.filtroRostro || (this.filtroRostro === 'registrado') === !!e.registrado));
   }
+
+  get hayFiltros() { return !!(this.busqueda.trim() || this.filtroDepartamento || this.filtroRostro); }
+
+  limpiarFiltros() { this.busqueda = ''; this.filtroDepartamento = ''; this.filtroRostro = ''; }
 
   /** Ancho de la barra: distancia sobre una escala de 0 a 1.2. */
   barra(distancia?: number): number {

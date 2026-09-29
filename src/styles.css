@@ -38,6 +38,9 @@
   --color-oro-700: #a2571f;
   --color-oro-800: #84451f;
   --color-oro-900: #6d3a1d;
+
+  /* Fondo de tarjetas, campos, menús y modales (oscuro en modo oscuro) */
+  --color-superficie: #ffffff;
 }
 
 @layer base {
@@ -89,7 +92,7 @@
 }
 
 @utility btn-secondary {
-  @apply btn bg-white text-stone-700 border border-stone-200 shadow-sm
+  @apply btn bg-superficie text-stone-700 border border-stone-200 shadow-sm
            hover:bg-stone-50 hover:border-stone-300 hover:text-stone-900;
 }
 
@@ -111,12 +114,12 @@
 
 /* Exportar: Excel verde y PDF rojo (colores reconocibles de cada formato) */
 @utility btn-excel {
-  @apply btn bg-white text-emerald-700 border border-emerald-200 shadow-sm
+  @apply btn bg-superficie text-emerald-700 border border-emerald-200 shadow-sm
            hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800;
 }
 
 @utility btn-pdf {
-  @apply btn bg-white text-red-700 border border-red-200 shadow-sm
+  @apply btn bg-superficie text-red-700 border border-red-200 shadow-sm
            hover:bg-red-50 hover:border-red-300 hover:text-red-800;
 }
 
@@ -159,7 +162,7 @@
 /* ---------- Tarjetas ---------- */
 
 @utility card {
-  @apply bg-white rounded-xl border border-stone-200/70 shadow-sm;
+  @apply bg-superficie rounded-xl border border-stone-200/70 shadow-sm;
 }
 
 @utility card-header {
@@ -181,7 +184,7 @@
 }
 
 @utility input {
-  @apply block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900
+  @apply block w-full rounded-lg border border-stone-300 bg-superficie px-3 py-2 text-sm text-stone-900
            placeholder:text-stone-400 shadow-xs transition
            focus:border-vino-400 focus:ring-2 focus:ring-vino-100 focus:outline-none
            disabled:bg-stone-100 disabled:text-stone-500;
@@ -331,3 +334,101 @@
   .table tbody td { @apply px-4 py-3 border-t border-stone-100 align-middle; }
   .table tbody tr:hover td { @apply bg-stone-50/70; }
 }
+
+/* ============================================================
+   Modo oscuro
+   Se activa con la clase "dark" en <html> (botón de sol/luna; por defecto sigue
+   la preferencia del sistema). En lugar de repetir estilos en cada pantalla, se
+   remapean los colores: grises invertidos, "superficie" (tarjetas, campos, modales)
+   oscura, fondos pastel de los acentos como tintes oscuros y textos de acento más
+   claros. La barra lateral y la cámara ya son oscuras: usan .tema-fijo.
+   ============================================================ */
+.dark {
+  color-scheme: dark;
+
+  --color-superficie: #1b1917;
+
+  --color-stone-50: #121110;
+  --color-stone-100: #24211f;
+  --color-stone-200: #2f2b28;
+  --color-stone-300: #45403b;
+  --color-stone-400: #857d76;
+  --color-stone-500: #a39b94;
+  --color-stone-600: #bdb6b0;
+  --color-stone-700: #d4cec9;
+  --color-stone-800: #e6e2de;
+  --color-stone-900: #f4f2f0;
+
+  --color-vino-50: color-mix(in oklab, var(--color-vino-500) 16%, #1b1917);
+  --color-vino-100: color-mix(in oklab, var(--color-vino-500) 26%, #1b1917);
+  --color-vino-200: color-mix(in oklab, var(--color-vino-500) 40%, #1b1917);
+  --color-vino-700: #d4456a;
+  --color-vino-800: #e0708c;
+  --color-vino-900: #ec9dae;
+
+  --color-oro-50: color-mix(in oklab, var(--color-oro-500) 14%, #1b1917);
+  --color-oro-100: color-mix(in oklab, var(--color-oro-500) 24%, #1b1917);
+  --color-oro-200: color-mix(in oklab, var(--color-oro-500) 38%, #1b1917);
+  --color-oro-700: #ebc57c;
+  --color-oro-800: #f4dea5;
+  --color-oro-900: #faefd2;
+
+  --color-emerald-50: color-mix(in oklab, var(--color-emerald-500) 14%, #1b1917);
+  --color-emerald-100: color-mix(in oklab, var(--color-emerald-500) 24%, #1b1917);
+  --color-emerald-200: color-mix(in oklab, var(--color-emerald-500) 38%, #1b1917);
+  --color-emerald-700: #34d399;
+  --color-emerald-800: #6ee7b7;
+  --color-emerald-900: #a7f3d0;
+
+  --color-red-50: color-mix(in oklab, var(--color-red-500) 14%, #1b1917);
+  --color-red-100: color-mix(in oklab, var(--color-red-500) 24%, #1b1917);
+  --color-red-200: color-mix(in oklab, var(--color-red-500) 38%, #1b1917);
+  --color-red-700: #f87171;
+  --color-red-800: #fca5a5;
+  --color-red-900: #fecaca;
+
+  --color-amber-50: color-mix(in oklab, var(--color-amber-500) 14%, #1b1917);
+  --color-amber-100: color-mix(in oklab, var(--color-amber-500) 24%, #1b1917);
+  --color-amber-200: color-mix(in oklab, var(--color-amber-500) 38%, #1b1917);
+  --color-amber-700: #fbbf24;
+  --color-amber-800: #fcd34d;
+  --color-amber-900: #fde68a;
+
+  --color-sky-50: color-mix(in oklab, var(--color-sky-500) 14%, #1b1917);
+  --color-sky-100: color-mix(in oklab, var(--color-sky-500) 24%, #1b1917);
+  --color-sky-200: color-mix(in oklab, var(--color-sky-500) 38%, #1b1917);
+  --color-sky-700: #38bdf8;
+  --color-sky-800: #7dd3fc;
+
+  --color-violet-50: color-mix(in oklab, var(--color-violet-500) 16%, #1b1917);
+  --color-violet-100: color-mix(in oklab, var(--color-violet-500) 26%, #1b1917);
+  --color-violet-200: color-mix(in oklab, var(--color-violet-500) 40%, #1b1917);
+  --color-violet-700: #a78bfa;
+  --color-violet-800: #c4b5fd;
+
+  --color-teal-50: color-mix(in oklab, var(--color-teal-500) 14%, #1b1917);
+  --color-teal-700: #2dd4bf;
+}
+
+/* Zonas que ya son oscuras en ambos modos (barra lateral, cámara): grises originales */
+.dark .tema-fijo {
+  --color-stone-50: #fafaf9;
+  --color-stone-100: #f5f5f4;
+  --color-stone-200: #e7e5e4;
+  --color-stone-300: #d6d3d1;
+  --color-stone-400: #a8a29e;
+  --color-stone-500: #78716c;
+  --color-stone-600: #57534e;
+  --color-stone-700: #44403c;
+  --color-stone-800: #292524;
+  --color-stone-900: #1c1917;
+}
+
+/* En oscuro el "700/800" de los acentos es más claro (para textos): los botones
+   sólidos usan el tono medio al pasar el mouse para mantener el contraste */
+.dark .btn-primary, .dark .bg-vino-700 { background-color: var(--color-vino-600); }
+.dark .btn-primary:hover:not(:disabled) { background-color: var(--color-vino-500); }
+.dark .btn-success:hover:not(:disabled) { background-color: var(--color-emerald-500); }
+.dark .btn-danger:hover:not(:disabled) { background-color: var(--color-red-500); }
+.dark .shadow-sm, .dark .shadow-md, .dark .shadow-lg, .dark .shadow-2xl { --tw-shadow-color: rgb(0 0 0 / 0.5); }
+.dark .hover\:bg-vino-800:hover { background-color: var(--color-vino-500); }

@@ -9,7 +9,7 @@ import { Subscription } from 'rxjs';
   template: `
     <div class="pointer-events-none fixed right-4 top-4 z-[80] flex w-full max-w-sm flex-col gap-3" aria-live="polite">
       @for (toast of toasts; track toast.id) {
-        <div class="pointer-events-auto flex gap-3 rounded-xl border bg-white p-4 shadow-lg" [class]="borde(toast)">
+        <div class="pointer-events-auto flex gap-3 rounded-xl border bg-superficie p-4 shadow-lg" [class]="borde(toast)">
           <i class="bi text-lg" [class]="icono(toast)"></i>
           <div class="min-w-0 flex-1">
             <p class="text-sm font-semibold text-stone-900">{{ toast.title }}</p>

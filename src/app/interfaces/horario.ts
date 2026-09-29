@@ -75,6 +75,7 @@ export interface EmpleadoHorarioSemanal {
   empleadoNombre: string;
   empleadoRol: string;
   empleadoCargo: string;
+  empleadoDepartamento?: string;
   dias: { [fecha: string]: DetalleHorarioDia }; // Map: fecha ISO -> detalle
 }
 

@@ -4,11 +4,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { LoginRequest } from '../../interfaces/auth';
 import { LogoComponent } from '../shared/logo/logo.component';
+import { BotonTemaComponent } from '../shared/boton-tema/boton-tema.component';
 import { mensajeError } from '../../utils/format';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, LogoComponent],
+  imports: [FormsModule, LogoComponent, BotonTemaComponent],
   templateUrl: './login.html'
 })
 export class LoginComponent implements OnInit {
