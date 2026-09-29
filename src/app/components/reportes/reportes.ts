@@ -200,7 +200,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
   }
 
   formatHora(hora: string | null): string {
-    if (!hora) return '--:--';
+    if (!hora) return '—';
     return hora.length >= 5 ? hora.substring(0, 5) : hora;
   }
 

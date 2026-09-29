@@ -4,8 +4,8 @@
     <p class="page-subtitle">{{ filtrados.length }} de {{ empleados.length }} colaboradores</p>
   </div>
   <div class="flex gap-2">
-    <button class="btn-secondary" (click)="exportarExcel()"><i class="bi bi-file-earmark-excel"></i> Excel</button>
-    <button class="btn-secondary" (click)="exportarPDF()"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+    <button class="btn-excel" (click)="exportarExcel()"><i class="bi bi-file-earmark-excel-fill"></i> Excel</button>
+    <button class="btn-pdf" (click)="exportarPDF()"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</button>
     @if (puedeCrear) {
       <button class="btn-primary" (click)="nuevo()"><i class="bi bi-person-plus"></i> Nuevo empleado</button>
     }
@@ -40,23 +40,23 @@
   } @else {
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Colaborador</th><th>DNI</th><th>Departamento</th><th>Rol</th><th>Ingreso</th><th>Estado</th><th>Rostro</th><th class="text-right">Acciones</th></tr></thead>
+        <thead><tr><th>Colaborador</th><th>DNI</th><th>Departamento</th><th>Rol</th><th class="hidden 2xl:table-cell">Ingreso</th><th>Estado</th><th>Rostro</th><th class="text-right">Acciones</th></tr></thead>
         <tbody>
           @for (e of filtrados; track e.id) {
             <tr>
-              <td>
+              <td class="max-w-64">
                 <div class="flex items-center gap-3">
                   <app-avatar [nombre]="e.nombre" [foto]="e.foto" [tamano]="36" />
                   <div class="min-w-0">
-                    <p class="truncate font-medium">{{ e.nombre }}</p>
-                    <p class="truncate text-xs text-stone-500">{{ e.cargo }}</p>
+                    <p class="truncate font-medium" [title]="e.nombre">{{ e.nombre }}</p>
+                    <p class="truncate text-xs text-stone-500" [title]="e.cargo">{{ e.cargo }}</p>
                   </div>
                 </div>
               </td>
               <td class="tabular-nums text-stone-600" [title]="e.dni ? '' : 'Solo lo ven el colaborador y quienes lo administran'">{{ e.dni || '—' }}</td>
-              <td class="text-stone-600">{{ e.departamentoNombre || '—' }}</td>
+              <td class="max-w-36 text-stone-600">{{ e.departamentoNombre || '—' }}</td>
               <td><span [class]="rolBadge(e.rol)">{{ rolLabel(e.rol) }}</span></td>
-              <td class="text-stone-600">{{ fechaCorta(e.ingreso) }}</td>
+              <td class="hidden text-stone-600 2xl:table-cell">{{ fechaCorta(e.ingreso) }}</td>
               <td><span [class]="e.activo ? 'badge-green' : 'badge-gray'">{{ e.activo ? 'Activo' : 'Inactivo' }}</span></td>
               <td>
                 @if (tieneRostro(e)) {
@@ -66,16 +66,16 @@
                 }
               </td>
               <td>
-                <div class="flex justify-end gap-1" data-acciones>
+                <div class="flex flex-nowrap justify-end gap-0.5" data-acciones>
                   @if (puedeEditar(e)) {
                     <!-- Editar: amarillo -->
-                    <button class="btn-icon hover:bg-amber-50! hover:text-amber-600!" title="Editar" aria-label="Editar"
+                    <button class="btn-icon accion-editar" title="Editar" aria-label="Editar"
                             data-accion="editar" (click)="editar(e)"><i class="bi bi-pencil-square"></i></button>
                   }
                   @if (puedeAdministrar(e)) {
                     <!-- Reconocimiento facial: rostro dentro de un marco, azul -->
                     @if (tieneRostro(e)) {
-                      <button class="btn-icon hover:bg-sky-50! hover:text-sky-600!" title="Restablecer rostro registrado"
+                      <button class="btn-icon accion-rostro" title="Restablecer rostro registrado"
                               aria-label="Restablecer rostro" data-accion="rostro-restablecer" (click)="restablecerRostro(e)">
                         <span class="relative inline-flex">
                           <i class="bi bi-person-bounding-box"></i>
@@ -83,26 +83,26 @@
                         </span>
                       </button>
                     } @else {
-                      <button class="btn-icon hover:bg-sky-50! hover:text-sky-600!" title="Registrar rostro en persona"
+                      <button class="btn-icon accion-rostro" title="Registrar rostro en persona"
                               aria-label="Registrar rostro" data-accion="rostro-registrar" (click)="abrirRegistroRostro(e)">
                         <i class="bi bi-person-bounding-box"></i>
                       </button>
                     }
                     @if (gestionaAcceso) {
                       <!-- Contraseña: violeta -->
-                      <button class="btn-icon hover:bg-violet-50! hover:text-violet-600!" title="Restablecer contraseña"
+                      <button class="btn-icon accion-clave" title="Restablecer contraseña"
                               aria-label="Restablecer contraseña" data-accion="clave" (click)="abrirReset(e)"><i class="bi bi-key"></i></button>
                     }
                     <!-- Activar: verde / Desactivar: rojo -->
                     @if (e.activo) {
-                      <button class="btn-icon hover:bg-red-50! hover:text-red-600!" title="Desactivar"
+                      <button class="btn-icon accion-rechazar" title="Desactivar"
                               aria-label="Desactivar" data-accion="desactivar" (click)="cambiarEstado(e)"><i class="bi bi-person-dash"></i></button>
                     } @else {
-                      <button class="btn-icon hover:bg-emerald-50! hover:text-emerald-600!" title="Activar"
+                      <button class="btn-icon accion-aprobar" title="Activar"
                               aria-label="Activar" data-accion="activar" (click)="cambiarEstado(e)"><i class="bi bi-person-check"></i></button>
                     }
                     <!-- Eliminar: rojo intenso -->
-                    <button class="btn-icon hover:bg-red-100! hover:text-red-700!" title="Eliminar" aria-label="Eliminar"
+                    <button class="btn-icon accion-eliminar" title="Eliminar" aria-label="Eliminar"
                             data-accion="eliminar" (click)="eliminar(e)"><i class="bi bi-trash3"></i></button>
                   }
                 </div>

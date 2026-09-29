@@ -28,11 +28,11 @@ import { rolBadge } from '../../../utils/roles';
             @for (u of filtrados; track u.id) {
               <tr>
                 <td class="font-mono text-xs">{{ u.username }}</td>
-                <td><p class="font-medium">{{ u.empleadoNombre || 'Cuenta del sistema' }}</p><p class="text-xs text-stone-500">{{ u.departamento }}</p></td>
+                <td class="min-w-56"><p class="font-medium">{{ u.empleadoNombre || 'Cuenta del sistema' }}</p><p class="text-xs text-stone-500">{{ u.departamento }}</p></td>
                 <td>
                   @if (u.rol === 'admin') { <span class="badge-gray">{{ u.rolNombre }}</span> }
                   @else {
-                    <select class="select w-40 py-1! text-xs!" [ngModel]="u.rol" (ngModelChange)="cambiarRol(u, $event)">
+                    <select class="select w-48 py-1! text-xs!" [ngModel]="u.rol" (ngModelChange)="cambiarRol(u, $event)">
                       @for (t of rolesPersonal; track t.codigo) { <option [value]="t.codigo">{{ t.nombre }}</option> }
                     </select>
                   }
@@ -43,14 +43,16 @@ import { rolBadge } from '../../../utils/roles';
                     @if (u.debeCambiarPassword) { <span class="badge-amber">Cambio de clave pendiente</span> }
                   </div>
                 </td>
-                <td class="text-xs text-stone-500">{{ u.ultimoAcceso ? u.ultimoAcceso.replace('T', ' ').substring(0, 16) : 'Nunca' }}</td>
+                <td class="whitespace-nowrap text-xs text-stone-500">{{ u.ultimoAcceso ? u.ultimoAcceso.replace('T', ' ').substring(0, 16) : 'Nunca' }}</td>
                 <td>
-                  <div class="flex justify-end gap-1">
-                    <button class="btn-ghost btn-sm" (click)="abrirReset(u)"><i class="bi bi-key"></i> Restablecer clave</button>
+                  <div class="flex flex-nowrap justify-end gap-1">
+                    <button class="btn-icon accion-clave" title="Restablecer contraseña" aria-label="Restablecer contraseña" (click)="abrirReset(u)"><i class="bi bi-key"></i></button>
                     @if (u.rol !== 'admin') {
-                      <button class="btn-ghost btn-sm" (click)="cambiarEstado(u)">
-                        <i class="bi" [class]="u.activo ? 'bi-person-dash' : 'bi-person-check'"></i> {{ u.activo ? 'Desactivar' : 'Activar' }}
-                      </button>
+                      @if (u.activo) {
+                        <button class="btn-icon accion-rechazar" title="Desactivar acceso" aria-label="Desactivar acceso" (click)="cambiarEstado(u)"><i class="bi bi-person-dash"></i></button>
+                      } @else {
+                        <button class="btn-icon accion-aprobar" title="Activar acceso" aria-label="Activar acceso" (click)="cambiarEstado(u)"><i class="bi bi-person-check"></i></button>
+                      }
                     }
                   </div>
                 </td>

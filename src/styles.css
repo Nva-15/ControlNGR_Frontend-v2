@@ -67,8 +67,9 @@
 
 @utility btn {
   @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
-           transition-colors duration-150 cursor-pointer select-none whitespace-nowrap
-           disabled:opacity-50 disabled:cursor-not-allowed;
+           transition-all duration-150 cursor-pointer select-none whitespace-nowrap
+           active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
+           focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vino-400;
 }
 
 @utility btn-sm {
@@ -80,15 +81,16 @@
 }
 
 @utility btn-primary {
-  @apply btn bg-vino-700 text-white hover:bg-vino-800 shadow-sm;
+  @apply btn bg-vino-700 text-white shadow-sm hover:bg-vino-800 hover:shadow-md;
 }
 
 @utility btn-accent {
-  @apply btn bg-oro-500 text-white hover:bg-oro-600 shadow-sm;
+  @apply btn bg-oro-500 text-white shadow-sm hover:bg-oro-600 hover:shadow-md;
 }
 
 @utility btn-secondary {
-  @apply btn bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 shadow-sm;
+  @apply btn bg-white text-stone-700 border border-stone-200 shadow-sm
+           hover:bg-stone-50 hover:border-stone-300 hover:text-stone-900;
 }
 
 @utility btn-ghost {
@@ -96,21 +98,62 @@
 }
 
 @utility btn-success {
-  @apply btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm;
+  @apply btn bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 hover:shadow-md;
 }
 
 @utility btn-danger {
-  @apply btn bg-red-600 text-white hover:bg-red-700 shadow-sm;
+  @apply btn bg-red-600 text-white shadow-sm hover:bg-red-700 hover:shadow-md;
 }
 
 @utility btn-danger-soft {
-  @apply btn bg-red-50 text-red-700 hover:bg-red-100;
+  @apply btn bg-red-50 text-red-700 ring-1 ring-inset ring-red-200 hover:bg-red-100;
 }
 
+/* Exportar: Excel verde y PDF rojo (colores reconocibles de cada formato) */
+@utility btn-excel {
+  @apply btn bg-white text-emerald-700 border border-emerald-200 shadow-sm
+           hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800;
+}
+
+@utility btn-pdf {
+  @apply btn bg-white text-red-700 border border-red-200 shadow-sm
+           hover:bg-red-50 hover:border-red-300 hover:text-red-800;
+}
+
+/* Botón de solo ícono (acciones de tablas y tarjetas) */
 @utility btn-icon {
   @apply inline-flex items-center justify-center size-8 rounded-lg text-stone-500
-           hover:bg-stone-100 hover:text-stone-900 transition-colors cursor-pointer
-           disabled:opacity-40 disabled:cursor-not-allowed;
+           hover:bg-stone-100 hover:text-stone-900 transition-all duration-150 cursor-pointer
+           active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
+           focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-vino-400;
+}
+
+/*
+ * Tono de cada acción al pasar el mouse. Se combinan con btn-icon o btn-ghost:
+ *   <button class="btn-icon accion-editar"><i class="bi bi-pencil-square"></i></button>
+ * ver = teal · editar = ámbar · eliminar = rojo · aprobar/activar = verde
+ * rechazar/desactivar = rojo · rostro = azul · clave = violeta
+ */
+@utility accion-ver {
+  &:hover:not(:disabled) { background-color: var(--color-teal-50) !important; color: var(--color-teal-700) !important; }
+}
+@utility accion-editar {
+  &:hover:not(:disabled) { background-color: var(--color-amber-50) !important; color: var(--color-amber-600) !important; }
+}
+@utility accion-eliminar {
+  &:hover:not(:disabled) { background-color: var(--color-red-100) !important; color: var(--color-red-700) !important; }
+}
+@utility accion-aprobar {
+  &:hover:not(:disabled) { background-color: var(--color-emerald-50) !important; color: var(--color-emerald-700) !important; }
+}
+@utility accion-rechazar {
+  &:hover:not(:disabled) { background-color: var(--color-red-50) !important; color: var(--color-red-600) !important; }
+}
+@utility accion-rostro {
+  &:hover:not(:disabled) { background-color: var(--color-sky-50) !important; color: var(--color-sky-600) !important; }
+}
+@utility accion-clave {
+  &:hover:not(:disabled) { background-color: var(--color-violet-50) !important; color: var(--color-violet-600) !important; }
 }
 
 /* ---------- Tarjetas ---------- */

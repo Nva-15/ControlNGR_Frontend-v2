@@ -4,8 +4,8 @@
     <p class="page-subtitle">Puntualidad y ausencias según el horario programado.</p>
   </div>
   <div class="flex gap-2">
-    <button class="btn-secondary" (click)="exportarExcel()" [disabled]="!reporteFiltrado.length"><i class="bi bi-file-earmark-excel"></i> Excel</button>
-    <button class="btn-secondary" (click)="exportarPdf()" [disabled]="!reporteFiltrado.length"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+    <button class="btn-excel" (click)="exportarExcel()" [disabled]="!reporteFiltrado.length"><i class="bi bi-file-earmark-excel-fill"></i> Excel</button>
+    <button class="btn-pdf" (click)="exportarPdf()" [disabled]="!reporteFiltrado.length"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</button>
   </div>
 </div>
 
@@ -48,14 +48,14 @@
     <div class="table-wrap">
       <table class="table">
         <thead>
-          <tr><th>Colaborador</th><th>Fecha</th><th>Programado</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Retraso</th><th>Mensaje del colaborador</th><th>Observaciones</th></tr>
+          <tr><th>Colaborador</th><th>Fecha</th><th>Programado</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Retraso</th><th>Mensaje</th><th>Observaciones</th></tr>
         </thead>
         <tbody>
           @for (r of reporteFiltrado; track $index) {
             <tr>
-              <td><p class="font-medium">{{ r.empleadoNombre }}</p><span [class]="getRolClass(r.empleadoRol)">{{ getRolLabel(r.empleadoRol) }}</span></td>
+              <td class="min-w-52"><p class="font-medium">{{ r.empleadoNombre }}</p><span [class]="getRolClass(r.empleadoRol)">{{ getRolLabel(r.empleadoRol) }}</span></td>
               <td class="whitespace-nowrap">{{ getDiaSemanaLabel(r.diaSemana) }} {{ r.fecha.split('-').reverse().join('/') }}</td>
-              <td class="tabular-nums text-stone-600">{{ formatHora(r.horarioEntrada) }} – {{ formatHora(r.horarioSalida) }}</td>
+              <td class="whitespace-nowrap tabular-nums text-stone-600">@if (r.horarioEntrada) { {{ formatHora(r.horarioEntrada) }} – {{ formatHora(r.horarioSalida) }} } @else { — }</td>
               <td class="tabular-nums">{{ formatHora(r.horaEntradaReal) }}</td>
               <td class="tabular-nums">{{ formatHora(r.horaSalidaReal) }}
                 @if (r.salidaAutomatica) { <span class="badge-gray ml-1" title="Salida registrada automáticamente">auto</span> }

@@ -91,10 +91,10 @@
                   </td>
                   <td>
                     <div class="flex justify-end gap-1">
-                      <button class="btn-icon" title="Ver detalle" (click)="verDetalle(s)"><i class="bi bi-eye"></i></button>
+                      <button class="btn-icon accion-ver" title="Ver detalle" (click)="verDetalle(s)"><i class="bi bi-eye"></i></button>
                       @if (s.estado === 'pendiente') {
-                        <button class="btn-icon hover:bg-amber-50! hover:text-amber-600!" title="Editar" (click)="editar(s)"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn-icon hover:bg-red-100! hover:text-red-700!" title="Eliminar" (click)="eliminar(s)"><i class="bi bi-trash3"></i></button>
+                        <button class="btn-icon accion-editar" title="Editar" (click)="editar(s)"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn-icon accion-eliminar" title="Eliminar" (click)="eliminar(s)"><i class="bi bi-trash3"></i></button>
                       }
                     </div>
                   </td>
@@ -104,8 +104,8 @@
           </table>
         </div>
         <div class="flex justify-end gap-2 border-t border-stone-100 px-5 py-3">
-          <button class="btn-secondary btn-sm" (click)="exportarExcel(misFiltradas, 'mis_solicitudes')"><i class="bi bi-file-earmark-excel"></i> Excel</button>
-          <button class="btn-secondary btn-sm" (click)="exportarPDF(misFiltradas, 'Mis solicitudes', 'mis_solicitudes')"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+          <button class="btn-excel btn-sm" (click)="exportarExcel(misFiltradas, 'mis_solicitudes')"><i class="bi bi-file-earmark-excel-fill"></i> Excel</button>
+          <button class="btn-pdf btn-sm" (click)="exportarPDF(misFiltradas, 'Mis solicitudes', 'mis_solicitudes')"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</button>
         </div>
       }
     </div>
@@ -171,7 +171,7 @@
                       <p class="truncate text-sm font-medium">{{ archivo.name }}</p>
                       <p class="text-xs text-stone-500">{{ tamano(archivo.size) }}</p>
                     </div>
-                    <button type="button" class="btn-icon" (click)="archivo = null" title="Quitar"><i class="bi bi-x-lg"></i></button>
+                    <button type="button" class="btn-icon accion-eliminar" (click)="archivo = null" title="Quitar archivo"><i class="bi bi-x-lg"></i></button>
                   </div>
                 } @else {
                   <label class="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-stone-300 p-6 text-center hover:border-vino-300 hover:bg-vino-50/40">
@@ -271,7 +271,7 @@
               }
             </div>
             <div class="flex gap-2 border-t border-stone-100 p-4">
-              <button class="btn-ghost btn-sm" (click)="verDetalle(s)"><i class="bi bi-eye"></i></button>
+              <button class="btn-icon accion-ver" title="Ver detalle" (click)="verDetalle(s)"><i class="bi bi-eye"></i></button>
               <button class="btn-danger-soft btn-sm flex-1" (click)="abrirGestion(s, 'rechazado')"><i class="bi bi-x-lg"></i> Rechazar</button>
               <button class="btn-success btn-sm flex-1" (click)="abrirGestion(s, 'aprobado')"><i class="bi bi-check-lg"></i> Aprobar</button>
             </div>
@@ -302,12 +302,12 @@
                   <td class="text-stone-600">{{ s.aprobadoPor || '—' }}</td>
                   <td>
                     <div class="flex justify-end gap-1">
-                      <button class="btn-icon" title="Ver detalle" (click)="verDetalle(s)"><i class="bi bi-eye"></i></button>
+                      <button class="btn-icon accion-ver" title="Ver detalle" (click)="verDetalle(s)"><i class="bi bi-eye"></i></button>
                       @if (s.estado === 'pendiente') {
-                        <button class="btn-icon hover:text-emerald-700!" title="Aprobar" (click)="abrirGestion(s, 'aprobado')"><i class="bi bi-check-lg"></i></button>
-                        <button class="btn-icon hover:text-red-600!" title="Rechazar" (click)="abrirGestion(s, 'rechazado')"><i class="bi bi-x-lg"></i></button>
+                        <button class="btn-icon accion-aprobar" title="Aprobar" (click)="abrirGestion(s, 'aprobado')"><i class="bi bi-check-lg"></i></button>
+                        <button class="btn-icon accion-rechazar" title="Rechazar" (click)="abrirGestion(s, 'rechazado')"><i class="bi bi-x-lg"></i></button>
                       } @else if (puedeCorregir(s)) {
-                        <button class="btn-ghost btn-sm" (click)="abrirGestion(s, s.estado === 'aprobado' ? 'rechazado' : 'aprobado')">
+                        <button class="btn-ghost btn-sm accion-editar" (click)="abrirGestion(s, s.estado === 'aprobado' ? 'rechazado' : 'aprobado')">
                           <i class="bi bi-arrow-repeat"></i> {{ s.estado === 'aprobado' ? 'Cambiar a rechazada' : 'Cambiar a aprobada' }}
                         </button>
                       }
@@ -319,8 +319,8 @@
           </table>
         </div>
         <div class="flex justify-end gap-2 border-t border-stone-100 px-5 py-3">
-          <button class="btn-secondary btn-sm" (click)="exportarExcel(equipoFiltrado, 'solicitudes_equipo')"><i class="bi bi-file-earmark-excel"></i> Excel</button>
-          <button class="btn-secondary btn-sm" (click)="exportarPDF(equipoFiltrado, 'Solicitudes del equipo', 'solicitudes_equipo')"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+          <button class="btn-excel btn-sm" (click)="exportarExcel(equipoFiltrado, 'solicitudes_equipo')"><i class="bi bi-file-earmark-excel-fill"></i> Excel</button>
+          <button class="btn-pdf btn-sm" (click)="exportarPDF(equipoFiltrado, 'Solicitudes del equipo', 'solicitudes_equipo')"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</button>
         </div>
       }
     </div>
