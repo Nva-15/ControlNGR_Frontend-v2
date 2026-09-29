@@ -20,9 +20,9 @@
           <ul class="space-y-0.5">
             @for (item of grupo.items; track item.ruta) {
               <li>
-                <a [routerLink]="item.ruta" routerLinkActive="bg-white/10! text-white! [&>i]:text-oro-300!"
-                   class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-400 transition hover:bg-white/5 hover:text-white">
-                  <i class="bi text-base text-stone-500 group-hover:text-stone-300" [class]="item.icono"></i>
+                <a [routerLink]="item.ruta" routerLinkActive="menu-activo" ariaCurrentWhenActive="page"
+                   class="menu-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-400">
+                  <i class="menu-icono bi text-base text-stone-500" [class]="item.icono"></i>
                   <span class="flex-1">{{ item.texto }}</span>
                   @if (item.badge && item.badge() > 0) {
                     <span class="rounded-full bg-vino-600 px-2 py-0.5 text-[11px] font-semibold text-white">{{ item.badge() }}</span>
