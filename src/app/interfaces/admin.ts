@@ -118,3 +118,39 @@ export interface CopiaFeriados {
     estado: 'nuevo' | 'existe' | 'fecha_ocupada' | 'fecha_invalida' | 'copiado' | 'no_seleccionado';
   }[];
 }
+
+/** Respaldos de la base de datos (/api/admin/respaldos). */
+export type FrecuenciaRespaldo = 'NINGUNA' | 'DIARIA' | 'SEMANAL' | 'MENSUAL';
+
+export interface ProgramacionRespaldo {
+  frecuencia: FrecuenciaRespaldo;
+  hora: string;
+  diaSemana: number;
+  diaMes: number;
+  conservar: number;
+  incluirArchivos: boolean;
+  actualizadoEn?: string;
+  actualizadoPor?: string;
+}
+
+export interface Respaldo {
+  id: number;
+  archivo: string;
+  tipo: 'MANUAL' | 'PROGRAMADO';
+  estado: 'EN_CURSO' | 'COMPLETADO' | 'FALLIDO';
+  incluyeArchivos: boolean;
+  tamanoBytes?: number | null;
+  iniciadoEn: string;
+  finalizadoEn?: string | null;
+  mensaje?: string | null;
+  creadoPor?: string | null;
+  disponible: boolean;
+}
+
+export interface EstadoRespaldos {
+  programacion: ProgramacionRespaldo;
+  proximo?: string | null;
+  enCurso: boolean;
+  carpetaDisponible: boolean;
+  respaldos: Respaldo[];
+}
