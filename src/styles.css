@@ -432,3 +432,63 @@
 .dark .btn-danger:hover:not(:disabled) { background-color: var(--color-red-500); }
 .dark .shadow-sm, .dark .shadow-md, .dark .shadow-lg, .dark .shadow-2xl { --tw-shadow-color: rgb(0 0 0 / 0.5); }
 .dark .hover\:bg-vino-800:hover { background-color: var(--color-vino-500); }
+
+/* ---------- Menú lateral: contorno brillante al pasar el mouse y en la opción activa ---------- */
+.menu-item {
+  position: relative;
+  isolation: isolate;
+  transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.25s ease, transform 0.2s ease;
+}
+.menu-item::before {
+  /* barra de acento a la izquierda */
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  width: 3px; height: 0;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #ebc57c, #c93a5b);
+  box-shadow: 0 0 8px rgb(235 197 124 / 0.7);
+  transform: translateY(-50%);
+  transition: height 0.25s ease;
+}
+.menu-icono { transition: color 0.2s ease, transform 0.25s ease, filter 0.25s ease; }
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  color: #fff;
+  background-color: rgb(255 255 255 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(235 197 124 / 0.35), 0 0 14px -2px rgb(201 58 91 / 0.55);
+  transform: translateX(3px);
+  outline: none;
+}
+.menu-item:hover::before,
+.menu-item:focus-visible::before { height: 55%; }
+.menu-item:hover .menu-icono,
+.menu-item:focus-visible .menu-icono {
+  color: #f3dcae;
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 4px rgb(235 197 124 / 0.8));
+}
+
+.menu-item.menu-activo {
+  color: #fff;
+  background: linear-gradient(90deg, rgb(201 58 91 / 0.28), rgb(255 255 255 / 0.06) 70%);
+  box-shadow: inset 0 0 0 1px rgb(235 197 124 / 0.55), 0 0 16px -2px rgb(201 58 91 / 0.7);
+  animation: menu-brillo 2.8s ease-in-out infinite;
+}
+.menu-item.menu-activo::before { height: 70%; }
+.menu-item.menu-activo .menu-icono {
+  color: #ebc57c;
+  filter: drop-shadow(0 0 5px rgb(235 197 124 / 0.85));
+}
+
+@keyframes menu-brillo {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgb(235 197 124 / 0.45), 0 0 12px -3px rgb(201 58 91 / 0.55); }
+  50%      { box-shadow: inset 0 0 0 1px rgb(235 197 124 / 0.8),  0 0 20px -1px rgb(201 58 91 / 0.85); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-item, .menu-item::before, .menu-icono { transition: none; }
+  .menu-item:hover, .menu-item:focus-visible { transform: none; }
+  .menu-item.menu-activo { animation: none; }
+}
