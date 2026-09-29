@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
 import {
-  CopiaFeriados, Departamento, Feriado, Parametro, RolAsistencia, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
+  CopiaFeriados, Departamento, EstadoRespaldos, ProgramacionRespaldo, Respaldo, Feriado, Parametro, RolAsistencia, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
 } from '../interfaces/admin';
 import { MotivoLicencia, TipoSolicitud } from '../interfaces/solicitud';
 import { FeriadoLaborado, MovimientoSaldo, TipoSaldo } from '../interfaces/saldo';
@@ -16,6 +16,19 @@ export class AdminService {
   private get url() {
     return `${this.apiConfig.apiUrl}/admin`;
   }
+
+  // Respaldos de la base de datos
+  respaldos(): Observable<EstadoRespaldos> { return this.http.get<EstadoRespaldos>(`${this.url}/respaldos`); }
+  programarRespaldos(p: ProgramacionRespaldo): Observable<ProgramacionRespaldo> {
+    return this.http.put<ProgramacionRespaldo>(`${this.url}/respaldos/programacion`, p);
+  }
+  crearRespaldo(incluirArchivos: boolean): Observable<Respaldo> {
+    return this.http.post<Respaldo>(`${this.url}/respaldos`, { incluirArchivos });
+  }
+  descargarRespaldo(id: number): Observable<Blob> {
+    return this.http.get(`${this.url}/respaldos/${id}/descargar`, { responseType: 'blob' });
+  }
+  eliminarRespaldo(id: number): Observable<unknown> { return this.http.delete(`${this.url}/respaldos/${id}`); }
 
   // Parametros
   parametros(): Observable<Parametro[]> { return this.http.get<Parametro[]>(`${this.url}/parametros`); }

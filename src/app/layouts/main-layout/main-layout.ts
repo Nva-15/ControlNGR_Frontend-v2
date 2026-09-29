@@ -79,6 +79,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
             { ruta: '/admin/roles', texto: 'Roles y aprobaciones', icono: 'bi-diagram-2' },
             { ruta: '/admin/catalogos', texto: 'Tipos de solicitud', icono: 'bi-list-check' },
             { ruta: '/admin/parametros', texto: 'Parámetros', icono: 'bi-sliders' },
+            { ruta: '/admin/respaldos', texto: 'Respaldos', icono: 'bi-database-check' },
           ]
         },
         {

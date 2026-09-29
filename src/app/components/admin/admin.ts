@@ -12,6 +12,7 @@ import { AdminCatalogosComponent } from './secciones/catalogos';
 import { AdminParametrosComponent } from './secciones/parametros';
 import { AdminFacialComponent } from './secciones/facial';
 import { AdminAsistenciaComponent } from './secciones/asistencia';
+import { AdminRespaldosComponent } from './secciones/respaldos';
 
 const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   saldos: { titulo: 'Saldos y carga inicial', descripcion: 'Días de vacaciones y de compensación que se deben a cada empleado.' },
@@ -24,6 +25,7 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   roles: { titulo: 'Roles y aprobaciones', descripcion: 'Jerarquía de roles y quién aprueba las solicitudes de quién.' },
   catalogos: { titulo: 'Tipos de solicitud', descripcion: 'Tipos de solicitud y motivos de licencia.' },
   parametros: { titulo: 'Parámetros', descripcion: 'Valores que controlan las reglas del sistema.' },
+  respaldos: { titulo: 'Respaldos', descripcion: 'Copias de seguridad de la base de datos: automáticas (diarias, semanales o mensuales) o en el momento.' },
 };
 
 /** Panel maestro del administrador del sistema. */
@@ -33,7 +35,7 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   imports: [
     AdminSaldosComponent, AdminUsuariosComponent, AdminRedComponent, AdminFeriadosComponent,
     AdminDepartamentosComponent, AdminRolesComponent, AdminCatalogosComponent, AdminParametrosComponent,
-    AdminFacialComponent, AdminAsistenciaComponent
+    AdminFacialComponent, AdminAsistenciaComponent, AdminRespaldosComponent
   ],
   template: `
     <div class="page-header">
@@ -54,6 +56,7 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
       @case ('roles') { <app-admin-roles /> }
       @case ('catalogos') { <app-admin-catalogos /> }
       @case ('parametros') { <app-admin-parametros /> }
+      @case ('respaldos') { <app-admin-respaldos /> }
       @default { <div class="card"><div class="empty-state">Sección no encontrada.</div></div> }
     }
   `
