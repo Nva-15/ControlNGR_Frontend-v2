@@ -7,17 +7,14 @@ import { FeriadoLaborado, MovimientoSaldo, TipoSaldo } from '../../../interfaces
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { dias, fechaCorta, mensajeError } from '../../../utils/format';
 import { rolLabel } from '../../../utils/roles';
+import { normalizar, opciones } from '../../../utils/filtros';
 
 @Component({
   selector: 'app-admin-saldos',
   standalone: true,
   imports: [FormsModule, ModalComponent],
   template: `
-    <div class="mb-4 flex flex-wrap items-center gap-3">
-      <div class="relative min-w-64 flex-1">
-        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
-        <input class="input pl-9!" placeholder="Buscar por nombre o DNI" [(ngModel)]="busqueda" />
-      </div>
+    <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
       <button class="btn-secondary" (click)="verFeriados()"><i class="bi bi-calendar-heart"></i> Feriados laborados</button>
       <button class="btn-secondary" (click)="procesarVacaciones()" [disabled]="procesando"><i class="bi bi-arrow-repeat"></i> Procesar aniversarios</button>
     </div>
@@ -26,6 +23,22 @@ import { rolLabel } from '../../../utils/roles';
       <i class="bi bi-info-circle"></i>
       <p><strong>Carga inicial:</strong> registre los días que se deben a cada empleado a la fecha de hoy. El sistema deja el saldo exactamente
         en ese valor y guarda la diferencia en el historial. Desde aquí en adelante los aniversarios y feriados se abonan solos.</p>
+    </div>
+
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <div class="relative min-w-64 flex-1">
+        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
+        <input class="input pl-9!" placeholder="Buscar por nombre o DNI" [(ngModel)]="busqueda" />
+      </div>
+      <select class="select w-64" [(ngModel)]="filtroDepartamento" aria-label="Filtrar por departamento">
+        <option value="">Todos los departamentos</option>
+        @for (d of departamentos; track d) { <option [value]="d">{{ d }}</option> }
+      </select>
+      <select class="select w-44" [(ngModel)]="filtroRol" aria-label="Filtrar por rol">
+        <option value="">Todos los roles</option>
+        @for (r of roles; track r) { <option [value]="r">{{ rolLabel(r) }}</option> }
+      </select>
+      @if (hayFiltros) { <button class="btn-ghost btn-sm" (click)="limpiarFiltros()"><i class="bi bi-x-lg"></i> Limpiar</button> }
     </div>
 
     <div class="card">
@@ -38,7 +51,7 @@ import { rolLabel } from '../../../utils/roles';
             <tbody>
               @for (s of filtrados; track s.empleadoId) {
                 <tr [class.opacity-50]="!s.activo">
-                  <td><p class="font-medium">{{ s.empleadoNombre }}</p><p class="text-xs text-stone-500">{{ s.dni }} · {{ rolLabel(s.rol) }}</p></td>
+                  <td><p class="font-medium">{{ s.empleadoNombre }}</p><p class="text-xs text-stone-500">{{ s.dni }} · {{ rolLabel(s.rol) }}@if (s.departamento) { · {{ s.departamento }} }</p></td>
                   <td class="text-stone-600">{{ fechaCorta(s.ingreso) }}</td>
                   <td class="text-right tabular-nums">
                     <span class="font-semibold">{{ dias(s.vacaciones.saldo) }}</span>
@@ -60,6 +73,8 @@ import { rolLabel } from '../../../utils/roles';
             </tbody>
           </table>
         </div>
+        @if (!filtrados.length) { <div class="empty-state"><i class="bi bi-funnel text-3xl"></i><p>No hay empleados con esos filtros.</p></div> }
+        <p class="border-t border-stone-100 px-4 py-2 text-xs text-stone-500">{{ filtrados.length }} de {{ saldos.length }} empleados</p>
       }
     </div>
 
@@ -168,6 +183,10 @@ export class AdminSaldosComponent implements OnInit {
   guardando = false;
   procesando = false;
   busqueda = '';
+  filtroDepartamento = '';
+  filtroRol = '';
+  departamentos: string[] = [];
+  roles: string[] = [];
 
   carga: { emp: SaldoEmpleado; vacaciones: number | null; compensacion: number | null; observacion: string } | null = null;
   ajuste: { emp: SaldoEmpleado; tipo: TipoSaldo; dias: number | null; observacion: string } | null = null;
@@ -184,15 +203,27 @@ export class AdminSaldosComponent implements OnInit {
 
   cargar() {
     this.admin.saldos().subscribe({
-      next: s => { this.saldos = s.filter(x => x.rol !== 'director').sort((a, b) => a.empleadoNombre.localeCompare(b.empleadoNombre)); this.cargando = false; },
+      next: s => { 
+        this.saldos = s.filter(x => x.rol !== 'director').sort((a, b) => a.empleadoNombre.localeCompare(b.empleadoNombre));
+        this.departamentos = opciones(this.saldos, x => x.departamento);
+        this.roles = opciones(this.saldos, x => x.rol);
+        this.cargando = false;
+      },
       error: e => { this.cargando = false; this.notification.error(mensajeError(e)); }
     });
   }
 
   get filtrados() {
-    const q = this.busqueda.trim().toLowerCase();
-    return q ? this.saldos.filter(s => s.empleadoNombre.toLowerCase().includes(q) || s.dni.includes(q)) : this.saldos;
+    const q = normalizar(this.busqueda.trim());
+    return this.saldos.filter(s =>
+      (!q || normalizar(s.empleadoNombre).includes(q) || s.dni.includes(q)) &&
+      (!this.filtroDepartamento || s.departamento === this.filtroDepartamento) &&
+      (!this.filtroRol || s.rol === this.filtroRol));
   }
+
+  get hayFiltros() { return !!(this.busqueda.trim() || this.filtroDepartamento || this.filtroRol); }
+
+  limpiarFiltros() { this.busqueda = ''; this.filtroDepartamento = ''; this.filtroRol = ''; }
 
   abrirCarga(emp: SaldoEmpleado) {
     this.carga = { emp, vacaciones: emp.vacaciones.saldo, compensacion: emp.compensacion.saldo, observacion: '' };

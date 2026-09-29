@@ -37,7 +37,7 @@
           <button class="btn-secondary btn-sm" (click)="cambiarEstadoMenu = !cambiarEstadoMenu">Estado <i class="bi bi-chevron-down"></i></button>
           @if (cambiarEstadoMenu) {
             <div class="fixed inset-0 z-10" (click)="cambiarEstadoMenu = false"></div>
-            <div class="absolute right-10 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg border border-stone-200 bg-white p-1 shadow-lg">
+            <div class="absolute right-10 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg border border-stone-200 bg-superficie p-1 shadow-lg">
               @for (e of estadosSemana; track e.value) {
                 <button class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-stone-50"
                         (click)="cambiarEstado(e.value); cambiarEstadoMenu = false">
@@ -79,9 +79,16 @@
         <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
         <input class="input pl-9!" placeholder="Buscar colaborador" [(ngModel)]="filtroBusqueda" (ngModelChange)="aplicarFiltros()" />
       </div>
-      <select class="select w-48" [(ngModel)]="filtroRol" (ngModelChange)="onFiltroRolChange()">
+      <select class="select w-64" [(ngModel)]="filtroDepartamento" (ngModelChange)="aplicarFiltros()" aria-label="Filtrar por departamento">
+        <option value="">Todos los departamentos</option>
+        @for (d of departamentos; track d) { <option [value]="d">{{ d }}</option> }
+      </select>
+      <select class="select w-48" [(ngModel)]="filtroRol" (ngModelChange)="onFiltroRolChange()" aria-label="Filtrar por rol">
         @for (r of roles; track r.value) { <option [value]="r.value">{{ r.label }}</option> }
       </select>
+      @if (filtroBusqueda || filtroRol || filtroDepartamento) {
+        <button class="btn-ghost btn-sm" (click)="limpiarFiltros()"><i class="bi bi-x-lg"></i> Limpiar</button>
+      }
       <div class="flex flex-wrap gap-1.5">
         @for (t of tiposDia; track t.value) {
           <span class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium ring-1 ring-stone-200" [class]="t.clase">
@@ -110,7 +117,7 @@
           <tbody>
             @for (emp of empleadosFiltrados; track emp.empleadoId) {
               <tr>
-                <td class="sticky left-0 z-10 border-t border-stone-100 bg-white px-4 py-2">
+                <td class="sticky left-0 z-10 border-t border-stone-100 bg-superficie px-4 py-2">
                   <p class="font-medium text-stone-900">{{ emp.empleadoNombre }}</p>
                   <span [class]="getRolClass(emp.empleadoRol)">{{ getRolLabel(emp.empleadoRol) }}</span>
                 </td>

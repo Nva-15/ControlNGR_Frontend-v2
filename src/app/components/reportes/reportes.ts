@@ -8,6 +8,7 @@ import { ExportService } from '../../services/export';
 import { NotificationService } from '../../services/notification.service';
 import { ReporteAsistencia } from '../../interfaces/asistencia';
 import { rolBadge, rolLabel } from '../../utils/roles';
+import { normalizar, opciones } from '../../utils/filtros';
 import { hoyIso } from '../../utils/format';
 
 @Component({
@@ -33,6 +34,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
   fechaHoy = '';
   filtroBusqueda = '';
   filtroRol = '';
+  filtroDepartamento = '';
   filtroEstado = '';
 
   /** Solo los roles que trabajan con horario (los únicos que aparecen en el reporte). */
@@ -149,8 +151,12 @@ export class ReportesComponent implements OnInit, OnDestroy {
     let filtrado = [...this.reporteCompleto];
 
     if (this.filtroBusqueda) {
-      const busqueda = this.filtroBusqueda.toLowerCase();
-      filtrado = filtrado.filter(r => r.empleadoNombre.toLowerCase().includes(busqueda));
+      const busqueda = normalizar(this.filtroBusqueda.trim());
+      filtrado = filtrado.filter(r => normalizar(r.empleadoNombre).includes(busqueda));
+    }
+
+    if (this.filtroDepartamento) {
+      filtrado = filtrado.filter(r => r.empleadoDepartamento === this.filtroDepartamento);
     }
 
     if (this.filtroRol) {
@@ -224,9 +230,15 @@ export class ReportesComponent implements OnInit, OnDestroy {
     return this.authService.isGestion();
   }
 
+  /** Departamentos presentes en el reporte cargado. */
+  get departamentos(): string[] {
+    return opciones(this.reporteCompleto, r => r.empleadoDepartamento);
+  }
+
   limpiarFiltros(): void {
     this.filtroBusqueda = '';
     this.filtroRol = '';
+    this.filtroDepartamento = '';
     this.filtroEstado = '';
     this.fechaInicio = this.fechaHoy;
     this.fechaFin = this.fechaHoy;

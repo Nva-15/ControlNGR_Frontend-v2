@@ -1,6 +1,6 @@
 <div class="grid min-h-screen lg:grid-cols-2">
   <!-- Panel de marca -->
-  <aside class="relative hidden overflow-hidden bg-stone-950 lg:flex lg:flex-col lg:justify-between p-12">
+  <aside class="tema-fijo relative hidden overflow-hidden bg-stone-950 lg:flex lg:flex-col lg:justify-between p-12">
     <div class="absolute -right-32 -top-32 size-[28rem] rounded-full bg-vino-700/30 blur-3xl"></div>
     <div class="absolute -bottom-40 -left-24 size-[26rem] rounded-full bg-oro-500/20 blur-3xl"></div>
     <app-logo [tamano]="44" [oscuro]="true" class="relative" />
@@ -28,7 +28,8 @@
   </aside>
 
   <!-- Formulario -->
-  <main class="flex items-center justify-center p-6 sm:p-12">
+  <main class="relative flex items-center justify-center p-6 sm:p-12">
+    <app-boton-tema class="absolute right-4 top-4" />
     <div class="w-full max-w-sm">
       <app-logo [tamano]="40" class="mb-10 lg:hidden" />
 

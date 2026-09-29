@@ -71,6 +71,7 @@ export interface SaldoEmpleado {
   empleadoNombre: string;
   dni: string;
   rol: string;
+  departamento?: string;
   activo: boolean;
   ingreso?: string;
   vacaciones: SaldoResumen;

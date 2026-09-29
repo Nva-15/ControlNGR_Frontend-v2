@@ -15,7 +15,7 @@ type Estado = 'iniciando' | 'sin-https' | 'sin-camara' | 'permiso-denegado' | 'e
   standalone: true,
   template: `
     <div class="space-y-3">
-      <div class="relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-xl bg-stone-900">
+      <div class="relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-xl bg-stone-900 tema-fijo">
         <video #video class="h-full w-full -scale-x-100 object-cover" autoplay muted playsinline></video>
         <canvas #lienzo class="pointer-events-none absolute inset-0 h-full w-full"></canvas>
 

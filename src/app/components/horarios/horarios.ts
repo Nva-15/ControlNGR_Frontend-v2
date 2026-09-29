@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../shared/modal/modal.component';
 import { rolBadge, rolLabel } from '../../utils/roles';
+import { normalizar, opciones } from '../../utils/filtros';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HorariosService } from '../../services/horarios';
 import { EmpleadosService } from '../../services/empleados';
@@ -49,6 +50,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   isLoading = false;
   filtroRol = '';
   filtroBusqueda = '';
+  filtroDepartamento = '';
 
   // Modal de edicion
   mostrarModal = false;
@@ -81,7 +83,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   roles: { value: string; label: string }[] = [{ value: '', label: 'Todos los roles' }];
 
   tiposDia = [
-    { value: 'normal', label: 'Laboral', clase: 'bg-white text-stone-700', icon: 'bi-briefcase' },
+    { value: 'normal', label: 'Laboral', clase: 'bg-superficie text-stone-700', icon: 'bi-briefcase' },
     { value: 'descanso', label: 'Descanso', clase: 'bg-stone-200 text-stone-700', icon: 'bi-moon-stars' },
     { value: 'compensado', label: 'Compensado', clase: 'bg-sky-100 text-sky-800', icon: 'bi-calendar-check' },
     { value: 'vacaciones', label: 'Vacaciones', clase: 'bg-oro-100 text-oro-800', icon: 'bi-sun' },
@@ -270,17 +272,32 @@ export class HorariosComponent implements OnInit, OnDestroy {
       );
     }
 
+    if (this.filtroDepartamento) {
+      empleados = empleados.filter(e => e.empleadoDepartamento === this.filtroDepartamento);
+    }
+
     // Filtrar por búsqueda
     if (this.filtroBusqueda) {
-      empleados = empleados.filter(e =>
-        e.empleadoNombre.toLowerCase().includes(this.filtroBusqueda.toLowerCase())
-      );
+      const q = normalizar(this.filtroBusqueda.trim());
+      empleados = empleados.filter(e => normalizar(e.empleadoNombre).includes(q));
     }
 
     this.empleadosFiltrados = empleados;
   }
 
   onFiltroRolChange() {
+    this.aplicarFiltros();
+  }
+
+  /** Departamentos presentes en la semana cargada. */
+  get departamentos(): string[] {
+    return opciones(this.semanaSeleccionada?.empleados || [], e => e.empleadoDepartamento);
+  }
+
+  limpiarFiltros() {
+    this.filtroBusqueda = '';
+    this.filtroRol = '';
+    this.filtroDepartamento = '';
     this.aplicarFiltros();
   }
 

@@ -17,13 +17,19 @@
     <div class="mx-2 hidden h-8 w-px bg-stone-200 lg:block"></div>
     @if (isAdminOrSupervisor()) {
       <div class="min-w-48 flex-1"><label class="label">Buscar</label><input class="input" placeholder="Colaborador" [(ngModel)]="filtroBusqueda" (ngModelChange)="aplicarFiltros()" /></div>
+      <div class="w-52"><label class="label">Departamento</label>
+        <select class="select" [(ngModel)]="filtroDepartamento" (ngModelChange)="aplicarFiltros()">
+          <option value="">Todos</option>
+          @for (d of departamentos; track d) { <option [value]="d">{{ d }}</option> }
+        </select>
+      </div>
       <div class="w-44"><label class="label">Rol</label>
         <select class="select" [(ngModel)]="filtroRol" (ngModelChange)="aplicarFiltros()">
           @for (r of roles; track r.value) { <option [value]="r.value">{{ r.label }}</option> }
         </select>
       </div>
     }
-    <div class="w-44"><label class="label">Estado</label>
+    <div class="w-48"><label class="label">Estado</label>
       <select class="select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
         @for (e of estados; track e.value) { <option [value]="e.value">{{ e.label }}</option> }
       </select>

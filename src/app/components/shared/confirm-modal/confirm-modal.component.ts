@@ -9,8 +9,8 @@ import { Subscription } from 'rxjs';
   template: `
     @if (dialog) {
       <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-stone-950/50 backdrop-blur-[2px]" (click)="respond(false)"></div>
-        <div class="relative w-full max-w-md rounded-2xl bg-white shadow-2xl" role="alertdialog" aria-modal="true">
+        <div class="tema-fijo absolute inset-0 bg-stone-950/50 backdrop-blur-[2px]" (click)="respond(false)"></div>
+        <div class="relative w-full max-w-md rounded-2xl bg-superficie shadow-2xl" role="alertdialog" aria-modal="true">
           <div class="flex gap-4 p-6">
             <div class="flex size-11 shrink-0 items-center justify-center rounded-full" [class]="iconoFondo()">
               <i class="bi text-xl" [class]="icono()"></i>

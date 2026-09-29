@@ -32,6 +32,7 @@
     empleadoNombre: string;
     empleadoRol: string;
     empleadoCargo: string;
+    empleadoDepartamento?: string;
     fecha: string;
     diaSemana: string;
     horarioEntrada: string | null;
