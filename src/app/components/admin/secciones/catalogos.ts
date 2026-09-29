@@ -10,8 +10,8 @@ import { mensajeError } from '../../../utils/format';
   standalone: true,
   imports: [FormsModule],
   template: `
-    <div class="grid gap-6 xl:grid-cols-5">
-      <section class="card xl:col-span-3">
+    <div class="grid gap-6 2xl:grid-cols-5">
+      <section class="card 2xl:col-span-3">
         <div class="card-header"><h3 class="card-title">Tipos de solicitud</h3></div>
         <div class="table-wrap">
           <table class="table">
@@ -20,7 +20,7 @@ import { mensajeError } from '../../../utils/format';
               @for (t of tipos; track t.id) {
                 <tr>
                   <td>
-                    <input class="input py-1!" [(ngModel)]="t.nombre" />
+                    <input class="input min-w-44 py-1!" [(ngModel)]="t.nombre" />
                     <p class="mt-1 font-mono text-xs text-stone-500">{{ t.codigo }}</p>
                   </td>
                   <td>
@@ -38,7 +38,7 @@ import { mensajeError } from '../../../utils/format';
         </div>
       </section>
 
-      <section class="card xl:col-span-2">
+      <section class="card 2xl:col-span-2">
         <div class="card-header"><h3 class="card-title">Motivos de licencia</h3></div>
         <div class="card-body space-y-4">
           <div class="flex gap-2">

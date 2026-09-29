@@ -51,8 +51,8 @@ import { rolLabel } from '../../../utils/roles';
                   <td>
                     <div class="flex justify-end gap-1">
                       <button class="btn-secondary btn-sm" (click)="abrirCarga(s)"><i class="bi bi-pencil-square"></i> Carga inicial</button>
-                      <button class="btn-ghost btn-sm" (click)="abrirAjuste(s)"><i class="bi bi-plus-slash-minus"></i> Ajuste</button>
-                      <button class="btn-icon" title="Historial" (click)="verMovimientos(s)"><i class="bi bi-clock-history"></i></button>
+                      <button class="btn-ghost btn-sm accion-editar" (click)="abrirAjuste(s)"><i class="bi bi-plus-slash-minus"></i> Ajuste</button>
+                      <button class="btn-icon accion-ver" title="Historial de movimientos" (click)="verMovimientos(s)"><i class="bi bi-clock-history"></i></button>
                     </div>
                   </td>
                 </tr>

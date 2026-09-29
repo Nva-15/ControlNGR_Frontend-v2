@@ -65,7 +65,7 @@ import { mensajeError } from '../../../utils/format';
                 <span class="flex-1"><span class="font-medium">{{ nombre(r.solicitante) }}</span>
                   <i class="bi bi-arrow-right mx-2 text-stone-400"></i>
                   <span class="font-medium text-vino-700">{{ nombre(r.aprobador) }}</span></span>
-                <button class="btn-icon hover:bg-red-50! hover:text-red-600!" title="Quitar" (click)="quitarRegla(r)"><i class="bi bi-x-lg"></i></button>
+                <button class="btn-icon accion-eliminar" title="Quitar" (click)="quitarRegla(r)"><i class="bi bi-x-lg"></i></button>
               </li>
             }
           </ul>

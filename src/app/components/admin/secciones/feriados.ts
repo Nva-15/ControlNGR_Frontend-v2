@@ -14,9 +14,9 @@ import { mensajeError } from '../../../utils/format';
     <div class="card">
       <div class="card-header">
         <div class="flex items-center gap-2">
-          <button class="btn-icon" (click)="cambiarAnio(-1)"><i class="bi bi-chevron-left"></i></button>
+          <button class="btn-icon" title="Año anterior" aria-label="Año anterior" (click)="cambiarAnio(-1)"><i class="bi bi-chevron-left"></i></button>
           <h3 class="card-title tabular-nums">{{ anio }}</h3>
-          <button class="btn-icon" (click)="cambiarAnio(1)"><i class="bi bi-chevron-right"></i></button>
+          <button class="btn-icon" title="Año siguiente" aria-label="Año siguiente" (click)="cambiarAnio(1)"><i class="bi bi-chevron-right"></i></button>
           <span class="badge-gray">{{ feriados.length }} feriados</span>
         </div>
         <div class="flex gap-2">
@@ -40,8 +40,8 @@ import { mensajeError } from '../../../utils/format';
                 <td><span [class]="f.activo ? 'badge-green' : 'badge-gray'">{{ f.activo ? 'Activo' : 'Inactivo' }}</span></td>
                 <td>
                   <div class="flex justify-end gap-1">
-                    <button class="btn-icon hover:bg-amber-50! hover:text-amber-600!" title="Editar" (click)="abrir(f)"><i class="bi bi-pencil-square"></i></button>
-                    <button class="btn-icon hover:bg-red-100! hover:text-red-700!" title="Eliminar" (click)="eliminar(f)"><i class="bi bi-trash3"></i></button>
+                    <button class="btn-icon accion-editar" title="Editar" (click)="abrir(f)"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn-icon accion-eliminar" title="Eliminar" (click)="eliminar(f)"><i class="bi bi-trash3"></i></button>
                   </div>
                 </td>
               </tr>
