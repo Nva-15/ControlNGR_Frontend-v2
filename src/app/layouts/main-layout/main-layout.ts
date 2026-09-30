@@ -88,6 +88,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
             { ruta: '/empleados', texto: 'Empleados', icono: 'bi-people' },
             { ruta: '/horarios', texto: 'Horarios', icono: 'bi-calendar-week' },
             { ruta: '/organigrama', texto: 'Organigrama', icono: 'bi-diagram-3' },
+            { ruta: '/herramientas', texto: '+ Herramientas', icono: 'bi-grid-3x3-gap' },
           ]
         }
       ];
@@ -102,6 +103,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
           { ruta: '/horarios', texto: 'Horarios', icono: 'bi-calendar-week' },
           { ruta: '/eventos', texto: 'Eventos', icono: 'bi-megaphone', badge: () => this.resumen?.eventosSinResponder || 0 },
           { ruta: '/organigrama', texto: 'Organigrama', icono: 'bi-diagram-3' },
+          { ruta: '/herramientas', texto: '+ Herramientas', icono: 'bi-grid-3x3-gap' },
         ]
       }
     ];

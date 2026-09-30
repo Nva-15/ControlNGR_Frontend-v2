@@ -51,6 +51,8 @@ export class HorariosComponent implements OnInit, OnDestroy {
   filtroRol = '';
   filtroBusqueda = '';
   filtroDepartamento = '';
+  /** El filtro por el área del usuario se aplica una sola vez, al abrir la pantalla. */
+  private filtroInicialAplicado = false;
 
   // Modal de edicion
   mostrarModal = false;
@@ -230,6 +232,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
     this.horariosService.getSemanaById(semanaId).subscribe({
       next: (semana) => {
         this.semanaSeleccionada = semana;
+        this.aplicarFiltroInicial();
         this.aplicarFiltros();
         this.isLoading = false;
       },
@@ -245,6 +248,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
     this.horariosService.getSemanaVigente().subscribe({
       next: (semana) => {
         this.semanaSeleccionada = semana;
+        this.aplicarFiltroInicial();
         this.aplicarFiltros();
         this.isLoading = false;
       },
@@ -287,6 +291,18 @@ export class HorariosComponent implements OnInit, OnDestroy {
 
   onFiltroRolChange() {
     this.aplicarFiltros();
+  }
+
+  /**
+   * Al abrir Horarios, cada colaborador ve primero a su área (Soporte, HD, NOC...) para no cargar
+   * a todo el personal. La gerencia y el admin empiezan viendo todo. "Limpiar" muestra a todos.
+   */
+  private aplicarFiltroInicial() {
+    if (this.filtroInicialAplicado || !this.semanaSeleccionada) return;
+    this.filtroInicialAplicado = true;
+    if (this.authService.isAdmin() || this.authService.isGerencia()) return;
+    const area = this.authService.empleado()?.departamentoNombre;
+    if (area && this.departamentos.includes(area)) this.filtroDepartamento = area;
   }
 
   /** Departamentos presentes en la semana cargada. */

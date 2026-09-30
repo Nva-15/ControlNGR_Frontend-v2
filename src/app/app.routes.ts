@@ -38,6 +38,8 @@ export const routes: Routes = [
         loadComponent: () => import('./components/horarios/horarios').then(m => m.HorariosComponent) },
       { path: 'organigrama', title: 'Organigrama · Control NGR',
         loadComponent: () => import('./components/organigrama/organigrama').then(m => m.OrganigramaComponent) },
+      { path: 'herramientas', title: 'Herramientas · Control NGR',
+        loadComponent: () => import('./components/herramientas/herramientas').then(m => m.HerramientasComponent) },
 
       // Gestion
       { path: 'empleados', canActivate: [gestionGuard], title: 'Empleados · Control NGR',
