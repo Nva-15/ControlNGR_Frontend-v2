@@ -5,27 +5,36 @@
   }
 
   <!-- Menu lateral -->
-  <aside class="fixed inset-y-0 left-0 z-50 tema-fijo flex w-64 flex-col bg-stone-950 transition-transform duration-200 lg:translate-x-0"
-         [class.-translate-x-full]="!menuMovilAbierto">
-    <div class="flex h-16 items-center px-5">
+  <aside class="menu-lateral fixed inset-y-0 left-0 z-50 tema-fijo flex w-64 flex-col bg-stone-950 lg:translate-x-0"
+         [class.-translate-x-full]="!menuMovilAbierto" [class.menu-contraido]="menuContraido">
+    <div class="menu-cabecera flex h-16 items-center px-5">
       <app-logo [tamano]="32" [oscuro]="true" />
     </div>
+    <button type="button" class="menu-toggle" (click)="alternarMenu()"
+            [attr.aria-label]="menuContraido ? 'Expandir menú' : 'Contraer menú'" [attr.aria-expanded]="!menuContraido"
+            [title]="menuContraido ? 'Expandir menú' : 'Contraer menú'">
+      <i class="bi bi-chevron-left"></i>
+    </button>
 
     <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-4">
       @for (grupo of grupos; track $index) {
         <div>
           @if (grupo.titulo) {
-            <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-stone-500">{{ grupo.titulo }}</p>
+            <p class="menu-titulo-grupo mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-stone-500">{{ grupo.titulo }}</p>
+            <div class="menu-separador mx-2 mb-3 h-px bg-white/10" aria-hidden="true"></div>
           }
           <ul class="space-y-0.5">
             @for (item of grupo.items; track item.ruta) {
               <li>
                 <a [routerLink]="item.ruta" routerLinkActive="menu-activo" ariaCurrentWhenActive="page"
-                   class="menu-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-400">
+                   class="menu-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-stone-400"
+                   [attr.aria-label]="item.texto"
+                   (mouseenter)="mostrarTooltip($event, item.texto)" (focus)="mostrarTooltip($event, item.texto)"
+                   (mouseleave)="tooltip = null" (blur)="tooltip = null">
                   <i class="menu-icono bi text-base text-stone-500" [class]="item.icono"></i>
-                  <span class="flex-1">{{ item.texto }}</span>
+                  <span class="menu-texto flex-1">{{ item.texto }}</span>
                   @if (item.badge && item.badge() > 0) {
-                    <span class="rounded-full bg-vino-600 px-2 py-0.5 text-[11px] font-semibold text-white">{{ item.badge() }}</span>
+                    <span class="menu-badge rounded-full bg-vino-600 px-2 py-0.5 text-[11px] font-semibold text-white">{{ item.badge() }}</span>
                   }
                 </a>
               </li>
@@ -36,9 +45,9 @@
     </nav>
 
     <div class="border-t border-white/10 p-3">
-      <div class="flex items-center gap-3 rounded-lg px-2 py-2">
+      <div class="menu-usuario flex items-center gap-3 rounded-lg px-2 py-2">
         <app-avatar [nombre]="nombre()" [foto]="empleado()?.foto" [tamano]="34" />
-        <div class="min-w-0 flex-1">
+        <div class="menu-usuario-datos min-w-0 flex-1">
           <p class="truncate text-sm font-medium text-white">{{ nombre() }}</p>
           <p class="truncate text-xs text-stone-400">{{ auth.getRolDisplayName() }}</p>
         </div>
@@ -49,8 +58,12 @@
     </div>
   </aside>
 
+  @if (tooltip) {
+    <div class="menu-tooltip tema-fijo" role="tooltip" [style.top.px]="tooltip.top">{{ tooltip.texto }}</div>
+  }
+
   <!-- Contenido -->
-  <div class="lg:pl-64">
+  <div class="menu-contenido lg:pl-64" [class.contenido-contraido]="menuContraido">
     <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-stone-200/70 bg-superficie/85 px-4 backdrop-blur sm:px-6">
       <button type="button" class="btn-icon lg:hidden" (click)="menuMovilAbierto = true" aria-label="Abrir menú">
         <i class="bi bi-list text-xl"></i>
