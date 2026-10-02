@@ -37,7 +37,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
   filtroDepartamento = '';
   filtroEstado = '';
 
-  /** Solo los roles que trabajan con horario (los únicos que aparecen en el reporte). */
+  /** Roles que trabajan con horario; las opciones del filtro suman los roles de quien marcó sin horario. */
   roles: { value: string; label: string }[] = [{ value: '', label: 'Todos los roles' }];
 
   estados = [
@@ -51,7 +51,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
     { value: 'Compensado', label: 'Compensado' },
     { value: 'Descanso_medico', label: 'Descanso médico' },
     { value: 'Licencia', label: 'Licencia' },
-    { value: 'Sin horario', label: 'Sin horario' }
+    { value: 'Asistió', label: 'Asistió (sin horario)' }
   ];
 
   // Resumen
@@ -59,6 +59,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
   totalATiempo = 0;
   totalTardanzas = 0;
   totalFaltas = 0;
+  totalAsistio = 0;
   private intervaloAutoRefresh: any;
 
   ngOnInit(): void {
@@ -172,13 +173,13 @@ export class ReportesComponent implements OnInit, OnDestroy {
   }
 
   private calcularResumen(): void {
-    const workDays = this.reporteFiltrado.filter(
-      r => !r.tipoDia || r.tipoDia === 'normal'
-    );
+    // Días laborales: solo los que tienen horario programado (los marcados sin horario van aparte)
+    const workDays = this.reporteFiltrado.filter(r => r.tipoDia === 'normal');
     this.totalRegistros = workDays.length;
     this.totalATiempo = workDays.filter(r => r.estado === 'A tiempo').length;
     this.totalTardanzas = workDays.filter(r => r.estado === 'Tardanza').length;
     this.totalFaltas = workDays.filter(r => r.estado === 'Falta').length;
+    this.totalAsistio = this.reporteFiltrado.filter(r => r.estado === 'Asistió').length;
   }
 
   getEstadoBadgeClass(estado: string): string {
@@ -187,7 +188,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
       case 'Tardanza': return 'badge-amber';
       case 'Falta': return 'badge-red';
       case 'Vacaciones': return 'badge-oro';
-      case 'Compensado': return 'badge-blue';
+      case 'Compensado': case 'Asistió': return 'badge-blue';
       case 'Descanso_medico': case 'Licencia': case 'Permiso': return 'badge-violet';
       default: return 'badge-gray';
     }
@@ -228,6 +229,14 @@ export class ReportesComponent implements OnInit, OnDestroy {
   /** Jefaturas, supervisores y gestor ven a todo el personal. */
   isAdminOrSupervisor(): boolean {
     return this.authService.isGestion();
+  }
+
+  /** Roles con horario más los de quien aparece en el reporte por haber marcado (por ejemplo, jefaturas). */
+  get opcionesRol(): { value: string; label: string }[] {
+    const extra = opciones(this.reporteCompleto, r => r.empleadoRol?.toLowerCase())
+      .filter(c => !this.roles.some(r => r.value === c))
+      .map(c => ({ value: c, label: rolLabel(c) }));
+    return [...this.roles, ...extra];
   }
 
   /** Departamentos presentes en el reporte cargado. */
@@ -302,7 +311,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
       dia: this.getDiaSemanaLabel(r.diaSemana),
       horarioEntrada: this.formatHora(r.horarioEntrada),
       horaReal: this.formatHora(r.horaEntradaReal),
-      estado: r.estado,
+      estado: this.estadoTexto(r.estado),
       minutosRetraso: r.minutosRetraso !== null && r.minutosRetraso > 0 ? this.formatRetraso(r.minutosRetraso) : '-',
       mensaje: this.mensajeTexto(r),
       observaciones: r.observaciones || ''
