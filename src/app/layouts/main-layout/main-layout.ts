@@ -8,6 +8,12 @@ import { LogoComponent } from '../../components/shared/logo/logo.component';
 import { AvatarComponent } from '../../components/shared/avatar/avatar.component';
 import { BotonTemaComponent } from '../../components/shared/boton-tema/boton-tema.component';
 
+const CLAVE_MENU = 'cngr.menuContraido';
+
+function leerMenuContraido(): boolean {
+  try { return localStorage.getItem(CLAVE_MENU) === '1'; } catch { return false; }
+}
+
 interface ItemMenu {
   ruta: string;
   texto: string;
@@ -33,6 +39,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
   menuMovilAbierto = false;
   menuUsuarioAbierto = false;
+  /** Menú lateral contraído (solo íconos) en escritorio; se recuerda en este navegador. */
+  menuContraido = leerMenuContraido();
+  tooltip: { texto: string; top: number } | null = null;
   resumen: NotificacionResumen | null = null;
   private subs: Subscription[] = [];
   private refreshInterval: any;
@@ -48,6 +57,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
 
     this.subs.push(this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => {
       this.menuMovilAbierto = false;
+      this.tooltip = null;
       this.menuUsuarioAbierto = false;
     }));
 
@@ -56,6 +66,19 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
       this.notificacionesService.cargarResumen().subscribe();
       this.refreshInterval = setInterval(() => this.notificacionesService.cargarResumen().subscribe(), 30000);
     }
+  }
+
+  alternarMenu() {
+    this.menuContraido = !this.menuContraido;
+    this.tooltip = null;
+    try { localStorage.setItem(CLAVE_MENU, this.menuContraido ? '1' : '0'); } catch { /* sin almacenamiento */ }
+  }
+
+  /** Con el menú contraído, el nombre de la opción aparece al lado del ícono. */
+  mostrarTooltip(evento: Event, texto: string) {
+    if (!this.menuContraido || !window.matchMedia('(min-width: 64rem)').matches) return;
+    const r = (evento.currentTarget as HTMLElement).getBoundingClientRect();
+    this.tooltip = { texto, top: r.top + r.height / 2 };
   }
 
   ngOnDestroy() {
