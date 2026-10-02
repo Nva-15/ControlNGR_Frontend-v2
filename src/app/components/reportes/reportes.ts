@@ -51,7 +51,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
     { value: 'Compensado', label: 'Compensado' },
     { value: 'Descanso_medico', label: 'Descanso médico' },
     { value: 'Licencia', label: 'Licencia' },
-    { value: 'Asistió', label: 'Asistió (sin horario)' }
+    { value: 'Asistió', label: 'Asistió' }
   ];
 
   // Resumen
