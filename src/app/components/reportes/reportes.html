@@ -25,7 +25,7 @@
       </div>
       <div class="w-44"><label class="label">Rol</label>
         <select class="select" [(ngModel)]="filtroRol" (ngModelChange)="aplicarFiltros()">
-          @for (r of roles; track r.value) { <option [value]="r.value">{{ r.label }}</option> }
+          @for (r of opcionesRol; track r.value) { <option [value]="r.value">{{ r.label }}</option> }
         </select>
       </div>
     }
@@ -38,11 +38,12 @@
   </div>
 </div>
 
-<div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+<div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
   <div class="card p-5"><p class="stat-label">Días laborales</p><p class="stat-value mt-1">{{ totalRegistros }}</p></div>
   <div class="card p-5"><p class="stat-label">A tiempo</p><p class="stat-value mt-1 text-emerald-700!">{{ totalATiempo }}</p></div>
   <div class="card p-5"><p class="stat-label">Tardanzas</p><p class="stat-value mt-1 text-amber-600!">{{ totalTardanzas }}</p></div>
   <div class="card p-5"><p class="stat-label">Faltas</p><p class="stat-value mt-1 text-red-600!">{{ totalFaltas }}</p></div>
+  <div class="card col-span-2 p-5 lg:col-span-1" title="Días que marcó sin tener horario programado"><p class="stat-label">Asistencias sin horario</p><p class="stat-value mt-1 text-sky-700!">{{ totalAsistio }}</p></div>
 </div>
 
 <div class="card">
