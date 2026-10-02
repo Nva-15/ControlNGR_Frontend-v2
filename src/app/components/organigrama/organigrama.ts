@@ -4,6 +4,15 @@ import { EmpleadoResponse } from '../../interfaces/empleado';
 import { AvatarComponent } from '../shared/avatar/avatar.component';
 import { ModalComponent } from '../shared/modal/modal.component';
 import { ROLES } from '../../utils/roles';
+import { normalizar } from '../../utils/filtros';
+
+/** Orden de los equipos: primero las áreas con más personal (Soporte, HD, NOC), debajo Back Office y Almacén. */
+const ORDEN_EQUIPOS = ['soporte tecnico', 'hd', 'noc', 'back office', 'tiendas y almacen de sistemas'];
+
+function ordenEquipo(departamento: string): number {
+  const i = ORDEN_EQUIPOS.indexOf(normalizar(departamento).trim());
+  return i === -1 ? ORDEN_EQUIPOS.length : i;
+}
 
 interface Nivel {
   titulo: string;
@@ -63,7 +72,8 @@ export class OrganigramaComponent implements OnInit {
     }
     this.equipos = [...porDepto.entries()]
       .map(([departamento, personas]) => ({ departamento, personas }))
-      .sort((a, b) => a.departamento.localeCompare(b.departamento));
+      .sort((a, b) => ordenEquipo(a.departamento) - ordenEquipo(b.departamento)
+        || a.departamento.localeCompare(b.departamento));
   }
 
   private calcularCumpleanos(empleados: EmpleadoResponse[]) {
