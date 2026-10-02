@@ -3,75 +3,166 @@
     <h1 class="page-title">Organigrama</h1>
     <p class="page-subtitle">Estructura del área y equipos por departamento.</p>
   </div>
+  @if (!cargando) {
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="org-kpi"><b>{{ totalPersonas }}</b> personas</span>
+      <span class="org-kpi"><b>{{ equipos.length }}</b> equipos</span>
+      <span class="org-kpi"><b>{{ totalSupervisores }}</b> supervisores</span>
+    </div>
+  }
 </div>
 
 @if (cargando) {
   <div class="flex justify-center py-16"><span class="spinner"></span></div>
 } @else {
+  <div class="mb-5 flex flex-wrap items-center gap-3">
+    <div class="relative w-full sm:w-72">
+      <i class="bi bi-search pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-stone-400"></i>
+      <input class="input pl-9!" placeholder="Buscar persona o cargo" aria-label="Buscar persona o cargo" [(ngModel)]="busqueda" />
+    </div>
+    <div class="flex-1"></div>
+    <div class="org-vistas" role="group" aria-label="Vista del organigrama">
+      <button type="button" [class.org-vista-activa]="vista === 'arbol'" [attr.aria-pressed]="vista === 'arbol'" (click)="vista = 'arbol'">
+        <i class="bi bi-diagram-3"></i> Árbol
+      </button>
+      <button type="button" [class.org-vista-activa]="vista === 'lista'" [attr.aria-pressed]="vista === 'lista'" (click)="vista = 'lista'">
+        <i class="bi bi-list-ul"></i> Lista
+      </button>
+    </div>
+  </div>
+
   @if (cumpleanos.length) {
-    <section class="card mb-8 overflow-hidden">
-      <div class="flex items-center gap-3 bg-gradient-to-r from-vino-700 to-coral-500 px-5 py-3 text-white">
-        <i class="bi bi-cake2 text-lg"></i>
-        <h2 class="font-semibold text-white">Cumpleaños de la semana</h2>
-      </div>
-      <div class="flex gap-4 overflow-x-auto p-5">
-        @for (c of cumpleanos; track c.emp.id) {
-          <button type="button" class="flex min-w-56 items-center gap-3 rounded-xl border p-3 text-left hover:bg-stone-50"
-                  [class]="c.esHoy ? 'border-oro-300 bg-oro-50' : 'border-stone-200'" (click)="seleccionado = c.emp">
-            <app-avatar [nombre]="c.emp.nombre" [foto]="c.emp.foto" [tamano]="44" />
-            <span class="min-w-0">
-              <span class="block truncate text-sm font-medium">{{ c.emp.nombre }}</span>
-              <span class="block text-xs first-letter:uppercase" [class]="c.esHoy ? 'font-semibold text-oro-700' : 'text-stone-500'">{{ fechaCumple(c) }}</span>
-            </span>
-          </button>
-        }
-      </div>
+    <section class="tema-fijo mb-6 flex items-center gap-3 overflow-x-auto rounded-xl bg-gradient-to-r from-vino-700 to-coral-500 px-4 py-2.5 text-white">
+      <span class="flex shrink-0 items-center gap-2 text-sm font-semibold"><i class="bi bi-cake2"></i> Cumpleaños de la semana</span>
+      @for (c of cumpleanos; track c.emp.id) {
+        <button type="button" class="flex shrink-0 items-center gap-2 rounded-full bg-white/15 py-1 pr-3 pl-1 text-sm hover:bg-white/25"
+                [class.ring-2]="c.esHoy" [class.ring-oro-200]="c.esHoy" (click)="seleccionado = c.emp">
+          <app-avatar [nombre]="c.emp.nombre" [foto]="c.emp.foto" [tamano]="26" />
+          <span>{{ c.emp.nombre }} · <span class="first-letter:uppercase">{{ fechaCumple(c) }}</span></span>
+        </button>
+      }
     </section>
   }
 
-  <!-- Liderazgo -->
-  <div class="flex flex-col items-center gap-2">
-    @for (nivel of niveles; track nivel.titulo; let ultimo = $last) {
-      <p class="text-[11px] font-semibold uppercase tracking-wider text-stone-500">{{ nivel.titulo }}</p>
-      <div class="flex flex-wrap justify-center gap-4">
-        @for (p of nivel.personas; track p.id) {
-          <button type="button" (click)="seleccionado = p"
-                  class="card flex w-60 flex-col items-center p-5 text-center transition hover:-translate-y-0.5 hover:shadow-md">
-            <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="64" />
-            <p class="mt-3 font-semibold text-stone-900">{{ p.nombre }}</p>
-            <p class="text-xs text-stone-500">{{ p.cargo }}</p>
-          </button>
-        }
-      </div>
-      @if (!ultimo || equipos.length) { <div class="h-8 w-px bg-stone-300"></div> }
-    }
-  </div>
-
-  <!-- Equipos -->
-  <div class="mt-2 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-    @for (eq of equipos; track eq.departamento) {
-      <section class="card">
-        <div class="card-header">
-          <h3 class="card-title"><i class="bi bi-building text-vino-700"></i> {{ eq.departamento }}</h3>
-          <span class="badge-gray">{{ eq.personas.length }}</span>
-        </div>
-        <ul class="divide-y divide-stone-100">
-          @for (p of eq.personas; track p.id) {
-            <li>
-              <button type="button" class="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-stone-50" (click)="seleccionado = p">
-                <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="38" />
-                <span class="min-w-0 flex-1">
-                  <span class="block truncate text-sm font-medium">{{ p.nombre }}</span>
-                  <span class="block truncate text-xs text-stone-500">{{ p.cargo }}</span>
+  @if (sinResultados) {
+    <div class="card empty-state py-12"><i class="bi bi-search text-4xl"></i><p>No se encontraron personas con "{{ busqueda }}".</p></div>
+  } @else if (vista === 'arbol') {
+    <!-- Dirección, gerencia y jefatura -->
+    @if (nivelesVisibles.length) {
+      <div class="flex flex-col items-center gap-3 lg:flex-row lg:items-end lg:justify-center lg:gap-0">
+        @for (nivel of nivelesVisibles; track nivel.titulo; let ultimo = $last) {
+          <div class="flex flex-col items-center gap-1.5">
+            <p class="org-etiqueta">{{ nivel.titulo }}</p>
+            @for (p of nivel.personas; track p.id) {
+              <button type="button" class="org-lider" (click)="seleccionado = p">
+                <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="44" />
+                <span class="min-w-0 text-left leading-snug">
+                  <span class="block text-sm font-semibold text-stone-900 break-words">{{ p.nombre }}</span>
+                  <span class="block text-xs text-stone-500 break-words">{{ p.cargo }}</span>
                 </span>
               </button>
-            </li>
+            }
+          </div>
+          @if (!ultimo) {
+            <i class="bi bi-chevron-down text-stone-300 lg:hidden" aria-hidden="true"></i>
+            <span class="org-flecha hidden lg:block" aria-hidden="true"></span>
           }
-        </ul>
-      </section>
+        }
+      </div>
+      @if (equiposVisibles.length) {
+        <div class="mx-auto h-6 w-px bg-stone-300" aria-hidden="true"></div>
+        @if (filaPrincipal.length === 3) {
+          <div class="hidden xl:block" aria-hidden="true">
+            <div class="mx-[16.66%] h-px bg-stone-300"></div>
+            <div class="grid grid-cols-3 gap-5"><span class="org-bajada"></span><span class="org-bajada"></span><span class="org-bajada"></span></div>
+          </div>
+        }
+      }
     }
-  </div>
+
+    <!-- Equipos -->
+    @if (filaPrincipal.length) {
+      <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        @for (eq of filaPrincipal; track eq.departamento) {
+          <ng-container [ngTemplateOutlet]="tarjeta" [ngTemplateOutletContext]="{ $implicit: eq }" />
+        }
+      </div>
+    }
+    @if (filaSecundaria.length) {
+      <div class="mt-5 grid gap-5 md:grid-cols-2">
+        @for (eq of filaSecundaria; track eq.departamento) {
+          <ng-container [ngTemplateOutlet]="tarjeta" [ngTemplateOutletContext]="{ $implicit: eq }" />
+        }
+      </div>
+    }
+  } @else {
+    <!-- Vista de lista -->
+    <div class="card">
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Colaborador</th><th>Cargo</th><th>Equipo</th><th>Rol</th></tr></thead>
+          <tbody>
+            @for (fila of lista; track fila.p.id) {
+              <tr class="cursor-pointer" (click)="seleccionado = fila.p">
+                <td class="min-w-56">
+                  <span class="flex items-center gap-3">
+                    <app-avatar [nombre]="fila.p.nombre" [foto]="fila.p.foto" [tamano]="32" />
+                    <span class="font-medium">{{ fila.p.nombre }}</span>
+                  </span>
+                </td>
+                <td class="text-stone-600">{{ fila.p.cargo }}</td>
+                <td class="whitespace-nowrap"><span class="org-punto" [style.--c]="fila.color"></span>{{ fila.equipo }}</td>
+                <td><span [class]="rolClase(fila.p.rol)">{{ rolTexto(fila.p.rol) }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
 }
+
+<ng-template #tarjeta let-eq>
+  <section class="org-equipo @container" [style.--c]="eq.color">
+    <header class="flex items-center gap-3 border-b border-stone-100 px-5 py-3.5">
+      <span class="org-icono"><i class="bi" [class]="eq.icono"></i></span>
+      <h3 class="flex-1 text-base font-semibold text-stone-900">{{ eq.titulo }}</h3>
+      <span class="org-cantidad">{{ eq.lideres.length + eq.personas.length }} {{ eq.lideres.length + eq.personas.length === 1 ? 'persona' : 'personas' }}</span>
+    </header>
+    @if (eq.lideres.length) {
+      <div class="org-supervision px-5 py-3">
+        <p class="org-etiqueta">{{ eq.etiquetaLideres }}</p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          @for (p of eq.lideres; track p.id) {
+            <button type="button" class="org-chip" (click)="seleccionado = p">
+              <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="28" />
+              <span class="min-w-0 text-left">
+                <span class="block truncate text-sm font-semibold text-stone-900">{{ p.nombre }}</span>
+                <span class="block truncate text-xs text-stone-500">{{ p.cargo }}</span>
+              </span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+    @if (eq.personas.length) {
+      <p class="org-etiqueta px-5 pt-3">Equipo</p>
+      <ul class="grid gap-0.5 p-2 @sm:grid-cols-2 @2xl:grid-cols-3">
+        @for (p of eq.personas; track p.id) {
+          <li>
+            <button type="button" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-stone-50" (click)="seleccionado = p">
+              <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="34" />
+              <span class="min-w-0 flex-1 leading-snug">
+                <span class="block text-sm font-medium break-words">{{ p.nombre }}</span>
+                <span class="block text-xs text-stone-500 break-words">{{ p.cargo }}</span>
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</ng-template>
 
 <app-modal [abierto]="!!seleccionado" [titulo]="seleccionado?.nombre || ''" [subtitulo]="seleccionado?.cargo || ''" (cerrar)="seleccionado = null">
   @if (seleccionado; as p) {
