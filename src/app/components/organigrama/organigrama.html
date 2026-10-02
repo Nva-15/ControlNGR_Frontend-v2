@@ -164,19 +164,46 @@
   </section>
 </ng-template>
 
-<app-modal [abierto]="!!seleccionado" [titulo]="seleccionado?.nombre || ''" [subtitulo]="seleccionado?.cargo || ''" (cerrar)="seleccionado = null">
+<app-modal [abierto]="!!seleccionado" titulo="Ficha del colaborador" icono="bi-person-vcard" (cerrar)="cerrarFicha()">
   @if (seleccionado; as p) {
-    <div class="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-      <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="96" />
-      <div class="flex-1 space-y-3">
-        <dl class="grid grid-cols-2 gap-3 text-sm">
-          <div><dt class="label">En la empresa</dt><dd>{{ antiguedad(p.ingreso) }}</dd></div>
-          <div><dt class="label">Cumpleaños</dt><dd>{{ fechaLarga(p.cumpleanos) }}</dd></div>
-          @if (p.email) { <div class="col-span-2"><dt class="label">Correo</dt><dd>{{ p.email }}</dd></div> }
-        </dl>
-        @if (p.descripcion) { <div><p class="label">Sobre mí</p><p class="text-sm text-stone-700">{{ p.descripcion }}</p></div> }
-        @if (p.hobby) { <div><p class="label">Pasatiempos</p><p class="text-sm text-stone-700">{{ p.hobby }}</p></div> }
-      </div>
+    <div class="flex flex-col items-center text-center">
+      @if (fotoDe(p); as url) {
+        <button type="button" class="org-foto group" (click)="fotoAmpliada = url" title="Ver foto en grande" aria-label="Ver foto en grande">
+          <app-avatar [nombre]="p.nombre" [foto]="p.foto" [tamano]="tamanoFoto" />
+          <span class="org-foto-lupa" aria-hidden="true"><i class="bi bi-zoom-in"></i></span>
+        </button>
+      } @else {
+        <span class="org-foto"><app-avatar [nombre]="p.nombre" [tamano]="tamanoFoto" /></span>
+      }
+      <h4 class="mt-4 text-xl font-semibold text-stone-900">{{ p.nombre }}</h4>
+      @if (p.cargo) { <p class="mt-0.5 text-sm text-stone-500">{{ p.cargo }}</p> }
+      @if (equipoDe(p); as eq) {
+        <span class="org-cantidad mt-3" [style.--c]="eq.color"><span class="org-punto" [style.--c]="eq.color"></span>{{ eq.titulo }}</span>
+      }
     </div>
+
+    <dl class="mt-6 grid gap-3 text-sm sm:grid-cols-2">
+      <div class="org-dato"><dt><i class="bi bi-briefcase"></i> En la empresa</dt><dd>{{ antiguedad(p.ingreso) }}</dd></div>
+      <div class="org-dato"><dt><i class="bi bi-cake2"></i> Cumpleaños</dt><dd>{{ fechaLarga(p.cumpleanos) }}</dd></div>
+      @if (p.email) {
+        <div class="org-dato sm:col-span-2"><dt><i class="bi bi-envelope"></i> Correo</dt><dd class="break-all">{{ p.email }}</dd></div>
+      }
+    </dl>
+    @if (p.descripcion) {
+      <div class="mt-5"><p class="label">Sobre mí</p><p class="text-sm leading-relaxed text-stone-700">{{ p.descripcion }}</p></div>
+    }
+    @if (p.hobby) {
+      <div class="mt-4"><p class="label">Pasatiempos</p><p class="text-sm leading-relaxed text-stone-700">{{ p.hobby }}</p></div>
+    }
   }
 </app-modal>
+
+@if (fotoAmpliada && seleccionado) {
+  <div class="tema-fijo fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4 bg-stone-950/85 p-4 backdrop-blur-sm"
+       role="dialog" aria-modal="true" aria-label="Foto de {{ seleccionado.nombre }}" (click)="fotoAmpliada = null">
+    <img [src]="fotoAmpliada" [alt]="seleccionado.nombre" class="org-foto-grande" />
+    <p class="text-sm font-medium text-white">{{ seleccionado.nombre }}</p>
+    <button type="button" class="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+            aria-label="Cerrar foto"><i class="bi bi-x-lg"></i></button>
+  </div>
+}

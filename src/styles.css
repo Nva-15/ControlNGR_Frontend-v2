@@ -507,6 +507,40 @@
   padding: 0.2rem 0.9rem 0.2rem 0.2rem;
 }
 .org-chip:hover { border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+.org-foto {
+  position: relative;
+  display: inline-flex;
+  border-radius: 9999px;
+  padding: 0.3rem;
+  background: linear-gradient(135deg, #f4dea5, #ebc57c 40%, #c93a5b);
+  box-shadow: 0 10px 30px -10px rgb(155 20 55 / 0.45);
+}
+.org-foto .avatar { box-shadow: 0 0 0 3px var(--color-superficie); }
+button.org-foto { cursor: zoom-in; transition: transform 0.2s ease; }
+button.org-foto:hover, button.org-foto:focus-visible { transform: scale(1.03); outline: none; }
+.org-foto-lupa {
+  position: absolute; right: 0.6rem; bottom: 0.6rem;
+  display: flex; height: 2.25rem; width: 2.25rem; align-items: center; justify-content: center;
+  border-radius: 9999px;
+  background-color: #1c1917; color: #ebc57c;
+  box-shadow: 0 0 0 3px var(--color-superficie);
+  opacity: 0.85; transition: opacity 0.2s ease;
+}
+button.org-foto:hover .org-foto-lupa { opacity: 1; }
+.org-foto-grande {
+  max-height: min(400px, 75vh); max-width: min(400px, 90vw);
+  border-radius: 1rem; object-fit: contain;
+  box-shadow: 0 0 0 3px rgb(235 197 124 / 0.6), 0 20px 50px -10px rgb(0 0 0 / 0.6);
+}
+.org-dato {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-stone-200);
+  background-color: color-mix(in srgb, var(--color-stone-100) 50%, transparent);
+  padding: 0.65rem 0.85rem;
+}
+.org-dato dt { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--color-stone-500); }
+.org-dato dd { margin-top: 0.15rem; font-weight: 500; color: var(--color-stone-900); }
+@media (prefers-reduced-motion: reduce) { button.org-foto { transition: none; } }
 .org-punto { display: inline-block; height: 0.5rem; width: 0.5rem; margin-right: 0.5rem; border-radius: 9999px; background-color: var(--c); }
 
 /* ---------- Menú lateral: contorno brillante al pasar el mouse y en la opción activa ---------- */
