@@ -7,6 +7,8 @@ import { AvatarComponent } from '../shared/avatar/avatar.component';
 import { ModalComponent } from '../shared/modal/modal.component';
 import { ROLES, rolBadge, rolLabel } from '../../utils/roles';
 import { normalizar } from '../../utils/filtros';
+import { fotoUrl } from '../../utils/format';
+import { ApiConfigService } from '../../services/api-config.service';
 
 /** Orden de los equipos: primero las áreas con más personal (Soporte, HD, NOC), debajo Back Office y Almacén. */
 const ORDEN_EQUIPOS = ['soporte tecnico', 'hd', 'noc', 'back office', 'tiendas y almacen de sistemas'];
@@ -66,12 +68,15 @@ interface Cumple {
 })
 export class OrganigramaComponent implements OnInit {
   private empService = inject(EmpleadosService);
+  private api = inject(ApiConfigService);
 
   cargando = true;
   niveles: Nivel[] = [];
   equipos: Equipo[] = [];
   cumpleanos: Cumple[] = [];
   seleccionado: EmpleadoResponse | null = null;
+  /** Foto de la ficha vista en grande (su tamaño real, hasta 400 px). */
+  fotoAmpliada: string | null = null;
 
   vista: 'arbol' | 'lista' = 'arbol';
   busqueda = '';
@@ -196,7 +201,35 @@ export class OrganigramaComponent implements OnInit {
   rolClase(r: string): string { return rolBadge(r); }
   rolTexto(r: string): string { return rolLabel(r); }
 
-  // ---------- Cumpleaños y ficha ----------
+  // ---------- Ficha del colaborador ----------
+
+  /** Foto grande en la ficha: 180 px en computadora, 150 px en celular. */
+  get tamanoFoto(): number {
+    return window.matchMedia('(min-width: 40rem)').matches ? 180 : 150;
+  }
+
+  fotoDe(p: EmpleadoResponse): string | null {
+    return fotoUrl(this.api.baseUrl, p.foto);
+  }
+
+  /** Equipo (o nivel de liderazgo) de la persona, con su color, para la ficha. */
+  equipoDe(p: EmpleadoResponse): { titulo: string; color: string } | null {
+    const eq = this.equipos.find(e => e.lideres.some(x => x.id === p.id) || e.personas.some(x => x.id === p.id));
+    if (eq) return { titulo: eq.titulo, color: eq.color };
+    const nivel = this.niveles.find(n => n.personas.some(x => x.id === p.id));
+    return nivel ? { titulo: nivel.titulo, color: ESTILO_NEUTRO.color } : null;
+  }
+
+  /** Esc o clic fuera: primero se cierra la foto ampliada, luego la ficha. */
+  cerrarFicha() {
+    if (this.fotoAmpliada) {
+      this.fotoAmpliada = null;
+      return;
+    }
+    this.seleccionado = null;
+  }
+
+  // ---------- Cumpleaños ----------
 
   private calcularCumpleanos(empleados: EmpleadoResponse[]) {
     const hoy = new Date();
