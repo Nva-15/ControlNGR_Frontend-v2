@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
 import {
-  CopiaFeriados, Departamento, EstadoRespaldos, ProgramacionRespaldo, Respaldo, Feriado, Parametro, RolAsistencia, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
+  AprobacionAutomatica, CopiaFeriados, Departamento, EstadoRespaldos, ProgramacionRespaldo, Respaldo, Feriado, Parametro, RolAsistencia, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
 } from '../interfaces/admin';
 import { MotivoLicencia, TipoSolicitud } from '../interfaces/solicitud';
 import { FeriadoLaborado, MovimientoSaldo, TipoSaldo } from '../interfaces/saldo';
@@ -134,5 +134,13 @@ export class AdminService {
   }
   procesarVacaciones(): Observable<{ periodosAbonados: number }> {
     return this.http.post<{ periodosAbonados: number }>(`${this.url}/vacaciones/procesar`, {});
+  }
+
+  // Aprobación automática de compensaciones por equipo
+  aprobacionAutomatica(): Observable<AprobacionAutomatica[]> {
+    return this.http.get<AprobacionAutomatica[]>(`${this.url}/aprobacion-automatica`);
+  }
+  guardarAprobacionAutomatica(departamentoId: number, a: Partial<AprobacionAutomatica>): Observable<AprobacionAutomatica> {
+    return this.http.put<AprobacionAutomatica>(`${this.url}/aprobacion-automatica/${departamentoId}`, a);
   }
 }

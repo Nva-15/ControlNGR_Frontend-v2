@@ -34,6 +34,9 @@ export interface SolicitudRequest {
   fechaFin: string;
   motivo?: string;
   motivoLicenciaId?: number | null;
+  /** Solo compensación: va siempre al supervisor */
+  urgente?: boolean;
+  motivoUrgencia?: string;
 }
 
 export interface SolicitudResponse {
@@ -55,7 +58,26 @@ export interface SolicitudResponse {
   aprobadoPor?: string;
   fechaAprobacion?: string;
   comentarioGestion?: string;
+  urgente?: boolean;
+  motivoUrgencia?: string;
+  /** Por qué no se aprobó sola (sala de espera); solo mientras está pendiente */
+  motivoEspera?: string;
+  posicionEspera?: number;
+  aprobacionAutomatica?: boolean;
   evidencias: Evidencia[];
+}
+
+/** Cupos de compensación del equipo en la semana de una fecha. */
+export interface CuposCompensacion {
+  activo: boolean;
+  equipo?: string;
+  semanaInicio?: string;
+  semanaFin?: string;
+  cupoSemanal?: number;
+  usadosEquipo?: number;
+  maximoPorEmpleado?: number;
+  usadosEmpleado?: number;
+  antelacionHoras?: number;
 }
 
 export interface HistorialSolicitud {
