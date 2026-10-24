@@ -1,3 +1,4 @@
+import { AdminParametrosBloqueComponent, CampoParametro } from './parametros-bloque';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../services/admin';
@@ -16,7 +17,7 @@ import { normalizar } from '../../../utils/filtros';
 @Component({
   selector: 'app-admin-saldos',
   standalone: true,
-  imports: [FormsModule, ModalComponent, MenuAccionesComponent, PaginacionComponent],
+  imports: [FormsModule, ModalComponent, MenuAccionesComponent, PaginacionComponent, AdminParametrosBloqueComponent],
   template: `
     <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
       <button class="btn-secondary" (click)="verFeriados()"><i class="bi bi-calendar-heart"></i> Feriados laborados</button>
@@ -186,9 +187,16 @@ import { normalizar } from '../../../utils/filtros';
         </div>
       }
     </app-modal>
+    <app-admin-parametros-bloque [campos]="camposSaldos" />
   `
 })
 export class AdminSaldosComponent implements OnInit {
+  readonly camposSaldos: CampoParametro[] = [
+    { clave: 'DIAS_VACACIONES_POR_ANIO', titulo: 'Días de vacaciones por año cumplido', unidad: 'días', min: 0, max: 60,
+      ayuda: 'Se abonan en cada aniversario de ingreso (proceso diario o el botón Procesar aniversarios).' },
+    { clave: 'VACACIONES_ABONO_DESDE', titulo: 'Abonar aniversarios desde',
+      ayuda: 'Solo se abonan automáticamente los aniversarios desde esta fecha. Lo anterior se registra con la carga inicial.' },
+  ];
   private admin = inject(AdminService);
   private notification = inject(NotificationService);
 

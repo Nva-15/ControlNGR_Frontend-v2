@@ -24,6 +24,9 @@ export interface Empleado {
 export interface EmpleadoResponse {
   /** Solo para el admin y la gestión (lista paginada de Empleados). */
   rostroRegistrado?: boolean;
+  /** Datos de acceso: solo los reciben quienes administran al colaborador. */
+  ultimoAcceso?: string | null;
+  debeCambiarPassword?: boolean;
   id?: number;
   /** Solo llega para el propio colaborador, quienes lo administran y el admin. */
   dni?: string;

@@ -3,13 +3,11 @@ import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { AdminSaldosComponent } from './secciones/saldos';
-import { AdminUsuariosComponent } from './secciones/usuarios';
 import { AdminRedComponent } from './secciones/red';
 import { AdminFeriadosComponent } from './secciones/feriados';
 import { AdminDepartamentosComponent } from './secciones/departamentos';
 import { AdminRolesComponent } from './secciones/roles';
 import { AdminCatalogosComponent } from './secciones/catalogos';
-import { AdminParametrosComponent } from './secciones/parametros';
 import { AdminFacialComponent } from './secciones/facial';
 import { AdminAsistenciaComponent } from './secciones/asistencia';
 import { AdminRespaldosComponent } from './secciones/respaldos';
@@ -17,16 +15,14 @@ import { AdminAprobacionComponent } from './secciones/aprobacion';
 
 const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   saldos: { titulo: 'Saldos y carga inicial', descripcion: 'Días de vacaciones y de compensación que se deben a cada empleado.' },
-  usuarios: { titulo: 'Usuarios y accesos', descripcion: 'Roles, activación y restablecimiento de contraseñas.' },
   facial: { titulo: 'Reconocimiento facial', descripcion: 'Modo de marcación por equipo (cámara o botón), rostros registrados y pruebas sin afectar la asistencia.' },
-  asistencia: { titulo: 'Asistencia y horarios', descripcion: 'Qué roles marcan asistencia, cuáles trabajan con horario y aparecen en el reporte, la anticipación para marcar entrada, la tolerancia de tardanza y la salida automática.' },
+  asistencia: { titulo: 'Reglas de marcación', descripcion: 'Tolerancia de tardanza, anticipación para marcar la entrada y salida automática.' },
   red: { titulo: 'Segmentos de red', descripcion: 'Redes desde las que se permite marcar asistencia.' },
   feriados: { titulo: 'Feriados', descripcion: 'Feriados nacionales (sector privado). Trabajar un feriado abona días de compensación.' },
   departamentos: { titulo: 'Departamentos', descripcion: 'Áreas de la organización y sus responsables.' },
-  roles: { titulo: 'Roles y aprobaciones', descripcion: 'Jerarquía de roles y quién aprueba las solicitudes de quién.' },
+  roles: { titulo: 'Roles y aprobaciones', descripcion: 'Jerarquía de roles, quién registra solicitudes, quién marca asistencia y con horario, y quién aprueba a quién.' },
   aprobacion: { titulo: 'Aprobación automática', descripcion: 'Compensaciones que se aprueban solas por equipo: cupos, cobertura mínima y antelación.' },
   catalogos: { titulo: 'Tipos de solicitud', descripcion: 'Tipos de solicitud y motivos de licencia.' },
-  parametros: { titulo: 'Parámetros', descripcion: 'Valores que controlan las reglas del sistema.' },
   respaldos: { titulo: 'Respaldos', descripcion: 'Copias de seguridad de la base de datos: automáticas (diarias, semanales o mensuales) o en el momento.' },
 };
 
@@ -35,8 +31,8 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   selector: 'app-admin',
   standalone: true,
   imports: [
-    AdminSaldosComponent, AdminUsuariosComponent, AdminRedComponent, AdminFeriadosComponent,
-    AdminDepartamentosComponent, AdminRolesComponent, AdminCatalogosComponent, AdminParametrosComponent,
+    AdminSaldosComponent, AdminRedComponent, AdminFeriadosComponent,
+    AdminDepartamentosComponent, AdminRolesComponent, AdminCatalogosComponent,
     AdminFacialComponent, AdminAsistenciaComponent, AdminRespaldosComponent, AdminAprobacionComponent
   ],
   template: `
@@ -49,7 +45,6 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
     </div>
     @switch (seccion()) {
       @case ('saldos') { <app-admin-saldos /> }
-      @case ('usuarios') { <app-admin-usuarios /> }
       @case ('facial') { <app-admin-facial /> }
       @case ('asistencia') { <app-admin-asistencia /> }
       @case ('red') { <app-admin-red /> }
@@ -58,7 +53,6 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
       @case ('roles') { <app-admin-roles /> }
       @case ('aprobacion') { <app-admin-aprobacion /> }
       @case ('catalogos') { <app-admin-catalogos /> }
-      @case ('parametros') { <app-admin-parametros /> }
       @case ('respaldos') { <app-admin-respaldos /> }
       @default { <div class="card"><div class="empty-state">Sección no encontrada.</div></div> }
     }

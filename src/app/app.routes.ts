@@ -49,6 +49,9 @@ export const routes: Routes = [
 
       // Panel maestro
       { path: 'admin', pathMatch: 'full', redirectTo: 'admin/saldos' },
+      // Secciones que se integraron en otras (enlaces y marcadores antiguos)
+      { path: 'admin/usuarios', pathMatch: 'full', redirectTo: 'empleados' },
+      { path: 'admin/parametros', pathMatch: 'full', redirectTo: 'admin/asistencia' },
       { path: 'admin/:seccion', canActivate: [adminGuard], title: 'Panel maestro · Control NGR',
         loadComponent: () => import('./components/admin/admin').then(m => m.AdminComponent) },
     ]

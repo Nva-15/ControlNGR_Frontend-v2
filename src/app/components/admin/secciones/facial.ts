@@ -1,3 +1,4 @@
+import { AdminParametrosBloqueComponent, CampoParametro } from './parametros-bloque';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -18,7 +19,7 @@ type Prueba = 'marcacion' | 'registro';
 @Component({
   selector: 'app-admin-facial',
   standalone: true,
-  imports: [FormsModule, RouterLink, ModalComponent, AvatarComponent, CamaraFacialComponent, PaginacionComponent],
+  imports: [FormsModule, RouterLink, ModalComponent, AvatarComponent, CamaraFacialComponent, PaginacionComponent, AdminParametrosBloqueComponent],
   template: `
     @if (!resumen) {
       <div class="flex justify-center py-12"><span class="spinner"></span></div>
@@ -34,7 +35,7 @@ type Prueba = 'marcacion' | 'registro';
         <div class="card p-5">
           <p class="stat-label">Umbral de coincidencia</p>
           <p class="stat-value mt-1 font-mono">{{ resumen.umbral }}</p>
-          <p class="field-help">0.4 estricto · 0.6 permisivo. <a routerLink="/admin/parametros" class="text-vino-700 hover:underline">Cambiar</a></p>
+          <p class="field-help">0.4 estricto · 0.6 permisivo. Se cambia más abajo.</p>
         </div>
         <div class="card p-5">
           <p class="stat-label">Marcan con reconocimiento facial</p>
@@ -89,11 +90,12 @@ type Prueba = 'marcacion' | 'registro';
         </div>
         <p class="border-t border-stone-100 px-5 py-3 text-xs text-stone-500">
           El cambio se aplica desde la siguiente marcación. Quienes no tienen equipo usan el modo general
-          (<a routerLink="/admin/parametros" class="text-vino-700 hover:underline">Parámetros</a>: {{ resumen.obligatorio ? 'reconocimiento facial' : 'botón' }}).
+          ({{ resumen.obligatorio ? 'reconocimiento facial' : 'botón' }}; se cambia más abajo).
         </p>
       </section>
 
-      <!-- Pruebas -->
+<div class="mb-6"><app-admin-parametros-bloque [campos]="camposFacial" [separado]="false" /></div>
+          <!-- Pruebas -->
       <div class="mt-6 grid gap-6 lg:grid-cols-2">
         <section class="card">
           <div class="card-header">
@@ -304,6 +306,14 @@ type Prueba = 'marcacion' | 'registro';
   `
 })
 export class AdminFacialComponent implements OnInit {
+  readonly camposFacial: CampoParametro[] = [
+    { clave: 'MARCACION_FACIAL_OBLIGATORIA', titulo: 'Modo para quienes no tienen equipo configurado', si: 'Reconocimiento facial', no: 'Botón',
+      ayuda: 'Se aplica a colaboradores sin departamento o de un departamento nuevo que aún no aparece en la tabla de arriba.' },
+    { clave: 'UMBRAL_FACIAL', titulo: 'Umbral de coincidencia', min: 0.3, max: 0.8, paso: 0.01,
+      ayuda: 'Distancia máxima para aceptar un rostro: 0.4 estricto (rechaza más), 0.6 permisivo. Recomendado 0.5.' },
+    { clave: 'MUESTRAS_FACIALES', titulo: 'Capturas al registrar un rostro', min: 3, max: 10,
+      ayuda: 'Cantidad de capturas que se toman al registrar un rostro (5 por defecto).' },
+  ];
   private facial = inject(FacialService);
   private admin = inject(AdminService);
   private notification = inject(NotificationService);

@@ -41,7 +41,7 @@
   } @else {
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Colaborador</th><th>DNI</th><th>Departamento</th><th>Rol</th><th class="hidden 2xl:table-cell">Ingreso</th><th>Rostro</th><th class="text-right">Acciones</th></tr></thead>
+        <thead><tr><th>Colaborador</th><th>DNI</th><th>Departamento</th><th>Rol</th><th class="hidden 2xl:table-cell">Ingreso</th>@if (gestionaAcceso) { <th>Último acceso</th> }<th>Rostro</th><th class="text-right">Acciones</th></tr></thead>
         <tbody>
           @for (e of filtrados; track e.id) {
             <tr>
@@ -52,7 +52,9 @@
                     <p class="flex items-center gap-2 font-medium" [title]="e.nombre">
                       <span class="truncate">{{ e.nombre }}</span>
                       @if (!e.activo) { <span class="badge-gray shrink-0" data-inactivo>Inactivo</span> }
+                      @else if (e.usuarioActivo === false) { <span class="badge-red shrink-0" title="Empleado activo, pero no puede ingresar al sistema">Sin acceso</span> }
                     </p>
+                    @if (e.debeCambiarPassword && e.activo) { <span class="badge-amber mt-0.5" data-clave-pendiente>Cambio de clave pendiente</span> }
                     @if (cargoExtra(e); as cargo) { <p class="truncate text-xs text-stone-500" [title]="cargo">{{ cargo }}</p> }
                   </div>
                 </div>
@@ -61,6 +63,9 @@
               <td class="max-w-36 text-stone-600">{{ e.departamentoNombre || '—' }}</td>
               <td><span [class]="rolBadge(e.rol)">{{ rolLabel(e.rol) }}</span></td>
               <td class="hidden text-stone-600 2xl:table-cell">{{ fechaCorta(e.ingreso) }}</td>
+              @if (gestionaAcceso) {
+                <td class="whitespace-nowrap text-xs text-stone-600" data-ultimo-acceso>{{ e.ultimoAcceso ? fechaHora(e.ultimoAcceso) : 'Nunca' }}</td>
+              }
               <td>
                 @if (tieneRostro(e)) {
                   <span class="badge-green" title="Rostro registrado"><i class="bi bi-person-check"></i> Registrado</span>

@@ -1,3 +1,4 @@
+import { AdminParametrosBloqueComponent, CampoParametro } from './parametros-bloque';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../services/admin';
@@ -9,7 +10,7 @@ import { mensajeError } from '../../../utils/format';
 @Component({
   selector: 'app-admin-red',
   standalone: true,
-  imports: [FormsModule, ModalComponent],
+  imports: [FormsModule, ModalComponent, AdminParametrosBloqueComponent],
   template: `
     <div class="alert-info mb-4">
       <i class="bi bi-info-circle"></i>
@@ -26,6 +27,7 @@ import { mensajeError } from '../../../utils/format';
         <span [class]="miIp.dentroDeRed ? 'badge-green' : 'badge-red'">{{ miIp.dentroDeRed ? 'Dentro de red' : 'Fuera de red' }}</span>
       </div>
     }
+    <div class="mb-6"><app-admin-parametros-bloque [campos]="camposRed" [separado]="false" /></div>
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Segmentos permitidos</h3>
@@ -72,6 +74,10 @@ import { mensajeError } from '../../../utils/format';
   `
 })
 export class AdminRedComponent implements OnInit {
+  readonly camposRed: CampoParametro[] = [
+    { clave: 'VALIDAR_IP_MARCACION', titulo: 'Validar red al marcar asistencia', si: 'Sí, solo desde estos segmentos', no: 'No, desde cualquier red',
+      ayuda: 'Si está activo, la asistencia solo se puede marcar desde los segmentos de red de abajo.' },
+  ];
   private admin = inject(AdminService);
   private notification = inject(NotificationService);
   segmentos: SegmentoRed[] = [];

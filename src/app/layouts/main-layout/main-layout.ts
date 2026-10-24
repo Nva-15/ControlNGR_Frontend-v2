@@ -90,29 +90,37 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
     if (this.auth.isAdmin()) {
       return [
         {
-          titulo: 'Panel maestro',
+          titulo: 'Personas',
           items: [
+            { ruta: '/empleados', texto: 'Empleados y accesos', icono: 'bi-people' },
             { ruta: '/admin/saldos', texto: 'Saldos y carga inicial', icono: 'bi-wallet2' },
-            { ruta: '/admin/usuarios', texto: 'Usuarios y accesos', icono: 'bi-person-lock' },
-            { ruta: '/admin/facial', texto: 'Reconocimiento facial', icono: 'bi-person-bounding-box' },
-            { ruta: '/admin/asistencia', texto: 'Asistencia y horarios', icono: 'bi-clipboard-check' },
-            { ruta: '/admin/red', texto: 'Segmentos de red', icono: 'bi-router' },
-            { ruta: '/admin/feriados', texto: 'Feriados', icono: 'bi-calendar-heart' },
-            { ruta: '/admin/departamentos', texto: 'Departamentos', icono: 'bi-building' },
-            { ruta: '/admin/roles', texto: 'Roles y aprobaciones', icono: 'bi-diagram-2' },
-            { ruta: '/admin/aprobacion', texto: 'Aprobación automática', icono: 'bi-lightning-charge' },
-            { ruta: '/admin/catalogos', texto: 'Tipos de solicitud', icono: 'bi-list-check' },
-            { ruta: '/admin/parametros', texto: 'Parámetros', icono: 'bi-sliders' },
-            { ruta: '/admin/respaldos', texto: 'Respaldos', icono: 'bi-database-check' },
+            { ruta: '/organigrama', texto: 'Organigrama', icono: 'bi-diagram-3' },
           ]
         },
         {
-          titulo: 'Datos del sistema',
+          titulo: 'Asistencia',
           items: [
-            { ruta: '/empleados', texto: 'Empleados', icono: 'bi-people' },
+            { ruta: '/admin/asistencia', texto: 'Reglas de marcación', icono: 'bi-clipboard-check' },
+            { ruta: '/admin/facial', texto: 'Reconocimiento facial', icono: 'bi-person-bounding-box' },
+            { ruta: '/admin/red', texto: 'Segmentos de red', icono: 'bi-router' },
+            { ruta: '/admin/feriados', texto: 'Feriados', icono: 'bi-calendar-heart' },
             { ruta: '/horarios', texto: 'Horarios', icono: 'bi-calendar-week' },
-            { ruta: '/organigrama', texto: 'Organigrama', icono: 'bi-diagram-3' },
+          ]
+        },
+        {
+          titulo: 'Solicitudes',
+          items: [
+            { ruta: '/admin/roles', texto: 'Roles y aprobaciones', icono: 'bi-diagram-2' },
+            { ruta: '/admin/aprobacion', texto: 'Aprobación automática', icono: 'bi-lightning-charge' },
+            { ruta: '/admin/catalogos', texto: 'Tipos de solicitud', icono: 'bi-list-check' },
+          ]
+        },
+        {
+          titulo: 'Sistema',
+          items: [
+            { ruta: '/admin/departamentos', texto: 'Departamentos', icono: 'bi-building' },
             { ruta: '/herramientas', texto: '+ Herramientas', icono: 'bi-grid-3x3-gap' },
+            { ruta: '/admin/respaldos', texto: 'Respaldos', icono: 'bi-database-check' },
           ]
         }
       ];

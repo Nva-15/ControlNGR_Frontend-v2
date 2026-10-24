@@ -13,7 +13,7 @@
   <!-- Marcacion -->
   <section class="card lg:col-span-2">
     <div class="card-header">
-      <h2 class="card-title"><i class="bi bi-fingerprint text-vino-700"></i> Asistencia de hoy</h2>
+      <h2 class="card-title"><i class="bi text-vino-700" [class.bi-person-bounding-box]="requiereRostro" [class.bi-clock]="!requiereRostro"></i> Asistencia de hoy</h2>
       <div class="flex items-center gap-2">
         @if (red) {
           @if (red.dentroDeRed) {
