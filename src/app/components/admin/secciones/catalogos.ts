@@ -21,7 +21,6 @@ import { mensajeError } from '../../../utils/format';
                 <tr>
                   <td>
                     <input class="input min-w-44 py-1!" [(ngModel)]="t.nombre" />
-                    <p class="mt-1 font-mono text-xs text-stone-500">{{ t.codigo }}</p>
                   </td>
                   <td>
                     <span [class]="t.descuentaDe === 'NINGUNO' ? 'badge-gray' : 'badge-oro'">
@@ -30,7 +29,7 @@ import { mensajeError } from '../../../utils/format';
                   </td>
                   <td class="text-center"><input type="checkbox" class="checkbox" [(ngModel)]="t.requiereEvidencia" /></td>
                   <td class="text-center"><input type="checkbox" class="checkbox" [(ngModel)]="t.activo" /></td>
-                  <td class="text-right"><button class="btn-secondary btn-sm" (click)="guardarTipo(t)">Guardar</button></td>
+                  <td class="text-right"><button class="btn-secondary btn-sm" data-guardar [disabled]="!cambioTipo(t)" (click)="guardarTipo(t)">Guardar</button></td>
                 </tr>
               }
             </tbody>
@@ -64,19 +63,25 @@ export class AdminCatalogosComponent implements OnInit {
   private admin = inject(AdminService);
   private notification = inject(NotificationService);
   tipos: TipoSolicitud[] = [];
+  private originales = new Map<number, string>();
   motivos: MotivoLicencia[] = [];
   nuevoMotivo = '';
 
   ngOnInit() {
-    this.admin.tiposSolicitud().subscribe(t => this.tipos = t);
+    this.admin.tiposSolicitud().subscribe(t => { this.tipos = t; t.forEach(x => this.originales.set(x.id, this.huella(x))); });
     this.cargarMotivos();
   }
 
   cargarMotivos() { this.admin.motivosLicencia().subscribe(m => this.motivos = m); }
 
+  private huella(t: TipoSolicitud) { return JSON.stringify([t.nombre.trim(), !!t.requiereEvidencia, !!t.activo]); }
+
+  /** Guardar solo se activa si la fila cambió. */
+  cambioTipo(t: TipoSolicitud) { return !!t.nombre.trim() && this.huella(t) !== this.originales.get(t.id); }
+
   guardarTipo(t: TipoSolicitud) {
     this.admin.actualizarTipoSolicitud(t).subscribe({
-      next: () => this.notification.success(`"${t.nombre}" actualizado.`),
+      next: () => { this.originales.set(t.id, this.huella(t)); this.notification.success(`"${t.nombre}" actualizado.`); },
       error: e => this.notification.error(mensajeError(e))
     });
   }

@@ -7,7 +7,9 @@ import { ExportService } from '../../services/export';
 import { NotificationService } from '../../services/notification.service';
 import { ApiConfigService } from '../../services/api-config.service';
 import { EmpleadoResponse } from '../../interfaces/empleado';
+import { normalizar } from '../../utils/filtros';
 import { ModalComponent } from '../shared/modal/modal.component';
+import { MenuAccionesComponent } from '../shared/menu-acciones/menu-acciones.component';
 import { AvatarComponent } from '../shared/avatar/avatar.component';
 import { CamaraFacialComponent } from '../shared/camara-facial/camara-facial.component';
 import { FacialService } from '../../services/facial';
@@ -17,7 +19,7 @@ import { puedeAsignarRol, rolBadge, rolLabel } from '../../utils/roles';
 @Component({
   selector: 'app-empleados',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, ModalComponent, AvatarComponent, CamaraFacialComponent],
+  imports: [ReactiveFormsModule, FormsModule, ModalComponent, AvatarComponent, CamaraFacialComponent, MenuAccionesComponent],
   templateUrl: './empleados.html'
 })
 export class EmpleadosComponent implements OnInit {
@@ -62,6 +64,14 @@ export class EmpleadosComponent implements OnInit {
 
   readonly fechaCorta = fechaCorta;
   readonly rolLabel = rolLabel;
+
+  /** El cargo solo se muestra si dice algo más que el rol (evita "Help Desk" / "Help Desk"). */
+  cargoExtra(e: { cargo?: string; rol?: string }): string {
+    const cargo = (e.cargo || '').trim();
+    const igual = (x?: string) => !!x && normalizar(x) === normalizar(cargo);
+    if (!cargo || igual(rolLabel(e.rol)) || igual(this.roles.find(r => r.codigo === e.rol)?.nombre)) return '';
+    return cargo;
+  }
   readonly rolBadge = rolBadge;
 
   niveles = [

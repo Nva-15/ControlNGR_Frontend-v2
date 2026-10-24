@@ -5,6 +5,7 @@ import { NotificationService } from '../../../services/notification.service';
 import { SaldoEmpleado } from '../../../interfaces/admin';
 import { FeriadoLaborado, MovimientoSaldo, TipoSaldo } from '../../../interfaces/saldo';
 import { ModalComponent } from '../../shared/modal/modal.component';
+import { MenuAccionesComponent } from '../../shared/menu-acciones/menu-acciones.component';
 import { dias, fechaCorta, mensajeError } from '../../../utils/format';
 import { rolLabel } from '../../../utils/roles';
 import { normalizar, opciones } from '../../../utils/filtros';
@@ -12,7 +13,7 @@ import { normalizar, opciones } from '../../../utils/filtros';
 @Component({
   selector: 'app-admin-saldos',
   standalone: true,
-  imports: [FormsModule, ModalComponent],
+  imports: [FormsModule, ModalComponent, MenuAccionesComponent],
   template: `
     <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
       <button class="btn-secondary" (click)="verFeriados()"><i class="bi bi-calendar-heart"></i> Feriados laborados</button>
@@ -38,6 +39,11 @@ import { normalizar, opciones } from '../../../utils/filtros';
         <option value="">Todos los roles</option>
         @for (r of roles; track r) { <option [value]="r">{{ rolLabel(r) }}</option> }
       </select>
+      <select class="select w-36" [(ngModel)]="filtroEstado" aria-label="Filtrar por estado" data-filtro-estado>
+        <option value="activos">Activos</option>
+        <option value="inactivos">Inactivos</option>
+        <option value="todos">Todos</option>
+      </select>
       @if (hayFiltros) { <button class="btn-ghost btn-sm" (click)="limpiarFiltros()"><i class="bi bi-x-lg"></i> Limpiar</button> }
     </div>
 
@@ -50,8 +56,8 @@ import { normalizar, opciones } from '../../../utils/filtros';
             <thead><tr><th>Empleado</th><th>Ingreso</th><th class="text-right">Vacaciones</th><th class="text-right">Compensación</th><th class="text-right">Acciones</th></tr></thead>
             <tbody>
               @for (s of filtrados; track s.empleadoId) {
-                <tr [class.opacity-50]="!s.activo">
-                  <td><p class="font-medium">{{ s.empleadoNombre }}</p><p class="text-xs text-stone-500">{{ s.dni }} · {{ rolLabel(s.rol) }}@if (s.departamento) { · {{ s.departamento }} }</p></td>
+                <tr>
+                  <td><p class="flex items-center gap-2 font-medium">{{ s.empleadoNombre }}@if (!s.activo) { <span class="badge-gray">Inactivo</span> }</p><p class="text-xs text-stone-500">{{ s.dni }} · {{ rolLabel(s.rol) }}@if (s.departamento && !mismoNombre(s.departamento, rolLabel(s.rol))) { · {{ s.departamento }} }</p></td>
                   <td class="text-stone-600">{{ fechaCorta(s.ingreso) }}</td>
                   <td class="text-right tabular-nums">
                     <span class="font-semibold">{{ dias(s.vacaciones.saldo) }}</span>
@@ -62,10 +68,12 @@ import { normalizar, opciones } from '../../../utils/filtros';
                     @if (s.compensacion.pendiente) { <span class="block text-xs text-stone-400">{{ dias(s.compensacion.pendiente) }} pendiente</span> }
                   </td>
                   <td>
-                    <div class="flex justify-end gap-1">
-                      <button class="btn-secondary btn-sm" (click)="abrirCarga(s)"><i class="bi bi-pencil-square"></i> Carga inicial</button>
-                      <button class="btn-ghost btn-sm accion-editar" (click)="abrirAjuste(s)"><i class="bi bi-plus-slash-minus"></i> Ajuste</button>
-                      <button class="btn-icon accion-ver" title="Historial de movimientos" (click)="verMovimientos(s)"><i class="bi bi-clock-history"></i></button>
+                    <div class="flex justify-end">
+                      <app-menu-acciones etiqueta="Gestionar">
+                        <button class="menu-item" role="menuitem" data-accion="carga" (click)="abrirCarga(s)"><i class="bi bi-pencil-square"></i> Carga inicial</button>
+                        <button class="menu-item" role="menuitem" data-accion="ajuste" (click)="abrirAjuste(s)"><i class="bi bi-plus-slash-minus"></i> Ajuste</button>
+                        <button class="menu-item" role="menuitem" data-accion="historial" (click)="verMovimientos(s)"><i class="bi bi-clock-history"></i> Historial de movimientos</button>
+                      </app-menu-acciones>
                     </div>
                   </td>
                 </tr>
@@ -185,6 +193,7 @@ export class AdminSaldosComponent implements OnInit {
   busqueda = '';
   filtroDepartamento = '';
   filtroRol = '';
+  filtroEstado: 'activos' | 'inactivos' | 'todos' = 'activos';
   departamentos: string[] = [];
   roles: string[] = [];
 
@@ -218,12 +227,16 @@ export class AdminSaldosComponent implements OnInit {
     return this.saldos.filter(s =>
       (!q || normalizar(s.empleadoNombre).includes(q) || s.dni.includes(q)) &&
       (!this.filtroDepartamento || s.departamento === this.filtroDepartamento) &&
-      (!this.filtroRol || s.rol === this.filtroRol));
+      (!this.filtroRol || s.rol === this.filtroRol) &&
+      (this.filtroEstado === 'todos' || (this.filtroEstado === 'activos') === !!s.activo));
   }
 
-  get hayFiltros() { return !!(this.busqueda.trim() || this.filtroDepartamento || this.filtroRol); }
+  /** Evita "NOC · NOC" cuando el área se llama igual que el rol. */
+  mismoNombre(a: string, b: string) { return normalizar(a) === normalizar(b); }
 
-  limpiarFiltros() { this.busqueda = ''; this.filtroDepartamento = ''; this.filtroRol = ''; }
+  get hayFiltros() { return !!(this.busqueda.trim() || this.filtroDepartamento || this.filtroRol || this.filtroEstado !== 'activos'); }
+
+  limpiarFiltros() { this.busqueda = ''; this.filtroDepartamento = ''; this.filtroRol = ''; this.filtroEstado = 'activos'; }
 
   abrirCarga(emp: SaldoEmpleado) {
     this.carga = { emp, vacaciones: emp.vacaciones.saldo, compensacion: emp.compensacion.saldo, observacion: '' };

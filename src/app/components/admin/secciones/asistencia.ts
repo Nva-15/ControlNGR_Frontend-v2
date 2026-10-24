@@ -28,12 +28,6 @@ interface CampoParametro {
       <div class="card-header">
         <h3 class="card-title">Configuración por rol</h3>
       </div>
-      <div class="grid gap-3 border-b border-stone-100 px-5 py-4 text-sm text-stone-600 md:grid-cols-3">
-        <p><span class="badge-green">Con horario</span> Marca asistencia, recibe horario y aparece en el <b>reporte de asistencia</b> (con tardanzas).</p>
-        <p><span class="badge-oro">Horario flexible</span> Marca asistencia cualquier día, sin horario ni tardanzas. No aparece en Horarios ni en el reporte.</p>
-        <p><span class="badge-gray">No marca</span> No registra asistencia. No aparece en Horarios ni en el reporte.</p>
-      </div>
-
       @if (cargando) {
         <div class="flex justify-center py-12"><span class="spinner"></span></div>
       } @else {
@@ -53,7 +47,7 @@ interface CampoParametro {
                 <tr [attr.data-rol]="r.codigo">
                   <td>
                     <p class="font-medium">{{ r.nombre }}</p>
-                    <p class="font-mono text-xs text-stone-500">{{ r.codigo }}@if (!r.activo) { · inactivo }</p>
+                    @if (!r.activo) { <span class="badge-gray" data-inactivo>Inactivo</span> }
                   </td>
                   <td class="text-center tabular-nums">{{ r.empleados }}</td>
                   <td class="text-center">
@@ -66,9 +60,9 @@ interface CampoParametro {
                            (change)="cambiar(r, { conHorario: !r.conHorario })" />
                   </td>
                   <td>
-                    @if (!r.marcaAsistencia) { <span class="badge-gray">No marca</span> }
-                    @else if (r.conHorario) { <span class="badge-green">Con horario</span> }
-                    @else { <span class="badge-oro">Horario flexible</span> }
+                    @if (!r.marcaAsistencia) { <span class="badge-gray" title="No registra asistencia. No aparece en Horarios ni en el reporte.">No marca</span> }
+                    @else if (r.conHorario) { <span class="badge-green" title="Marca asistencia, recibe horario y aparece en el reporte con tardanzas.">Con horario</span> }
+                    @else { <span class="badge-oro" title="Marca asistencia cualquier día, sin horario ni tardanzas. No aparece en Horarios ni en el reporte.">Horario flexible</span> }
                   </td>
                 </tr>
               }
@@ -76,6 +70,7 @@ interface CampoParametro {
           </table>
         </div>
         <p class="field-help px-5 pb-4 pt-2">
+          <b>Con horario</b>: recibe horario y aparece en el reporte con tardanzas. <b>Horario flexible</b>: marca cualquier día, sin horario ni tardanzas.
           Los cambios se aplican de inmediato en Horarios, en el reporte de asistencia (y su filtro de roles) y al marcar.
           Los horarios ya creados de un rol que pasa a flexible se conservan, pero dejan de usarse.
         </p>

@@ -54,7 +54,7 @@ import { normalizar, opciones } from '../../../utils/filtros';
                 </td>
                 <td>
                   <div class="flex flex-wrap gap-1">
-                    <span [class]="u.activo ? 'badge-green' : 'badge-red'">{{ u.activo ? 'Activo' : 'Inactivo' }}</span>
+                    @if (!u.activo) { <span class="badge-red" data-inactivo>Inactivo</span> }
                     @if (u.debeCambiarPassword) { <span class="badge-amber">Cambio de clave pendiente</span> }
                   </div>
                 </td>

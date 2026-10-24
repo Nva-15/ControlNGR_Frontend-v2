@@ -22,7 +22,6 @@ import { mensajeError } from '../../../utils/format';
                 <tr>
                   <td>
                     <p class="font-medium">{{ t.nombre }}</p>
-                    <p class="font-mono text-xs text-stone-500">{{ t.codigo }}</p>
                   </td>
                   @if (t.esSistema) {
                     <td colspan="3" class="text-xs text-stone-500">Cuenta técnica del panel maestro (no editable)</td>

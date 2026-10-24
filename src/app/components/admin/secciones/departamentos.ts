@@ -13,21 +13,19 @@ import { mensajeError } from '../../../utils/format';
   imports: [FormsModule, ModalComponent],
   template: `
     <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Departamentos</h3>
+      <div class="card-header justify-end!">
         <button class="btn-primary btn-sm" (click)="abrir()"><i class="bi bi-plus-lg"></i> Nuevo departamento</button>
       </div>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Nombre</th><th>Descripción</th><th>Responsable</th><th>Personal</th><th>Estado</th><th class="text-right"></th></tr></thead>
+          <thead><tr><th>Nombre</th><th>Descripción</th><th>Responsable</th><th>Personal</th><th class="text-right"></th></tr></thead>
           <tbody>
             @for (d of departamentos; track d.id) {
               <tr>
-                <td class="font-medium">{{ d.nombre }}</td>
+                <td class="font-medium">{{ d.nombre }}@if (!d.activo) { <span class="badge-gray ml-2" data-inactivo>Inactivo</span> }</td>
                 <td class="text-stone-600">{{ d.descripcion }}</td>
                 <td>{{ nombreEmpleado(d.responsableId) }}</td>
                 <td class="tabular-nums">{{ cantidad(d.id) }}</td>
-                <td><span [class]="d.activo ? 'badge-green' : 'badge-gray'">{{ d.activo ? 'Activo' : 'Inactivo' }}</span></td>
                 <td class="text-right"><button class="btn-icon accion-editar" title="Editar" (click)="abrir(d)"><i class="bi bi-pencil-square"></i></button></td>
               </tr>
             }
