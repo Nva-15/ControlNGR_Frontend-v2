@@ -3,10 +3,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
 import {
-  AprobacionAutomatica, CopiaFeriados, Departamento, EstadoRespaldos, ProgramacionRespaldo, Respaldo, Feriado, Parametro, RolAsistencia, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
+  AprobacionAutomatica, Pagina, CopiaFeriados, Departamento, EstadoRespaldos, ProgramacionRespaldo, Respaldo, Feriado, Parametro, RolAsistencia, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
 } from '../interfaces/admin';
 import { MotivoLicencia, TipoSolicitud } from '../interfaces/solicitud';
 import { ModoEquipo, ModoMarcacion } from '../interfaces/facial';
+import { parametros } from '../utils/filtros';
 import { FeriadoLaborado, MovimientoSaldo, TipoSaldo } from '../interfaces/saldo';
 
 /** Endpoints del panel maestro (/api/admin/**, solo rol admin). */
@@ -113,6 +114,10 @@ export class AdminService {
   }
 
   // Saldos
+  saldosPagina(filtros: { q?: string; departamentoId?: number | ''; rol?: string; estado?: string; pagina?: number; tamano?: number }):
+      Observable<Pagina<SaldoEmpleado>> {
+    return this.http.get<Pagina<SaldoEmpleado>>(`${this.url}/saldos/pagina`, { params: parametros(filtros) });
+  }
   saldos(): Observable<SaldoEmpleado[]> { return this.http.get<SaldoEmpleado[]>(`${this.url}/saldos`); }
   movimientos(empleadoId: number, tipo?: TipoSaldo): Observable<MovimientoSaldo[]> {
     const params = tipo ? new HttpParams().set('tipo', tipo) : undefined;

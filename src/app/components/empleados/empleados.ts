@@ -10,6 +10,8 @@ import { EmpleadoResponse } from '../../interfaces/empleado';
 import { normalizar } from '../../utils/filtros';
 import { ModalComponent } from '../shared/modal/modal.component';
 import { MenuAccionesComponent } from '../shared/menu-acciones/menu-acciones.component';
+import { PaginacionComponent } from '../shared/paginacion/paginacion.component';
+import { Pagina } from '../../interfaces/admin';
 import { AvatarComponent } from '../shared/avatar/avatar.component';
 import { CamaraFacialComponent } from '../shared/camara-facial/camara-facial.component';
 import { FacialService } from '../../services/facial';
@@ -19,7 +21,7 @@ import { puedeAsignarRol, rolBadge, rolLabel } from '../../utils/roles';
 @Component({
   selector: 'app-empleados',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, ModalComponent, AvatarComponent, CamaraFacialComponent, MenuAccionesComponent],
+  imports: [ReactiveFormsModule, FormsModule, ModalComponent, AvatarComponent, CamaraFacialComponent, MenuAccionesComponent, PaginacionComponent],
   templateUrl: './empleados.html'
 })
 export class EmpleadosComponent implements OnInit {
@@ -39,7 +41,11 @@ export class EmpleadosComponent implements OnInit {
   rostroCapturando = false;
   rostroGuardando = false;
 
-  empleados: EmpleadoResponse[] = [];
+  // Lista paginada en el servidor
+  lista: Pagina<EmpleadoResponse> | null = null;
+  private esperaBusqueda: any;
+  private pedido = 0;
+  exportando = false;
   departamentos: { id: number; nombre: string }[] = [];
   roles: { codigo: string; nombre: string; nivel: number }[] = [];
   cargando = true;
@@ -85,6 +91,9 @@ export class EmpleadosComponent implements OnInit {
   ];
 
   ngOnInit() {
+    // Las jefaturas y supervisores empiezan viendo su departamento; el admin y la gerencia, a todos
+    const depto = this.auth.empleado()?.departamentoId;
+    if (depto && !this.auth.isAdmin() && !this.auth.isGerencia()) this.filtroDepartamento = depto;
     this.cargar();
     this.empService.departamentos().subscribe(d => this.departamentos = d);
     this.empService.roles().subscribe(r => this.roles = r);
@@ -110,21 +119,41 @@ export class EmpleadosComponent implements OnInit {
     return !!this.editando && this.esPropio(this.editando);
   }
 
-  cargar() {
-    this.facial.registrados().subscribe({ next: ids => this.conRostro = new Set(ids), error: () => this.conRostro = new Set() });
-    this.empService.getEmpleados().subscribe({
-      next: d => { this.empleados = d.sort((a, b) => a.nombre.localeCompare(b.nombre)); this.cargando = false; },
+  private get filtros() {
+    return { q: this.busqueda.trim(), departamentoId: this.filtroDepartamento, rol: this.filtroRol, estado: this.filtroEstado };
+  }
+
+  cargar(pagina = this.lista?.pagina ?? 0) {
+    const pedido = ++this.pedido;
+    this.cargando = true;
+    this.empService.pagina({ ...this.filtros, pagina, tamano: 20 }).subscribe({
+      next: p => {
+        if (pedido !== this.pedido) return;
+        // Si se borró el último de una página, vuelve a la anterior
+        if (!p.contenido.length && p.total && pagina > 0) { this.cargar(pagina - 1); return; }
+        this.lista = p;
+        this.conRostro = new Set(p.contenido.filter(e => e.rostroRegistrado).map(e => e.id!));
+        this.cargando = false;
+      },
       error: e => { this.cargando = false; this.notification.error(mensajeError(e)); }
     });
   }
 
-  get filtrados(): EmpleadoResponse[] {
-    const q = this.busqueda.trim().toLowerCase();
-    return this.empleados.filter(e =>
-      (this.filtroEstado === 'todos' || (this.filtroEstado === 'activos') === !!e.activo) &&
-      (!this.filtroDepartamento || e.departamentoId === this.filtroDepartamento) &&
-      (!this.filtroRol || e.rol === this.filtroRol) &&
-      (!q || e.nombre.toLowerCase().includes(q) || (e.dni || '').includes(q) || (e.cargo || '').toLowerCase().includes(q)));
+  filtrar() { this.cargar(0); }
+
+  /** Busca al dejar de escribir. */
+  buscar() {
+    clearTimeout(this.esperaBusqueda);
+    this.esperaBusqueda = setTimeout(() => this.cargar(0), 350);
+  }
+
+  get filtrados(): EmpleadoResponse[] { return this.lista?.contenido || []; }
+
+  get hayFiltros() { return !!(this.busqueda.trim() || this.filtroDepartamento || this.filtroRol || this.filtroEstado !== 'activos'); }
+
+  limpiarFiltros() {
+    this.busqueda = ''; this.filtroDepartamento = ''; this.filtroRol = ''; this.filtroEstado = 'activos';
+    this.cargar(0);
   }
 
   // ==================== PERMISOS ====================
@@ -395,18 +424,27 @@ export class EmpleadosComponent implements OnInit {
 
   // ==================== EXPORTAR ====================
 
-  private filas() {
-    return this.filtrados.map(e => ({
+  private filas(lista: EmpleadoResponse[]) {
+    return lista.map(e => ({
       Nombre: e.nombre, DNI: e.dni || '', Cargo: e.cargo, Departamento: e.departamentoNombre || '',
       Rol: rolLabel(e.rol), Correo: e.email || '', Ingreso: fechaCorta(e.ingreso), Cumpleaños: fechaCorta(e.cumpleanos),
       Estado: e.activo ? 'Activo' : 'Inactivo'
     }));
   }
 
-  exportarExcel() { this.exportService.exportToExcel(this.filas(), `empleados_${hoyIso()}`, 'Empleados'); }
+  /** Exporta todo lo filtrado (no solo la página): se pide al servidor solo al pulsar el botón. */
+  private conTodos(hacer: (lista: EmpleadoResponse[]) => void) {
+    this.exportando = true;
+    this.empService.pagina({ ...this.filtros, pagina: 0, tamano: 5000, exportar: true }).subscribe({
+      next: p => { this.exportando = false; hacer(p.contenido); },
+      error: e => { this.exportando = false; this.notification.error(mensajeError(e)); }
+    });
+  }
+
+  exportarExcel() { this.conTodos(l => this.exportService.exportToExcel(this.filas(l), `empleados_${hoyIso()}`, 'Empleados')); }
 
   exportarPDF() {
     const cols = ['Nombre', 'DNI', 'Cargo', 'Departamento', 'Rol', 'Correo', 'Ingreso', 'Estado'].map(c => ({ header: c, dataKey: c }));
-    this.exportService.exportToPDF(this.filas(), cols, { title: 'Empleados', filename: `empleados_${hoyIso()}` });
+    this.conTodos(l => this.exportService.exportToPDF(this.filas(l), cols, { title: 'Empleados', filename: `empleados_${hoyIso()}` }));
   }
 }

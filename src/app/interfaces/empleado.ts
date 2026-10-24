@@ -22,6 +22,8 @@ export interface Empleado {
 
 /** Empleado tal como lo devuelve la API. */
 export interface EmpleadoResponse {
+  /** Solo para el admin y la gestión (lista paginada de Empleados). */
+  rostroRegistrado?: boolean;
   id?: number;
   /** Solo llega para el propio colaborador, quienes lo administran y el admin. */
   dni?: string;

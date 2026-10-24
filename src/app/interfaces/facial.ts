@@ -39,8 +39,9 @@ export interface ResumenFacial {
   obligatorio: boolean;
   /** Colaboradores cuyo equipo marca con reconocimiento facial. */
   conFacial?: number;
+  /** De esos, cuántos aún no registran su rostro. */
+  pendientes?: number;
   muestrasRequeridas: number;
-  empleados: EmpleadoFacial[];
 }
 
 /** FACIAL: camara y rostro registrado. BOTON: confirmacion, sin camara. */

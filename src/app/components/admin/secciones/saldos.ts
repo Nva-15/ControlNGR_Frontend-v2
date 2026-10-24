@@ -6,14 +6,17 @@ import { SaldoEmpleado } from '../../../interfaces/admin';
 import { FeriadoLaborado, MovimientoSaldo, TipoSaldo } from '../../../interfaces/saldo';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { MenuAccionesComponent } from '../../shared/menu-acciones/menu-acciones.component';
+import { PaginacionComponent } from '../../shared/paginacion/paginacion.component';
+import { EmpleadosService } from '../../../services/empleados';
+import { Pagina } from '../../../interfaces/admin';
 import { dias, fechaCorta, mensajeError } from '../../../utils/format';
 import { rolLabel } from '../../../utils/roles';
-import { normalizar, opciones } from '../../../utils/filtros';
+import { normalizar } from '../../../utils/filtros';
 
 @Component({
   selector: 'app-admin-saldos',
   standalone: true,
-  imports: [FormsModule, ModalComponent, MenuAccionesComponent],
+  imports: [FormsModule, ModalComponent, MenuAccionesComponent, PaginacionComponent],
   template: `
     <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
       <button class="btn-secondary" (click)="verFeriados()"><i class="bi bi-calendar-heart"></i> Feriados laborados</button>
@@ -29,17 +32,17 @@ import { normalizar, opciones } from '../../../utils/filtros';
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <div class="relative min-w-64 flex-1">
         <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
-        <input class="input pl-9!" placeholder="Buscar por nombre o DNI" [(ngModel)]="busqueda" />
+        <input class="input pl-9!" placeholder="Buscar por nombre o DNI" [(ngModel)]="busqueda" (ngModelChange)="buscar()" data-buscar />
       </div>
-      <select class="select w-64" [(ngModel)]="filtroDepartamento" aria-label="Filtrar por departamento">
+      <select class="select w-64" [(ngModel)]="filtroDepartamento" (ngModelChange)="filtrar()" aria-label="Filtrar por departamento">
         <option value="">Todos los departamentos</option>
-        @for (d of departamentos; track d) { <option [value]="d">{{ d }}</option> }
+        @for (d of departamentos; track d.id) { <option [ngValue]="d.id">{{ d.nombre }}</option> }
       </select>
-      <select class="select w-44" [(ngModel)]="filtroRol" aria-label="Filtrar por rol">
+      <select class="select w-44" [(ngModel)]="filtroRol" (ngModelChange)="filtrar()" aria-label="Filtrar por rol">
         <option value="">Todos los roles</option>
-        @for (r of roles; track r) { <option [value]="r">{{ rolLabel(r) }}</option> }
+        @for (r of roles; track r.codigo) { <option [value]="r.codigo">{{ r.nombre }}</option> }
       </select>
-      <select class="select w-36" [(ngModel)]="filtroEstado" aria-label="Filtrar por estado" data-filtro-estado>
+      <select class="select w-36" [(ngModel)]="filtroEstado" (ngModelChange)="filtrar()" aria-label="Filtrar por estado" data-filtro-estado>
         <option value="activos">Activos</option>
         <option value="inactivos">Inactivos</option>
         <option value="todos">Todos</option>
@@ -48,7 +51,7 @@ import { normalizar, opciones } from '../../../utils/filtros';
     </div>
 
     <div class="card">
-      @if (cargando) {
+      @if (cargando && !lista) {
         <div class="flex justify-center py-12"><span class="spinner"></span></div>
       } @else {
         <div class="table-wrap">
@@ -82,7 +85,10 @@ import { normalizar, opciones } from '../../../utils/filtros';
           </table>
         </div>
         @if (!filtrados.length) { <div class="empty-state"><i class="bi bi-funnel text-3xl"></i><p>No hay empleados con esos filtros.</p></div> }
-        <p class="border-t border-stone-100 px-4 py-2 text-xs text-stone-500">{{ filtrados.length }} de {{ saldos.length }} empleados</p>
+        @if (lista) {
+          <app-paginacion [total]="lista.total" [pagina]="lista.pagina" [tamano]="lista.tamano" unidad="empleados"
+                          [cargando]="cargando" (cambiar)="cargar($event)" />
+        }
       }
     </div>
 
@@ -186,16 +192,19 @@ export class AdminSaldosComponent implements OnInit {
   private admin = inject(AdminService);
   private notification = inject(NotificationService);
 
-  saldos: SaldoEmpleado[] = [];
   cargando = true;
   guardando = false;
   procesando = false;
   busqueda = '';
-  filtroDepartamento = '';
+  filtroDepartamento: number | '' = '';
   filtroRol = '';
   filtroEstado: 'activos' | 'inactivos' | 'todos' = 'activos';
-  departamentos: string[] = [];
-  roles: string[] = [];
+  departamentos: { id: number; nombre: string }[] = [];
+  roles: { codigo: string; nombre: string }[] = [];
+  lista: Pagina<SaldoEmpleado> | null = null;
+  private esperaBusqueda: any;
+  private pedido = 0;
+  private empleados = inject(EmpleadosService);
 
   carga: { emp: SaldoEmpleado; vacaciones: number | null; compensacion: number | null; observacion: string } | null = null;
   ajuste: { emp: SaldoEmpleado; tipo: TipoSaldo; dias: number | null; observacion: string } | null = null;
@@ -208,35 +217,38 @@ export class AdminSaldosComponent implements OnInit {
   readonly fechaCorta = fechaCorta;
   readonly rolLabel = rolLabel;
 
-  ngOnInit() { this.cargar(); }
+  ngOnInit() {
+    this.empleados.departamentos().subscribe(d => this.departamentos = d);
+    this.empleados.roles().subscribe(r => this.roles = r);
+    this.cargar();
+  }
 
-  cargar() {
-    this.admin.saldos().subscribe({
-      next: s => { 
-        this.saldos = s.filter(x => x.rol !== 'director').sort((a, b) => a.empleadoNombre.localeCompare(b.empleadoNombre));
-        this.departamentos = opciones(this.saldos, x => x.departamento);
-        this.roles = opciones(this.saldos, x => x.rol);
-        this.cargando = false;
-      },
+  /** Solo se calculan los saldos de la página que se muestra. */
+  cargar(pagina = this.lista?.pagina ?? 0) {
+    const pedido = ++this.pedido;
+    this.cargando = true;
+    this.admin.saldosPagina({ q: this.busqueda.trim(), departamentoId: this.filtroDepartamento, rol: this.filtroRol,
+                              estado: this.filtroEstado, pagina, tamano: 20 }).subscribe({
+      next: p => { if (pedido === this.pedido) { this.lista = p; this.cargando = false; } },
       error: e => { this.cargando = false; this.notification.error(mensajeError(e)); }
     });
   }
 
-  get filtrados() {
-    const q = normalizar(this.busqueda.trim());
-    return this.saldos.filter(s =>
-      (!q || normalizar(s.empleadoNombre).includes(q) || s.dni.includes(q)) &&
-      (!this.filtroDepartamento || s.departamento === this.filtroDepartamento) &&
-      (!this.filtroRol || s.rol === this.filtroRol) &&
-      (this.filtroEstado === 'todos' || (this.filtroEstado === 'activos') === !!s.activo));
+  filtrar() { this.cargar(0); }
+
+  buscar() {
+    clearTimeout(this.esperaBusqueda);
+    this.esperaBusqueda = setTimeout(() => this.cargar(0), 350);
   }
+
+  get filtrados(): SaldoEmpleado[] { return this.lista?.contenido || []; }
+
+  get hayFiltros() { return !!(this.busqueda.trim() || this.filtroDepartamento || this.filtroRol || this.filtroEstado !== 'activos'); }
 
   /** Evita "NOC · NOC" cuando el área se llama igual que el rol. */
   mismoNombre(a: string, b: string) { return normalizar(a) === normalizar(b); }
 
-  get hayFiltros() { return !!(this.busqueda.trim() || this.filtroDepartamento || this.filtroRol || this.filtroEstado !== 'activos'); }
-
-  limpiarFiltros() { this.busqueda = ''; this.filtroDepartamento = ''; this.filtroRol = ''; this.filtroEstado = 'activos'; }
+  limpiarFiltros() { this.busqueda = ''; this.filtroDepartamento = ''; this.filtroRol = ''; this.filtroEstado = 'activos'; this.cargar(0); }
 
   abrirCarga(emp: SaldoEmpleado) {
     this.carga = { emp, vacaciones: emp.vacaciones.saldo, compensacion: emp.compensacion.saldo, observacion: '' };

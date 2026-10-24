@@ -2,7 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
-import { EstadoFacial, PruebaMarcacion, PruebaRegistro, ResumenFacial } from '../interfaces/facial';
+import { EstadoFacial, PruebaMarcacion, PruebaRegistro, ResumenFacial, EmpleadoFacial } from '../interfaces/facial';
+import { Pagina } from '../interfaces/admin';
+import { parametros } from '../utils/filtros';
 
 type FaceApi = typeof import('face-api.js');
 
@@ -58,6 +60,11 @@ export class FacialService {
   }
 
   // ==================== PRUEBAS (panel admin) ====================
+
+  /** Quienes marcan asistencia, por páginas (vista: pendientes, registrados, sin_registrar, facial, todos). */
+  colaboradores(filtros: { vista?: string; q?: string; departamentoId?: number | ''; pagina?: number; tamano?: number }): Observable<Pagina<EmpleadoFacial>> {
+    return this.http.get<Pagina<EmpleadoFacial>>(`${this.apiUrl}/admin/colaboradores`, { params: parametros(filtros) });
+  }
 
   resumenAdmin(): Observable<ResumenFacial> {
     return this.http.get<ResumenFacial>(`${this.apiUrl}/admin/resumen`);

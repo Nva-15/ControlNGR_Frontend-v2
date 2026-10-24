@@ -8,7 +8,7 @@ import { fotoUrl, iniciales } from '../../../utils/format';
   standalone: true,
   template: `
     @if (url && !fallo) {
-      <img [src]="url" [alt]="nombre" class="avatar" [style.width.px]="tamano" [style.height.px]="tamano" (error)="fallo = true" />
+      <img [src]="url" [alt]="nombre" loading="lazy" class="avatar" [style.width.px]="tamano" [style.height.px]="tamano" (error)="fallo = true" />
     } @else {
       <span class="avatar" [style.width.px]="tamano" [style.height.px]="tamano" [style.font-size.px]="tamano * 0.38">{{ ini }}</span>
     }

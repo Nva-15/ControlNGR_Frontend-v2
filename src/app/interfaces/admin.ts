@@ -170,3 +170,11 @@ export interface AprobacionAutomatica {
   actualizadoEn?: string | null;
   actualizadoPor?: string | null;
 }
+
+/** Una página de resultados filtrada en el servidor. */
+export interface Pagina<T> {
+  contenido: T[];
+  total: number;
+  pagina: number;
+  tamano: number;
+}
