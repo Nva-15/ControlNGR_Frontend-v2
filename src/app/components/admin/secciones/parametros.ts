@@ -11,6 +11,7 @@ const NOMBRES: Record<string, string> = {
   VACACIONES_ABONO_DESDE: 'Abonar aniversarios desde',
   VALIDAR_IP_MARCACION: 'Validar red al marcar asistencia',
   TOLERANCIA_TARDANZA_MINUTOS: 'Tolerancia de tardanza (minutos)',
+  ANTICIPACION_ENTRADA_MINUTOS: 'Anticipación para marcar entrada (minutos)',
   EVIDENCIA_MAX_MB: 'Tamaño máximo de evidencia (MB)',
   SALIDA_AUTOMATICA_HORAS: 'Salida automática (horas después de la entrada)',
   MARCACION_FACIAL_OBLIGATORIA: 'Reconocimiento facial para quienes no tienen equipo configurado',
