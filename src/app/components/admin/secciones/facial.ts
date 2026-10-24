@@ -8,8 +8,9 @@ import { EmpleadoFacial, ModoEquipo, ModoMarcacion, PruebaMarcacion, PruebaRegis
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { CamaraFacialComponent } from '../../shared/camara-facial/camara-facial.component';
+import { PaginacionComponent } from '../../shared/paginacion/paginacion.component';
+import { Pagina } from '../../../interfaces/admin';
 import { fechaCorta, horaCorta, mensajeError } from '../../../utils/format';
-import { normalizar, opciones } from '../../../utils/filtros';
 
 type Prueba = 'marcacion' | 'registro';
 
@@ -17,7 +18,7 @@ type Prueba = 'marcacion' | 'registro';
 @Component({
   selector: 'app-admin-facial',
   standalone: true,
-  imports: [FormsModule, RouterLink, ModalComponent, AvatarComponent, CamaraFacialComponent],
+  imports: [FormsModule, RouterLink, ModalComponent, AvatarComponent, CamaraFacialComponent, PaginacionComponent],
   template: `
     @if (!resumen) {
       <div class="flex justify-center py-12"><span class="spinner"></span></div>
@@ -102,10 +103,26 @@ type Prueba = 'marcacion' | 'registro';
             <p class="text-sm text-stone-600">Captura un rostro y muestra a quién reconoce el sistema y con qué distancia. <b>No registra asistencia.</b></p>
             <div>
               <label class="label" for="comparar">Comparar además con (opcional)</label>
-              <select id="comparar" class="select" [(ngModel)]="compararCon" name="comparar">
-                <option [ngValue]="null">— Solo identificar —</option>
-                @for (e of registrados; track e.empleadoId) { <option [ngValue]="e.empleadoId">{{ e.nombre }}</option> }
-              </select>
+              @if (compararCon; as c) {
+                <div class="flex items-center gap-2 rounded-lg border border-stone-200 px-3 py-2 text-sm" data-comparar-elegido>
+                  <span class="flex-1">{{ c.nombre }}</span>
+                  <button type="button" class="btn-icon" aria-label="Quitar" (click)="compararCon = null"><i class="bi bi-x-lg"></i></button>
+                </div>
+              } @else {
+                <div class="relative">
+                  <input id="comparar" class="input" placeholder="Solo identificar · escriba un nombre para comparar" autocomplete="off"
+                         [(ngModel)]="buscarComparar" name="comparar" (ngModelChange)="buscarParaComparar()" data-comparar />
+                  @if (opcionesComparar.length) {
+                    <ul class="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-stone-200 bg-superficie py-1 shadow-lg">
+                      @for (o of opcionesComparar; track o.empleadoId) {
+                        <li><button type="button" class="menu-opcion w-full px-3 py-2 text-left text-sm hover:bg-stone-50" (click)="elegirComparar(o)">
+                          {{ o.nombre }} <span class="text-xs text-stone-500">· {{ o.departamento || 'Sin equipo' }}</span></button></li>
+                      }
+                    </ul>
+                  }
+                </div>
+                <p class="field-help">Solo busca entre quienes tienen rostro registrado.</p>
+              }
             </div>
             <button type="button" class="btn-primary" [disabled]="!resumen.registrados" (click)="iniciar('marcacion')">
               <i class="bi bi-camera"></i> Iniciar prueba de marcación
@@ -194,26 +211,28 @@ type Prueba = 'marcacion' | 'registro';
           <h3 class="card-title">Colaboradores que marcan asistencia</h3>
         </div>
         <div class="flex flex-wrap items-center gap-3 border-b border-stone-100 px-5 py-3">
+          <select class="select w-72" [(ngModel)]="vista" (ngModelChange)="filtrar()" name="vista" aria-label="Mostrar" data-vista>
+            <option value="pendientes">Pendientes de registrar (equipos con cámara)</option>
+            <option value="sin_registrar">Sin rostro registrado (todos los equipos)</option>
+            <option value="registrados">Con rostro registrado</option>
+            <option value="facial">Equipos con reconocimiento facial</option>
+            <option value="todos">Todos los que marcan asistencia</option>
+          </select>
+          <select class="select w-64" [(ngModel)]="filtroDepartamento" (ngModelChange)="filtrar()" name="filtroDepartamento" aria-label="Filtrar por equipo" data-equipo>
+            <option value="">Todos los equipos</option>
+            @for (m of modos; track m.departamentoId) { <option [ngValue]="m.departamentoId">{{ m.departamento }}</option> }
+          </select>
           <div class="relative min-w-56 flex-1">
             <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
-            <input class="input pl-9!" placeholder="Buscar por nombre" [(ngModel)]="busqueda" name="busqueda" />
+            <input class="input pl-9!" placeholder="Buscar por nombre o DNI" [(ngModel)]="busqueda" (ngModelChange)="buscar()" name="busqueda" data-buscar />
           </div>
-          <select class="select w-64" [(ngModel)]="filtroDepartamento" name="filtroDepartamento" aria-label="Filtrar por departamento">
-            <option value="">Todos los departamentos</option>
-            @for (d of departamentos; track d) { <option [value]="d">{{ d }}</option> }
-          </select>
-          <select class="select w-40" [(ngModel)]="filtroRostro" name="filtroRostro" aria-label="Filtrar por rostro">
-            <option value="">Rostro: todos</option>
-            <option value="registrado">Registrados</option>
-            <option value="pendiente">Pendientes</option>
-          </select>
           @if (hayFiltros) { <button class="btn-ghost btn-sm" (click)="limpiarFiltros()"><i class="bi bi-x-lg"></i> Limpiar</button> }
         </div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Colaborador</th><th>Marca con</th><th>Rostro</th><th>Capturas</th><th>Registrado el</th><th class="text-right">Acciones</th></tr></thead>
+            <thead><tr><th>Colaborador</th>@if (col.modo) { <th>Marca con</th> }@if (col.rostro) { <th>Rostro</th> }@if (col.detalle) { <th>Capturas</th><th>Registrado el</th><th class="text-right">Acciones</th> }</tr></thead>
             <tbody>
-              @for (e of filtrados; track e.empleadoId) {
+              @for (e of lista?.contenido || []; track e.empleadoId) {
                 <tr>
                   <td>
                     <div class="flex items-center gap-3">
@@ -221,14 +240,19 @@ type Prueba = 'marcacion' | 'registro';
                       <div class="min-w-0"><p class="truncate font-medium">{{ e.nombre }}</p><p class="truncate text-xs text-stone-500">{{ e.cargo }}@if (e.departamento) { · {{ e.departamento }} }</p></div>
                     </div>
                   </td>
+                  @if (col.modo) {
                   <td>
                     @if (e.modo === 'FACIAL') { <span class="badge-green"><i class="bi bi-person-bounding-box"></i> Facial</span> }
                     @else { <span class="badge-gray"><i class="bi bi-hand-index"></i> Botón</span> }
                   </td>
+                  }
+                  @if (col.rostro) {
                   <td>
                     @if (e.registrado) { <span class="badge-green"><i class="bi bi-person-check"></i> Registrado</span> }
                     @else { <span class="badge-gray">Pendiente</span> }
                   </td>
+                  }
+                  @if (col.detalle) {
                   <td class="tabular-nums">{{ e.muestras || '—' }}</td>
                   <td class="text-stone-600">{{ e.registrado ? fechaCorta(e.registradoEl) : '—' }}</td>
                   <td>
@@ -244,13 +268,22 @@ type Prueba = 'marcacion' | 'registro';
                       }
                     </div>
                   </td>
+                  }
                 </tr>
               } @empty {
-                <tr><td colspan="6"><div class="empty-state">No hay colaboradores con esos filtros.</div></td></tr>
+                <tr><td colspan="7"><div class="empty-state">
+                  @if (cargandoLista) { <span class="spinner"></span> }
+                  @else if (vista === 'pendientes' && !busqueda.trim() && !filtroDepartamento) { <i class="bi bi-check2-circle text-3xl text-emerald-600"></i><p>Nadie pendiente de registrar en los equipos con cámara.</p> }
+                  @else { <p>No hay colaboradores con esos filtros.</p> }
+                </div></td></tr>
               }
             </tbody>
           </table>
         </div>
+        @if (lista) {
+          <app-paginacion [total]="lista.total" [pagina]="lista.pagina" [tamano]="lista.tamano" unidad="colaboradores"
+                          [cargando]="cargandoLista" (cambiar)="cargarLista($event)" />
+        }
         <p class="border-t border-stone-100 px-5 py-3 text-xs text-stone-500">
           Cada colaborador registra su rostro en <b>Mi perfil</b>. Para registrarlo en persona use <a routerLink="/empleados" class="text-vino-700 hover:underline">Empleados</a>.
         </p>
@@ -276,11 +309,19 @@ export class AdminFacialComponent implements OnInit {
   private notification = inject(NotificationService);
 
   resumen: ResumenFacial | null = null;
+  // Lista paginada en el servidor: al entrar solo los pendientes de registrar
+  vista = 'pendientes';
   busqueda = '';
-  filtroDepartamento = '';
-  filtroRostro: '' | 'registrado' | 'pendiente' = '';
-  departamentos: string[] = [];
-  compararCon: number | null = null;
+  filtroDepartamento: number | '' = '';
+  lista: Pagina<EmpleadoFacial> | null = null;
+  cargandoLista = false;
+  private esperaBusqueda: any;
+  private pedidoLista = 0;
+  // Comparar con: buscador entre los registrados (no se carga la lista completa)
+  compararCon: { empleadoId: number; nombre: string } | null = null;
+  buscarComparar = '';
+  opcionesComparar: EmpleadoFacial[] = [];
+  private esperaComparar: any;
   prueba: Prueba | null = null;
   procesando = false;
   pruebaMarcacion: PruebaMarcacion | null = null;
@@ -297,7 +338,7 @@ export class AdminFacialComponent implements OnInit {
 
   cargar() {
     this.facial.resumenAdmin().subscribe({
-      next: r => { this.resumen = r; this.departamentos = opciones(r.empleados || [], e => e.departamento); },
+      next: r => { this.resumen = r; this.cargarLista(this.lista?.pagina ?? 0); },
       error: e => this.notification.error(mensajeError(e), 'Reconocimiento facial')
     });
     this.admin.marcacionEquipos().subscribe({
@@ -330,21 +371,46 @@ export class AdminFacialComponent implements OnInit {
     });
   }
 
-  get registrados(): EmpleadoFacial[] {
-    return (this.resumen?.empleados || []).filter(e => e.registrado);
+  cargarLista(pagina = 0) {
+    const pedido = ++this.pedidoLista;
+    this.cargandoLista = true;
+    this.facial.colaboradores({ vista: this.vista, q: this.busqueda.trim(), departamentoId: this.filtroDepartamento, pagina, tamano: 20 }).subscribe({
+      next: p => { if (pedido === this.pedidoLista) { this.lista = p; this.cargandoLista = false; } },
+      error: e => { this.cargandoLista = false; this.notification.error(mensajeError(e)); }
+    });
   }
 
-  get filtrados(): EmpleadoFacial[] {
-    const q = normalizar(this.busqueda.trim());
-    return (this.resumen?.empleados || []).filter(e =>
-      (!q || normalizar(e.nombre).includes(q)) &&
-      (!this.filtroDepartamento || e.departamento === this.filtroDepartamento) &&
-      (!this.filtroRostro || (this.filtroRostro === 'registrado') === !!e.registrado));
+  filtrar() { this.cargarLista(0); }
+
+  /** Columnas que aportan en cada vista (no se repite el mismo valor en todas las filas). */
+  get col() {
+    const v = this.vista;
+    return { modo: v !== 'pendientes' && v !== 'facial', rostro: v === 'todos' || v === 'facial', detalle: v !== 'pendientes' && v !== 'sin_registrar' };
   }
 
-  get hayFiltros() { return !!(this.busqueda.trim() || this.filtroDepartamento || this.filtroRostro); }
+  /** Busca al dejar de escribir. */
+  buscar() {
+    clearTimeout(this.esperaBusqueda);
+    this.esperaBusqueda = setTimeout(() => this.cargarLista(0), 350);
+  }
 
-  limpiarFiltros() { this.busqueda = ''; this.filtroDepartamento = ''; this.filtroRostro = ''; }
+  get hayFiltros() { return !!(this.busqueda.trim() || this.filtroDepartamento || this.vista !== 'pendientes'); }
+
+  limpiarFiltros() { this.busqueda = ''; this.filtroDepartamento = ''; this.vista = 'pendientes'; this.cargarLista(0); }
+
+  buscarParaComparar() {
+    clearTimeout(this.esperaComparar);
+    const q = this.buscarComparar.trim();
+    if (q.length < 2) { this.opcionesComparar = []; return; }
+    this.esperaComparar = setTimeout(() => this.facial.colaboradores({ vista: 'registrados', q, tamano: 8 })
+      .subscribe({ next: p => this.opcionesComparar = p.contenido, error: () => this.opcionesComparar = [] }), 300);
+  }
+
+  elegirComparar(e: EmpleadoFacial) {
+    this.compararCon = { empleadoId: e.empleadoId, nombre: e.nombre };
+    this.buscarComparar = '';
+    this.opcionesComparar = [];
+  }
 
   /** Ancho de la barra: distancia sobre una escala de 0 a 1.2. */
   barra(distancia?: number): number {
@@ -357,7 +423,7 @@ export class AdminFacialComponent implements OnInit {
   }
 
   probarCon(e: EmpleadoFacial) {
-    this.compararCon = e.empleadoId;
+    this.compararCon = { empleadoId: e.empleadoId, nombre: e.nombre };
     this.iniciar('marcacion');
   }
 
@@ -369,7 +435,7 @@ export class AdminFacialComponent implements OnInit {
     if (tipo === 'registro') {
       this.facial.probarRegistro(descriptores).subscribe({ next: r => { this.pruebaRegistro = r; fin(); }, error });
     } else {
-      this.facial.probarMarcacion(descriptores[0], this.compararCon).subscribe({ next: r => { this.pruebaMarcacion = r; fin(); }, error });
+      this.facial.probarMarcacion(descriptores[0], this.compararCon?.empleadoId ?? null).subscribe({ next: r => { this.pruebaMarcacion = r; fin(); }, error });
     }
   }
 

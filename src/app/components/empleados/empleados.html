@@ -1,11 +1,11 @@
 <div class="page-header">
   <div>
     <h1 class="page-title">Empleados</h1>
-    <p class="page-subtitle">{{ filtrados.length }} de {{ empleados.length }} colaboradores</p>
+    <p class="page-subtitle">{{ lista?.total ?? 0 }} colaboradores{{ hayFiltros ? ' con estos filtros' : '' }}</p>
   </div>
   <div class="flex gap-2">
-    <button class="btn-excel" (click)="exportarExcel()"><i class="bi bi-file-earmark-excel-fill"></i> Excel</button>
-    <button class="btn-pdf" (click)="exportarPDF()"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</button>
+    <button class="btn-excel" [disabled]="exportando" (click)="exportarExcel()"><i class="bi bi-file-earmark-excel-fill"></i> Excel</button>
+    <button class="btn-pdf" [disabled]="exportando" (click)="exportarPDF()"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</button>
     @if (puedeCrear) {
       <button class="btn-primary" (click)="nuevo()"><i class="bi bi-person-plus"></i> Nuevo empleado</button>
     }
@@ -16,24 +16,25 @@
   <div class="flex flex-wrap items-end gap-3 border-b border-stone-100 px-5 py-4">
     <div class="relative min-w-60 flex-1">
       <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
-      <input class="input pl-9!" placeholder="Nombre, DNI o cargo" [(ngModel)]="busqueda" />
+      <input class="input pl-9!" placeholder="Nombre, DNI o cargo" [(ngModel)]="busqueda" (ngModelChange)="buscar()" data-buscar />
     </div>
-    <select class="select w-64" [(ngModel)]="filtroDepartamento">
+    <select class="select w-64" [(ngModel)]="filtroDepartamento" (ngModelChange)="filtrar()" data-departamento>
       <option value="">Todos los departamentos</option>
       @for (d of departamentos; track d.id) { <option [ngValue]="d.id">{{ d.nombre }}</option> }
     </select>
-    <select class="select w-44" [(ngModel)]="filtroRol">
+    <select class="select w-44" [(ngModel)]="filtroRol" (ngModelChange)="filtrar()">
       <option value="">Todos los roles</option>
       @for (r of roles; track r.codigo) { <option [value]="r.codigo">{{ r.nombre }}</option> }
     </select>
-    <select class="select w-36" [(ngModel)]="filtroEstado">
+    <select class="select w-36" [(ngModel)]="filtroEstado" (ngModelChange)="filtrar()">
       <option value="activos">Activos</option>
       <option value="inactivos">Inactivos</option>
       <option value="todos">Todos</option>
     </select>
+    @if (hayFiltros) { <button class="btn-ghost btn-sm" (click)="limpiarFiltros()"><i class="bi bi-x-lg"></i> Limpiar</button> }
   </div>
 
-  @if (cargando) {
+  @if (cargando && !lista) {
     <div class="flex justify-center py-12"><span class="spinner"></span></div>
   } @else if (!filtrados.length) {
     <div class="empty-state"><i class="bi bi-people text-4xl"></i><p>No hay empleados con esos filtros.</p></div>
@@ -103,6 +104,10 @@
         </tbody>
       </table>
     </div>
+  }
+  @if (lista && lista.total) {
+    <app-paginacion [total]="lista.total" [pagina]="lista.pagina" [tamano]="lista.tamano" unidad="colaboradores"
+                    [cargando]="cargando" (cambiar)="cargar($event)" />
   }
 </div>
 

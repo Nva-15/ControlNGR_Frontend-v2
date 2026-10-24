@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Pagina } from '../interfaces/admin';
+import { parametros } from '../utils/filtros';
 import { Observable, map } from 'rxjs';
 import { Empleado, EmpleadoResponse } from '../interfaces/empleado';
 import { ApiConfigService } from './api-config.service';
@@ -32,6 +34,12 @@ export class EmpleadosService {
 
   getEmpleados(): Observable<EmpleadoResponse[]> {
     return this.http.get<EmpleadoResponse[]>(this.apiUrl);
+  }
+
+  /** Empleados por páginas, filtrados en el servidor (estado: activos, inactivos o todos). */
+  pagina(filtros: { q?: string; departamentoId?: number | ''; rol?: string; estado?: string; pagina?: number; tamano?: number; exportar?: boolean }):
+      Observable<Pagina<EmpleadoResponse>> {
+    return this.http.get<Pagina<EmpleadoResponse>>(`${this.apiUrl}/pagina`, { params: parametros(filtros) });
   }
 
   getEmpleadoById(id: number): Observable<EmpleadoResponse> {
