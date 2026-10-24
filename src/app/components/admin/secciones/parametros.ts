@@ -13,7 +13,7 @@ const NOMBRES: Record<string, string> = {
   TOLERANCIA_TARDANZA_MINUTOS: 'Tolerancia de tardanza (minutos)',
   EVIDENCIA_MAX_MB: 'Tamaño máximo de evidencia (MB)',
   SALIDA_AUTOMATICA_HORAS: 'Salida automática (horas después de la entrada)',
-  MARCACION_FACIAL_OBLIGATORIA: 'Marcación con reconocimiento facial obligatoria',
+  MARCACION_FACIAL_OBLIGATORIA: 'Reconocimiento facial para quienes no tienen equipo configurado',
   MUESTRAS_FACIALES: 'Capturas al registrar un rostro',
   UMBRAL_FACIAL: 'Umbral de coincidencia facial',
 };

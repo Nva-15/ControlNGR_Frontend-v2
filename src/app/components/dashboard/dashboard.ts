@@ -203,9 +203,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.facial.miEstado().subscribe({ next: (e) => this.estadoFacial = e, error: () => this.estadoFacial = null });
   }
 
-  /** La marcacion usa la camara si hay rostro registrado o si es obligatoria. */
+  /** La marcacion usa la camara si su equipo marca con reconocimiento facial (si no, con el boton). */
   get requiereRostro(): boolean {
-    return !!this.estadoFacial && (this.estadoFacial.registrado || this.estadoFacial.obligatorio);
+    return !!this.estadoFacial?.obligatorio;
   }
 
   /** Marcacion facial obligatoria y el colaborador aun no registra su rostro. */

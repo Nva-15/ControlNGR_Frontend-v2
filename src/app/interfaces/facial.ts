@@ -4,8 +4,10 @@ export interface EstadoFacial {
   muestras: number;
   registradoEl: string | null;
   consentimientoEl: string | null;
-  /** Si toda marcacion exige reconocimiento facial (parametro del panel admin). */
+  /** Si su marcacion exige reconocimiento facial (modo FACIAL de su equipo). */
   obligatorio: boolean;
+  /** Modo de marcacion de su equipo. */
+  modo?: ModoMarcacion;
   /** Capturas que se toman al registrar el rostro. */
   muestrasRequeridas: number;
 }
@@ -21,6 +23,8 @@ export interface EmpleadoFacial {
   registrado?: boolean;
   muestras?: number;
   registradoEl?: string | null;
+  /** Modo de marcacion de su equipo. */
+  modo?: ModoMarcacion;
   /** Distancia al rostro capturado (menor = mas parecido). */
   distancia?: number;
   /** Si la distancia es menor o igual al umbral (se aceptaria la marcacion). */
@@ -31,9 +35,27 @@ export interface ResumenFacial {
   total: number;
   registrados: number;
   umbral: number;
+  /** Modo FACIAL para quienes no tienen equipo configurado. */
   obligatorio: boolean;
+  /** Colaboradores cuyo equipo marca con reconocimiento facial. */
+  conFacial?: number;
   muestrasRequeridas: number;
   empleados: EmpleadoFacial[];
+}
+
+/** FACIAL: camara y rostro registrado. BOTON: confirmacion, sin camara. */
+export type ModoMarcacion = 'FACIAL' | 'BOTON';
+
+/** Modo de marcacion de un equipo (panel admin). */
+export interface ModoEquipo {
+  departamentoId: number;
+  departamento: string;
+  configurado: boolean;
+  modo: ModoMarcacion;
+  colaboradores: number;
+  conRostro: number;
+  actualizadoEn?: string | null;
+  actualizadoPor?: string | null;
 }
 
 export interface PruebaMarcacion {
