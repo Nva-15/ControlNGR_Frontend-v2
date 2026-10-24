@@ -107,9 +107,14 @@
             <i class="bi" [class.bi-person-bounding-box]="requiereRostro" [class.bi-box-arrow-right]="!requiereRostro"></i> Marcar salida
           </button>
         </div>
+        @if (entradaAntesDeTiempo) {
+          <p class="mt-3 flex items-center gap-2 text-sm text-amber-800" data-antes-de-tiempo>
+            <i class="bi bi-clock"></i> Podrá marcar su entrada desde las {{ entradaDesde }} ({{ config?.anticipacionMinutos }} min antes de su turno).
+          </p>
+        }
         <p class="field-help mt-3">
           La hora se registra con el reloj del servidor.
-          @if (horarioFlexible) { Su cargo tiene horario flexible. } @else { Solo puede marcar en días programados como laborales@if (config) {; tolerancia de {{ config.toleranciaMinutos }} min}. }
+          @if (horarioFlexible) { Su cargo tiene horario flexible. } @else { Solo puede marcar en días programados como laborales@if (config) {, desde {{ config.anticipacionMinutos ?? 0 }} min antes de su turno; tolerancia de {{ config.toleranciaMinutos }} min}. }
           @if (requiereRostro) { Al marcar se verificará su identidad con la cámara. }
           Después de marcar podrá dejar un mensaje a su supervisor.
           @if (config) { Si no marca su salida, se registrará automáticamente {{ config.horasSalidaAutomatica }} h después de la entrada. }

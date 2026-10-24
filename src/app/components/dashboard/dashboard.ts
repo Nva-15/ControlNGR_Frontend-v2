@@ -171,8 +171,32 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.red?.dentroDeRed === true;
   }
 
+  /** Minutos del dia (hora de Lima) de un "HH:mm[:ss]". */
+  private minutosDelDia(hora: string): number {
+    const [h, m] = hora.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  /** Hora ("HH:mm") desde la que puede marcar entrada, o null si su turno no lo limita. */
+  get entradaDesde(): string | null {
+    const turno = this.turnoHoy?.horaEntrada;
+    const anticipacion = this.config?.anticipacionMinutos;
+    if (!turno || anticipacion == null || !this.config?.conHorario) return null;
+    const desde = this.minutosDelDia(turno) - anticipacion;
+    if (desde < 0) return null;
+    return `${String(Math.floor(desde / 60)).padStart(2, '0')}:${String(desde % 60).padStart(2, '0')}`;
+  }
+
+  /** Aun es muy temprano para marcar la entrada (el servidor tambien lo valida). */
+  get entradaAntesDeTiempo(): boolean {
+    const desde = this.entradaDesde;
+    if (!desde || this.asistenciaHoy?.horaEntrada) return false;
+    const ahora = this.ahora.toLocaleTimeString('en-GB', { timeZone: ZONA, hourCycle: 'h23' });
+    return this.minutosDelDia(ahora) < this.minutosDelDia(desde);
+  }
+
   get puedeMarcarEntrada(): boolean {
-    return this.dentroDeRed && !this.faltaRegistroFacial && !this.asistenciaHoy?.horaEntrada;
+    return this.dentroDeRed && !this.faltaRegistroFacial && !this.asistenciaHoy?.horaEntrada && !this.entradaAntesDeTiempo;
   }
 
   get puedeMarcarSalida(): boolean {
@@ -181,7 +205,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   /** Configuracion de su rol (panel admin → Asistencia y horarios). */
-  config: { marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number; horasSalidaAutomatica: number } | null = null;
+  config: { marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number; anticipacionMinutos?: number; horasSalidaAutomatica: number } | null = null;
 
   /** Su rol marca asistencia (mientras carga se asume que si). */
   get marcaAsistencia(): boolean {
