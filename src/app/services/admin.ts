@@ -6,6 +6,7 @@ import {
   AprobacionAutomatica, CopiaFeriados, Departamento, EstadoRespaldos, ProgramacionRespaldo, Respaldo, Feriado, Parametro, RolAsistencia, ReglaAprobacion, SaldoEmpleado, SegmentoRed, TipoUsuario, UsuarioAdmin
 } from '../interfaces/admin';
 import { MotivoLicencia, TipoSolicitud } from '../interfaces/solicitud';
+import { ModoEquipo, ModoMarcacion } from '../interfaces/facial';
 import { FeriadoLaborado, MovimientoSaldo, TipoSaldo } from '../interfaces/saldo';
 
 /** Endpoints del panel maestro (/api/admin/**, solo rol admin). */
@@ -134,6 +135,14 @@ export class AdminService {
   }
   procesarVacaciones(): Observable<{ periodosAbonados: number }> {
     return this.http.post<{ periodosAbonados: number }>(`${this.url}/vacaciones/procesar`, {});
+  }
+
+  // Modo de marcación por equipo (reconocimiento facial o botón)
+  marcacionEquipos(): Observable<ModoEquipo[]> {
+    return this.http.get<ModoEquipo[]>(`${this.url}/marcacion-equipos`);
+  }
+  guardarMarcacionEquipo(departamentoId: number, modo: ModoMarcacion): Observable<ModoEquipo> {
+    return this.http.put<ModoEquipo>(`${this.url}/marcacion-equipos/${departamentoId}`, { modo });
   }
 
   // Aprobación automática de compensaciones por equipo

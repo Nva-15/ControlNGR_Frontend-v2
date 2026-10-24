@@ -2,12 +2,13 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { FacialService } from '../../../services/facial';
+import { AdminService } from '../../../services/admin';
 import { NotificationService } from '../../../services/notification.service';
-import { EmpleadoFacial, PruebaMarcacion, PruebaRegistro, ResumenFacial } from '../../../interfaces/facial';
+import { EmpleadoFacial, ModoEquipo, ModoMarcacion, PruebaMarcacion, PruebaRegistro, ResumenFacial } from '../../../interfaces/facial';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { CamaraFacialComponent } from '../../shared/camara-facial/camara-facial.component';
-import { fechaCorta, mensajeError } from '../../../utils/format';
+import { fechaCorta, horaCorta, mensajeError } from '../../../utils/format';
 import { normalizar, opciones } from '../../../utils/filtros';
 
 type Prueba = 'marcacion' | 'registro';
@@ -35,14 +36,61 @@ type Prueba = 'marcacion' | 'registro';
           <p class="field-help">0.4 estricto · 0.6 permisivo. <a routerLink="/admin/parametros" class="text-vino-700 hover:underline">Cambiar</a></p>
         </div>
         <div class="card p-5">
-          <p class="stat-label">Marcación facial</p>
-          <p class="mt-2">
-            @if (resumen.obligatorio) { <span class="badge-green"><i class="bi bi-shield-check"></i> Obligatoria</span> }
-            @else { <span class="badge-amber"><i class="bi bi-shield-exclamation"></i> Opcional</span> }
-          </p>
-          <p class="field-help">{{ resumen.obligatorio ? 'Nadie marca sin rostro.' : 'Solo quienes tienen rostro registrado marcan con cámara.' }}</p>
+          <p class="stat-label">Marcan con reconocimiento facial</p>
+          <p class="stat-value mt-1">{{ resumen.conFacial ?? 0 }}<span class="text-lg text-stone-400"> / {{ resumen.total }}</span></p>
+          <p class="field-help">Según el modo de su equipo. El resto marca con el botón, sin cámara.</p>
         </div>
       </div>
+
+      <!-- Modo de marcación por equipo -->
+      <section class="card mt-6" data-modos>
+        <div class="card-header">
+          <h3 class="card-title"><i class="bi bi-ui-radios text-vino-700"></i> Modo de marcación por equipo</h3>
+        </div>
+        <div class="grid gap-3 border-b border-stone-100 px-5 py-4 text-sm text-stone-600 md:grid-cols-2">
+          <p><span class="badge-green"><i class="bi bi-person-bounding-box"></i> Reconocimiento facial</span> Marca con la cámara. Quien no registró su rostro debe registrarlo en Mi perfil antes de marcar.</p>
+          <p><span class="badge-gray"><i class="bi bi-hand-index"></i> Botón</span> Marca con el botón y una confirmación, sin cámara, aunque tenga el rostro registrado. El rostro se conserva.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Equipo</th><th class="text-center">Colaboradores que marcan</th><th class="text-center">Con rostro registrado</th><th>Modo</th><th></th></tr></thead>
+            <tbody>
+              @for (m of modos; track m.departamentoId) {
+                <tr [attr.data-depto]="m.departamento">
+                  <td>
+                    <p class="font-medium">{{ m.departamento }}</p>
+                    <p class="text-xs text-stone-500">
+                      @if (m.actualizadoPor) { {{ m.actualizadoPor }} · {{ fechaHora(m.actualizadoEn) }} }
+                      @else if (!m.configurado) { Sin configurar: usa el modo general }
+                    </p>
+                  </td>
+                  <td class="text-center tabular-nums">{{ m.colaboradores }}</td>
+                  <td class="text-center tabular-nums">
+                    {{ m.conRostro }}
+                    @if (seleccion[m.departamentoId] === 'FACIAL' && m.conRostro < m.colaboradores) {
+                      <p class="text-xs text-amber-700">{{ m.colaboradores - m.conRostro }} sin registrar</p>
+                    }
+                  </td>
+                  <td>
+                    <select class="select w-60" data-modo [(ngModel)]="seleccion[m.departamentoId]" [name]="'modo' + m.departamentoId">
+                      <option value="FACIAL">Reconocimiento facial</option>
+                      <option value="BOTON">Botón</option>
+                    </select>
+                  </td>
+                  <td class="text-right">
+                    <button class="btn-secondary btn-sm" data-guardar [disabled]="seleccion[m.departamentoId] === m.modo || guardandoModo === m.departamentoId"
+                            (click)="guardarModo(m)">Guardar</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="border-t border-stone-100 px-5 py-3 text-xs text-stone-500">
+          El cambio se aplica desde la siguiente marcación. Quienes no tienen equipo usan el modo general
+          (<a routerLink="/admin/parametros" class="text-vino-700 hover:underline">Parámetros</a>: {{ resumen.obligatorio ? 'reconocimiento facial' : 'botón' }}).
+        </p>
+      </section>
 
       <!-- Pruebas -->
       <div class="mt-6 grid gap-6 lg:grid-cols-2">
@@ -163,7 +211,7 @@ type Prueba = 'marcacion' | 'registro';
         </div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>Colaborador</th><th>Rostro</th><th>Capturas</th><th>Registrado el</th><th class="text-right">Acciones</th></tr></thead>
+            <thead><tr><th>Colaborador</th><th>Marca con</th><th>Rostro</th><th>Capturas</th><th>Registrado el</th><th class="text-right">Acciones</th></tr></thead>
             <tbody>
               @for (e of filtrados; track e.empleadoId) {
                 <tr>
@@ -172,6 +220,10 @@ type Prueba = 'marcacion' | 'registro';
                       <app-avatar [nombre]="e.nombre" [foto]="e.foto" [tamano]="32" />
                       <div class="min-w-0"><p class="truncate font-medium">{{ e.nombre }}</p><p class="truncate text-xs text-stone-500">{{ e.cargo }}@if (e.departamento) { · {{ e.departamento }} }</p></div>
                     </div>
+                  </td>
+                  <td>
+                    @if (e.modo === 'FACIAL') { <span class="badge-green"><i class="bi bi-person-bounding-box"></i> Facial</span> }
+                    @else { <span class="badge-gray"><i class="bi bi-hand-index"></i> Botón</span> }
                   </td>
                   <td>
                     @if (e.registrado) { <span class="badge-green"><i class="bi bi-person-check"></i> Registrado</span> }
@@ -194,7 +246,7 @@ type Prueba = 'marcacion' | 'registro';
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="5"><div class="empty-state">No hay colaboradores con esos filtros.</div></td></tr>
+                <tr><td colspan="6"><div class="empty-state">No hay colaboradores con esos filtros.</div></td></tr>
               }
             </tbody>
           </table>
@@ -220,6 +272,7 @@ type Prueba = 'marcacion' | 'registro';
 })
 export class AdminFacialComponent implements OnInit {
   private facial = inject(FacialService);
+  private admin = inject(AdminService);
   private notification = inject(NotificationService);
 
   resumen: ResumenFacial | null = null;
@@ -232,6 +285,9 @@ export class AdminFacialComponent implements OnInit {
   procesando = false;
   pruebaMarcacion: PruebaMarcacion | null = null;
   pruebaRegistro: PruebaRegistro | null = null;
+  modos: ModoEquipo[] = [];
+  seleccion: Record<number, ModoMarcacion> = {};
+  guardandoModo: number | null = null;
 
   readonly fechaCorta = fechaCorta;
 
@@ -243,6 +299,34 @@ export class AdminFacialComponent implements OnInit {
     this.facial.resumenAdmin().subscribe({
       next: r => { this.resumen = r; this.departamentos = opciones(r.empleados || [], e => e.departamento); },
       error: e => this.notification.error(mensajeError(e), 'Reconocimiento facial')
+    });
+    this.admin.marcacionEquipos().subscribe({
+      next: m => { this.modos = m; this.seleccion = Object.fromEntries(m.map(x => [x.departamentoId, x.modo])); },
+      error: e => this.notification.error(mensajeError(e), 'Modo de marcación')
+    });
+  }
+
+  fechaHora(iso?: string | null) {
+    return iso ? `${fechaCorta(iso)} ${horaCorta(iso.substring(11))}` : '';
+  }
+
+  async guardarModo(m: ModoEquipo) {
+    const modo = this.seleccion[m.departamentoId];
+    const facial = modo === 'FACIAL';
+    const pendientes = m.colaboradores - m.conRostro;
+    const ok = await this.notification.confirm({
+      title: facial ? 'Pasar a reconocimiento facial' : 'Pasar a marcación con botón',
+      message: facial
+        ? `${m.departamento} marcará con la cámara desde la siguiente marcación.` +
+          (pendientes > 0 ? ` ${pendientes} colaborador(es) aún no registran su rostro y no podrán marcar hasta hacerlo.` : '')
+        : `${m.departamento} marcará con el botón, sin cámara. Los rostros registrados se conservan.`,
+      confirmText: 'Cambiar modo', type: facial && pendientes > 0 ? 'warning' : 'info'
+    });
+    if (!ok) { this.seleccion[m.departamentoId] = m.modo; return; }
+    this.guardandoModo = m.departamentoId;
+    this.admin.guardarMarcacionEquipo(m.departamentoId, modo).subscribe({
+      next: () => { this.guardandoModo = null; this.notification.success(`Modo de marcación de ${m.departamento} actualizado.`); this.cargar(); },
+      error: e => { this.guardandoModo = null; this.notification.error(mensajeError(e)); }
     });
   }
 
