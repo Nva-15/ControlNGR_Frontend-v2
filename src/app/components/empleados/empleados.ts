@@ -70,6 +70,7 @@ export class EmpleadosComponent implements OnInit {
 
   readonly fechaCorta = fechaCorta;
   readonly rolLabel = rolLabel;
+  fechaHora(iso: string) { return `${fechaCorta(iso)} ${iso.substring(11, 16)}`; }
 
   /** El cargo solo se muestra si dice algo más que el rol (evita "Help Desk" / "Help Desk"). */
   cargoExtra(e: { cargo?: string; rol?: string }): string {

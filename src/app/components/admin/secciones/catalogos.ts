@@ -1,3 +1,4 @@
+import { AdminParametrosBloqueComponent, CampoParametro } from './parametros-bloque';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../services/admin';
@@ -8,7 +9,7 @@ import { mensajeError } from '../../../utils/format';
 @Component({
   selector: 'app-admin-catalogos',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, AdminParametrosBloqueComponent],
   template: `
     <div class="grid gap-6 2xl:grid-cols-5">
       <section class="card 2xl:col-span-3">
@@ -57,9 +58,14 @@ import { mensajeError } from '../../../utils/format';
         </div>
       </section>
     </div>
+    <app-admin-parametros-bloque [campos]="camposCatalogos" />
   `
 })
 export class AdminCatalogosComponent implements OnInit {
+  readonly camposCatalogos: CampoParametro[] = [
+    { clave: 'EVIDENCIA_MAX_MB', titulo: 'Tamaño máximo de evidencia', unidad: 'MB', min: 1, max: 50,
+      ayuda: 'Límite del archivo (foto o PDF) que se adjunta a descanso médico y licencias.' },
+  ];
   private admin = inject(AdminService);
   private notification = inject(NotificationService);
   tipos: TipoSolicitud[] = [];

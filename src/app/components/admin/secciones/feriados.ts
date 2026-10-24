@@ -1,3 +1,4 @@
+import { AdminParametrosBloqueComponent, CampoParametro } from './parametros-bloque';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../services/admin';
@@ -9,7 +10,7 @@ import { mensajeError } from '../../../utils/format';
 @Component({
   selector: 'app-admin-feriados',
   standalone: true,
-  imports: [FormsModule, ModalComponent],
+  imports: [FormsModule, ModalComponent, AdminParametrosBloqueComponent],
   template: `
     <div class="card">
       <div class="card-header">
@@ -125,9 +126,14 @@ import { mensajeError } from '../../../utils/format';
         <button class="btn-primary" (click)="guardar()">Guardar</button>
       </div>
     </app-modal>
+    <app-admin-parametros-bloque [campos]="camposFeriados" />
   `
 })
 export class AdminFeriadosComponent implements OnInit {
+  readonly camposFeriados: CampoParametro[] = [
+    { clave: 'DIAS_POR_FERIADO_LABORADO', titulo: 'Días por feriado trabajado', unidad: 'días', min: 0, max: 10, paso: 0.5,
+      ayuda: 'Días de compensación que se abonan a quien marca asistencia en un feriado activo.' },
+  ];
   private admin = inject(AdminService);
   private notification = inject(NotificationService);
   anio = new Date().getFullYear();
