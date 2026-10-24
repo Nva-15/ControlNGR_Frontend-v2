@@ -33,14 +33,13 @@ import { mensajeError } from '../../../utils/format';
       </div>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Nombre</th><th>Patrón</th><th>Descripción</th><th>Estado</th><th class="text-right">Acciones</th></tr></thead>
+          <thead><tr><th>Nombre</th><th>Patrón</th><th>Descripción</th><th class="text-right">Acciones</th></tr></thead>
           <tbody>
             @for (s of segmentos; track s.id) {
               <tr>
-                <td class="font-medium">{{ s.nombre }}</td>
+                <td class="font-medium">{{ s.nombre }}@if (!s.activo) { <span class="badge-gray ml-2" data-inactivo>Inactivo</span> }</td>
                 <td class="font-mono">{{ s.patron }}</td>
                 <td class="text-stone-600">{{ s.descripcion }}</td>
-                <td><span [class]="s.activo ? 'badge-green' : 'badge-gray'">{{ s.activo ? 'Activo' : 'Inactivo' }}</span></td>
                 <td>
                   <div class="flex justify-end gap-1">
                     <button class="btn-icon accion-editar" title="Editar" (click)="abrir(s)"><i class="bi bi-pencil-square"></i></button>

@@ -40,7 +40,7 @@
   } @else {
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Colaborador</th><th>DNI</th><th>Departamento</th><th>Rol</th><th class="hidden 2xl:table-cell">Ingreso</th><th>Estado</th><th>Rostro</th><th class="text-right">Acciones</th></tr></thead>
+        <thead><tr><th>Colaborador</th><th>DNI</th><th>Departamento</th><th>Rol</th><th class="hidden 2xl:table-cell">Ingreso</th><th>Rostro</th><th class="text-right">Acciones</th></tr></thead>
         <tbody>
           @for (e of filtrados; track e.id) {
             <tr>
@@ -48,8 +48,11 @@
                 <div class="flex items-center gap-3">
                   <app-avatar [nombre]="e.nombre" [foto]="e.foto" [tamano]="36" />
                   <div class="min-w-0">
-                    <p class="truncate font-medium" [title]="e.nombre">{{ e.nombre }}</p>
-                    <p class="truncate text-xs text-stone-500" [title]="e.cargo">{{ e.cargo }}</p>
+                    <p class="flex items-center gap-2 font-medium" [title]="e.nombre">
+                      <span class="truncate">{{ e.nombre }}</span>
+                      @if (!e.activo) { <span class="badge-gray shrink-0" data-inactivo>Inactivo</span> }
+                    </p>
+                    @if (cargoExtra(e); as cargo) { <p class="truncate text-xs text-stone-500" [title]="cargo">{{ cargo }}</p> }
                   </div>
                 </div>
               </td>
@@ -57,12 +60,11 @@
               <td class="max-w-36 text-stone-600">{{ e.departamentoNombre || '—' }}</td>
               <td><span [class]="rolBadge(e.rol)">{{ rolLabel(e.rol) }}</span></td>
               <td class="hidden text-stone-600 2xl:table-cell">{{ fechaCorta(e.ingreso) }}</td>
-              <td><span [class]="e.activo ? 'badge-green' : 'badge-gray'">{{ e.activo ? 'Activo' : 'Inactivo' }}</span></td>
               <td>
                 @if (tieneRostro(e)) {
                   <span class="badge-green" title="Rostro registrado"><i class="bi bi-person-check"></i> Registrado</span>
                 } @else {
-                  <span class="badge-gray" title="Aún no registra su rostro">Pendiente</span>
+                  <span class="text-stone-400" title="Aún no registra su rostro">—</span>
                 }
               </td>
               <td>
@@ -73,37 +75,26 @@
                             data-accion="editar" (click)="editar(e)"><i class="bi bi-pencil-square"></i></button>
                   }
                   @if (puedeAdministrar(e)) {
-                    <!-- Reconocimiento facial: rostro dentro de un marco, azul -->
-                    @if (tieneRostro(e)) {
-                      <button class="btn-icon accion-rostro" title="Restablecer rostro registrado"
-                              aria-label="Restablecer rostro" data-accion="rostro-restablecer" (click)="restablecerRostro(e)">
-                        <span class="relative inline-flex">
-                          <i class="bi bi-person-bounding-box"></i>
-                          <i class="bi bi-arrow-counterclockwise absolute -bottom-1.5 -right-2 rounded-full bg-superficie text-[10px] leading-none"></i>
-                        </span>
-                      </button>
-                    } @else {
-                      <button class="btn-icon accion-rostro" title="Registrar rostro en persona"
-                              aria-label="Registrar rostro" data-accion="rostro-registrar" (click)="abrirRegistroRostro(e)">
-                        <i class="bi bi-person-bounding-box"></i>
-                      </button>
-                    }
-                    @if (gestionaAcceso) {
-                      <!-- Contraseña: violeta -->
-                      <button class="btn-icon accion-clave" title="Restablecer contraseña"
-                              aria-label="Restablecer contraseña" data-accion="clave" (click)="abrirReset(e)"><i class="bi bi-key"></i></button>
-                    }
-                    <!-- Activar: verde / Desactivar: rojo -->
-                    @if (e.activo) {
-                      <button class="btn-icon accion-rechazar" title="Desactivar"
-                              aria-label="Desactivar" data-accion="desactivar" (click)="cambiarEstado(e)"><i class="bi bi-person-dash"></i></button>
-                    } @else {
-                      <button class="btn-icon accion-aprobar" title="Activar"
-                              aria-label="Activar" data-accion="activar" (click)="cambiarEstado(e)"><i class="bi bi-person-check"></i></button>
-                    }
-                    <!-- Eliminar: rojo intenso -->
-                    <button class="btn-icon accion-eliminar" title="Eliminar" aria-label="Eliminar"
-                            data-accion="eliminar" (click)="eliminar(e)"><i class="bi bi-trash3"></i></button>
+                    <app-menu-acciones>
+                      @if (tieneRostro(e)) {
+                        <button class="menu-item" role="menuitem" data-accion="rostro-restablecer" (click)="restablecerRostro(e)">
+                          <i class="bi bi-arrow-counterclockwise"></i> Restablecer rostro
+                        </button>
+                      } @else {
+                        <button class="menu-item" role="menuitem" data-accion="rostro-registrar" (click)="abrirRegistroRostro(e)">
+                          <i class="bi bi-person-bounding-box"></i> Registrar rostro en persona
+                        </button>
+                      }
+                      @if (gestionaAcceso) {
+                        <button class="menu-item" role="menuitem" data-accion="clave" (click)="abrirReset(e)"><i class="bi bi-key"></i> Restablecer contraseña</button>
+                      }
+                      @if (e.activo) {
+                        <button class="menu-item" role="menuitem" data-accion="desactivar" (click)="cambiarEstado(e)"><i class="bi bi-person-dash"></i> Desactivar</button>
+                      } @else {
+                        <button class="menu-item" role="menuitem" data-accion="activar" (click)="cambiarEstado(e)"><i class="bi bi-person-check"></i> Activar</button>
+                      }
+                      <button class="menu-item peligro" role="menuitem" data-accion="eliminar" (click)="eliminar(e)"><i class="bi bi-trash3"></i> Eliminar</button>
+                    </app-menu-acciones>
                   }
                 </div>
               </td>

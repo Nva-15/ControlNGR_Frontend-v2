@@ -29,15 +29,14 @@ import { mensajeError } from '../../../utils/format';
       </div>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Fecha</th><th>Día</th><th>Descripción</th><th>Tipo</th><th>Estado</th><th class="text-right">Acciones</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Día</th><th>Descripción</th>@if (variosTipos) { <th>Tipo</th> }<th class="text-right">Acciones</th></tr></thead>
           <tbody>
             @for (f of feriados; track f.id) {
               <tr [class.opacity-50]="!f.activo">
                 <td class="font-medium tabular-nums">{{ f.fecha.split('-').reverse().join('/') }}</td>
                 <td class="capitalize text-stone-600">{{ diaSemana(f.fecha) }}</td>
-                <td>{{ f.descripcion }}</td>
-                <td class="capitalize">{{ f.tipo }}</td>
-                <td><span [class]="f.activo ? 'badge-green' : 'badge-gray'">{{ f.activo ? 'Activo' : 'Inactivo' }}</span></td>
+                <td>{{ f.descripcion }}@if (!f.activo) { <span class="badge-gray ml-2" data-inactivo>Inactivo</span> }</td>
+                @if (variosTipos) { <td class="capitalize">{{ f.tipo }}</td> }
                 <td>
                   <div class="flex justify-end gap-1">
                     <button class="btn-icon accion-editar" title="Editar" (click)="abrir(f)"><i class="bi bi-pencil-square"></i></button>
@@ -133,6 +132,8 @@ export class AdminFeriadosComponent implements OnInit {
   private notification = inject(NotificationService);
   anio = new Date().getFullYear();
   feriados: Feriado[] = [];
+  /** La columna Tipo solo se muestra si el año tiene feriados de más de un tipo. */
+  get variosTipos() { return new Set(this.feriados.map(f => f.tipo)).size > 1; }
   form: Feriado | null = null;
 
   // Copia al año siguiente
