@@ -154,3 +154,19 @@ export interface EstadoRespaldos {
   carpetaDisponible: boolean;
   respaldos: Respaldo[];
 }
+
+/** Reglas de aprobación automática de compensaciones de un departamento. */
+export interface AprobacionAutomatica {
+  departamentoId: number;
+  departamento: string;
+  configurado: boolean;
+  activo: boolean;
+  cupoSemanal: number;
+  maximoPorEmpleado: number;
+  minimoEnTurno: number;
+  antelacionHoras: number;
+  alLlenarse: 'ESPERA' | 'RECHAZO';
+  promoverEspera: boolean;
+  actualizadoEn?: string | null;
+  actualizadoPor?: string | null;
+}

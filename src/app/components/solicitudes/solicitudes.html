@@ -84,9 +84,19 @@
                   </td>
                   <td class="whitespace-nowrap">{{ fechaCorta(s.fechaInicio) }} – {{ fechaCorta(s.fechaFin) }}</td>
                   <td class="tabular-nums">{{ dias(s.diasSolicitados) }}</td>
-                  <td><span [class]="estadoClase(s.estado)">{{ estadoTexto(s.estado) }}</span></td>
+                  <td>
+                    <div class="flex flex-wrap items-center gap-1">
+                      <span [class]="estadoClase(s.estado)">{{ estadoTexto(s.estado) }}</span>
+                      @if (s.urgente && s.estado === 'pendiente') { <span class="badge-red">Urgente</span> }
+                      @if (s.motivoEspera && !s.urgente) { <span class="badge-amber" data-espera>En espera{{ s.posicionEspera ? ' · N.º ' + s.posicionEspera : '' }}</span> }
+                      @if (s.aprobacionAutomatica && s.estado === 'aprobado') { <span class="badge-blue" title="Aprobada por las reglas del equipo"><i class="bi bi-lightning-charge"></i> Automática</span> }
+                    </div>
+                    @if (s.motivoEspera && !s.urgente) {
+                      <p class="mt-1 w-56 text-xs text-amber-800">{{ s.motivoEspera }}. Comuníquese con su supervisor.</p>
+                    }
+                  </td>
                   <td class="text-stone-600">
-                    {{ s.aprobadoPor || '—' }}
+                    {{ s.aprobadoPor || (s.aprobacionAutomatica ? 'Automática (sistema)' : '—') }}
                     @if (s.comentarioGestion) { <p class="max-w-xs truncate text-xs text-stone-400" [title]="s.comentarioGestion">{{ s.comentarioGestion }}</p> }
                   </td>
                   <td>
@@ -190,6 +200,26 @@
                         placeholder="Detalle adicional para quien aprueba"></textarea>
             </div>
 
+            @if (esCompensacion) {
+              <div class="rounded-xl border border-stone-200 p-4">
+                <label class="flex cursor-pointer items-start gap-3">
+                  <input type="checkbox" class="checkbox mt-0.5" name="urgente" data-urgente [(ngModel)]="form.urgente" />
+                  <span>
+                    <span class="block font-medium text-stone-900">Es una urgencia personal</span>
+                    <span class="block text-xs text-stone-500">No se aprueba sola: la revisa su supervisor con prioridad.</span>
+                  </span>
+                </label>
+                @if (form.urgente) {
+                  <div class="mt-3">
+                    <label class="label" for="motivoUrgencia">Motivo de la urgencia <span class="text-red-600">*</span></label>
+                    <textarea id="motivoUrgencia" name="motivoUrgencia" class="textarea" rows="2" maxlength="500" [(ngModel)]="form.motivoUrgencia"
+                              placeholder="Explique brevemente la urgencia"></textarea>
+                    @if (urgenciaIncompleta) { <p class="field-help">Escriba al menos 5 caracteres.</p> }
+                  </div>
+                }
+              </div>
+            }
+
             @if (conflictos.length) {
               <div class="alert-warning">
                 <i class="bi bi-people"></i>
@@ -235,6 +265,21 @@
             <p class="field-help mt-4">Este tipo no descuenta días de sus saldos.</p>
           }
         </div>
+        @if (esCompensacion && cupos?.activo) {
+          <div class="card p-5" data-cupos>
+            <p class="stat-label">Aprobación automática · {{ cupos!.equipo }}</p>
+            <dl class="mt-4 space-y-3 text-sm">
+              <div class="flex justify-between"><dt class="text-stone-500">Semana</dt><dd class="font-medium">{{ fechaCorta(cupos!.semanaInicio) }} – {{ fechaCorta(cupos!.semanaFin) }}</dd></div>
+              <div class="flex justify-between"><dt class="text-stone-500">Cupo del equipo</dt><dd class="font-semibold tabular-nums">{{ cupos!.usadosEquipo }} de {{ cupos!.cupoSemanal }} usados</dd></div>
+              <div class="flex justify-between"><dt class="text-stone-500">Usted esta semana</dt><dd class="font-semibold tabular-nums">{{ cupos!.usadosEmpleado }} de {{ cupos!.maximoPorEmpleado }}</dd></div>
+            </dl>
+            @if (cupoRestante > 0) {
+              <p class="field-help mt-4">Quedan {{ cupoRestante }} día(s) que se aprueban solos, por orden de llegada, si hay cobertura y la pide con {{ cupos!.antelacionHoras }} h de antelación.</p>
+            } @else {
+              <div class="alert-warning mt-4"><i class="bi bi-hourglass-split"></i><span>El cupo del equipo de esa semana está completo: la solicitud la revisará su supervisor.</span></div>
+            }
+          </div>
+        }
         <div class="card p-5 text-xs text-stone-500 space-y-2">
           <p><i class="bi bi-info-circle mr-1"></i> Se cuentan días calendario, incluidos el primero y el último.</p>
           <p><i class="bi bi-info-circle mr-1"></i> Los días se descuentan cuando la solicitud es aprobada.</p>
@@ -250,7 +295,7 @@
     } @else {
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         @for (s of porAprobar; track s.id) {
-          <article class="card flex flex-col">
+          <article class="card flex flex-col" [class.ring-2]="s.urgente" [class.ring-red-200]="s.urgente">
             <div class="card-body flex-1 space-y-3">
               <div class="flex items-start justify-between gap-3">
                 <div>
@@ -265,6 +310,14 @@
               </div>
               @if (s.motivoLicencia) { <p class="text-sm"><span class="text-stone-500">Motivo:</span> {{ s.motivoLicencia }}</p> }
               @if (motivoLimpio(s)) { <p class="line-clamp-3 text-sm text-stone-600">{{ motivoLimpio(s) }}</p> }
+              @if (s.urgente) {
+                <div class="rounded-lg bg-red-50 p-3 text-sm text-red-800" data-urgente>
+                  <p class="font-semibold"><i class="bi bi-exclamation-octagon"></i> Urgente</p>
+                  @if (s.motivoUrgencia) { <p class="mt-1">{{ s.motivoUrgencia }}</p> }
+                </div>
+              } @else if (s.motivoEspera) {
+                <p class="text-sm text-amber-800" data-espera><i class="bi bi-hourglass-split"></i> En espera{{ s.posicionEspera ? ' (N.º ' + s.posicionEspera + ')' : '' }}: {{ s.motivoEspera }}</p>
+              }
               @if (tieneConflicto(s)) { <span class="badge-amber"><i class="bi bi-people"></i> Cruce con compañeros</span> }
               @for (ev of s.evidencias; track ev.id) {
                 <button type="button" class="btn-ghost btn-sm -ml-2" (click)="abrirEvidencia(s, ev)"><i class="bi bi-paperclip"></i> {{ ev.nombre }}</button>
@@ -298,8 +351,15 @@
                   <td>{{ s.tipoNombre }}</td>
                   <td class="whitespace-nowrap">{{ fechaCorta(s.fechaInicio) }} – {{ fechaCorta(s.fechaFin) }}</td>
                   <td class="tabular-nums">{{ dias(s.diasSolicitados) }}</td>
-                  <td><span [class]="estadoClase(s.estado)">{{ estadoTexto(s.estado) }}</span></td>
-                  <td class="text-stone-600">{{ s.aprobadoPor || '—' }}</td>
+                  <td>
+                    <div class="flex flex-wrap items-center gap-1">
+                      <span [class]="estadoClase(s.estado)">{{ estadoTexto(s.estado) }}</span>
+                      @if (s.urgente && s.estado === 'pendiente') { <span class="badge-red">Urgente</span> }
+                      @if (s.motivoEspera && !s.urgente) { <span class="badge-amber" [title]="s.motivoEspera">En espera</span> }
+                      @if (s.aprobacionAutomatica && s.estado === 'aprobado') { <span class="badge-blue"><i class="bi bi-lightning-charge"></i> Automática</span> }
+                    </div>
+                  </td>
+                  <td class="text-stone-600">{{ s.aprobadoPor || (s.aprobacionAutomatica ? 'Automática (sistema)' : '—') }}</td>
                   <td>
                     <div class="flex justify-end gap-1">
                       <button class="btn-icon accion-ver" title="Ver detalle" (click)="verDetalle(s)"><i class="bi bi-eye"></i></button>
@@ -335,9 +395,15 @@
       <div><dt class="label">Periodo</dt><dd class="font-medium">{{ fechaCorta(s.fechaInicio) }} – {{ fechaCorta(s.fechaFin) }}</dd></div>
       <div><dt class="label">Días</dt><dd class="font-medium">{{ dias(s.diasSolicitados) }}</dd></div>
       <div><dt class="label">Estado</dt><dd><span [class]="estadoClase(s.estado)">{{ estadoTexto(s.estado) }}</span></dd></div>
-      <div><dt class="label">Gestionado por</dt><dd class="font-medium">{{ s.aprobadoPor || '—' }}</dd></div>
+      <div><dt class="label">Gestionado por</dt><dd class="font-medium">{{ s.aprobadoPor || (s.aprobacionAutomatica ? 'Automática (sistema)' : '—') }}</dd></div>
       @if (s.motivoLicencia) { <div><dt class="label">Motivo de licencia</dt><dd class="font-medium">{{ s.motivoLicencia }}</dd></div> }
+      @if (s.aprobacionAutomatica && s.estado === 'aprobado') { <div><dt class="label">Aprobación</dt><dd><span class="badge-blue"><i class="bi bi-lightning-charge"></i> Automática</span></dd></div> }
     </dl>
+    @if (s.urgente) {
+      <div class="alert-danger mt-5"><i class="bi bi-exclamation-octagon"></i><div><p class="font-medium">Urgencia personal</p><p class="text-sm">{{ s.motivoUrgencia }}</p></div></div>
+    } @else if (s.motivoEspera) {
+      <div class="alert-warning mt-5"><i class="bi bi-hourglass-split"></i><div><p class="font-medium">En sala de espera{{ s.posicionEspera ? ' · N.º ' + s.posicionEspera : '' }}</p><p class="text-sm">{{ s.motivoEspera }}</p></div></div>
+    }
     @if (s.motivo) {
       <div class="mt-5"><p class="label">Comentario del solicitante</p><p class="whitespace-pre-line rounded-lg bg-stone-50 p-3 text-sm">{{ s.motivo }}</p></div>
     }
@@ -397,6 +463,9 @@
       }
       @if (g.estado === 'aprobado' && g.solicitud.descuentaDe !== 'NINGUNO') {
         <br />Se descontarán {{ dias(g.solicitud.diasSolicitados) }} día(s) de su saldo de {{ g.solicitud.descuentaDe === 'VACACIONES' ? 'vacaciones' : 'compensación' }}.
+      }
+      @if (g.estado === 'aprobado' && g.solicitud.estado === 'pendiente' && (g.solicitud.motivoEspera || g.solicitud.urgente)) {
+        <br />Quedará registrada como <strong>aprobada como excepción</strong> a las reglas del equipo.
       }
     </p>
     <div class="mt-4">

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
-  HistorialSolicitud, MotivoLicencia, SolicitudRequest, SolicitudResponse, TipoSolicitud
+  CuposCompensacion, HistorialSolicitud, MotivoLicencia, SolicitudRequest, SolicitudResponse, TipoSolicitud
 } from '../interfaces/solicitud';
 import { ApiConfigService } from './api-config.service';
 
@@ -31,6 +31,11 @@ export class SolicitudesService {
       return this.http.post<SolicitudResponse>(`${this.apiUrl}/crear`, form);
     }
     return this.http.post<SolicitudResponse>(`${this.apiUrl}/crear`, solicitud);
+  }
+
+  /** Cupos de compensación del equipo del usuario en la semana de la fecha (aprobación automática). */
+  cuposCompensacion(fecha: string): Observable<CuposCompensacion> {
+    return this.http.get<CuposCompensacion>(`${this.apiUrl}/cupos-compensacion`, { params: new HttpParams().set('fecha', fecha) });
   }
 
   getMisSolicitudes(empleadoId: number): Observable<SolicitudResponse[]> {

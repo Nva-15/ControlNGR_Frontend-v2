@@ -9,7 +9,7 @@ import { NotificationService } from '../../services/notification.service';
 import { NotificacionesService } from '../../services/notificaciones';
 import { ExportService } from '../../services/export';
 import {
-  EstadoSolicitud, Evidencia, HistorialSolicitud, MotivoLicencia, SolicitudResponse, TipoSolicitud
+  CuposCompensacion, EstadoSolicitud, Evidencia, HistorialSolicitud, MotivoLicencia, SolicitudResponse, TipoSolicitud
 } from '../../interfaces/solicitud';
 import { DetalleSaldos } from '../../interfaces/saldo';
 import { ModalComponent } from '../shared/modal/modal.component';
@@ -63,6 +63,7 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
   archivo: File | null = null;
   enviando = false;
   conflictos: any[] = [];
+  cupos: CuposCompensacion | null = null;
 
   // Detalle
   detalle: SolicitudResponse | null = null;
@@ -139,7 +140,8 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
   }
 
   cargarPorAprobar() {
-    this.solicitudesService.getPorAprobar().subscribe(d => this.porAprobar = d);
+    // Las urgencias primero; el resto conserva el orden de llegada
+    this.solicitudesService.getPorAprobar().subscribe(d => this.porAprobar = [...d].sort((a, b) => Number(!!b.urgente) - Number(!!a.urgente)));
   }
 
   cargarEquipo() {
@@ -172,7 +174,7 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
   // ==================== NUEVA SOLICITUD ====================
 
   private formVacio() {
-    return { tipo: '', fechaInicio: '', fechaFin: '', motivo: '', motivoLicenciaId: null as number | null };
+    return { tipo: '', fechaInicio: '', fechaFin: '', motivo: '', motivoLicenciaId: null as number | null, urgente: false, motivoUrgencia: '' };
   }
 
   get tipoSeleccionado(): TipoSolicitud | undefined {
@@ -203,9 +205,22 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
     return !!fecha && fecha < this.hoy;
   }
 
+  get esCompensacion(): boolean {
+    return this.form.tipo === 'compensacion';
+  }
+
+  /** Días de compensación que aún se aprueban solos en el equipo esa semana. */
+  get cupoRestante(): number {
+    return Math.max(0, (this.cupos?.cupoSemanal || 0) - (this.cupos?.usadosEquipo || 0));
+  }
+
+  get urgenciaIncompleta(): boolean {
+    return this.esCompensacion && this.form.urgente && this.form.motivoUrgencia.trim().length < 5;
+  }
+
   get puedeEnviar(): boolean {
     const t = this.tipoSeleccionado;
-    return !!t && this.diasSolicitados > 0 && !this.excedeSaldo && !this.enviando
+    return !!t && this.diasSolicitados > 0 && !this.excedeSaldo && !this.enviando && !this.urgenciaIncompleta
       && !this.fechaPasada(this.form.fechaInicio) && !this.fechaPasada(this.form.fechaFin)
       && (!t.requiereEvidencia || !!this.archivo)
       && (!t.requiereMotivoLicencia || !!this.form.motivoLicenciaId);
@@ -225,10 +240,25 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
     this.form.tipo = codigo;
     this.archivo = null;
     this.form.motivoLicenciaId = null;
+    this.form.urgente = false;
+    this.form.motivoUrgencia = '';
+    this.cargarCupos();
+  }
+
+  /** Cupos de la semana de la fecha de inicio (solo compensación en equipos con aprobación automática). */
+  cargarCupos() {
+    this.cupos = null;
+    if (!this.esCompensacion || !this.form.fechaInicio) return;
+    const fecha = this.form.fechaInicio;
+    this.solicitudesService.cuposCompensacion(fecha).subscribe({
+      next: c => { if (this.esCompensacion && this.form.fechaInicio === fecha) this.cupos = c; },
+      error: () => this.cupos = null
+    });
   }
 
   onFechasCambiadas() {
     this.conflictos = [];
+    this.cargarCupos();
     const e = this.empleado();
     if (!e || !this.form.fechaInicio || !this.form.fechaFin || this.form.fechaFin < this.form.fechaInicio) return;
     this.solicitudesService.verificarConflictosPorRol(e.id, e.rol, this.form.fechaInicio, this.form.fechaFin).subscribe({
@@ -266,14 +296,17 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
       fechaInicio: this.form.fechaInicio,
       fechaFin: this.form.fechaFin,
       motivo: this.form.motivo.trim() || undefined,
-      motivoLicenciaId: t.requiereMotivoLicencia ? this.form.motivoLicenciaId : undefined
+      motivoLicenciaId: t.requiereMotivoLicencia ? this.form.motivoLicenciaId : undefined,
+      urgente: this.esCompensacion && this.form.urgente ? true : undefined,
+      motivoUrgencia: this.esCompensacion && this.form.urgente ? this.form.motivoUrgencia.trim() : undefined
     }, t.requiereEvidencia ? this.archivo : null).subscribe({
-      next: () => {
+      next: (r) => {
         this.enviando = false;
-        this.notification.success(`Su solicitud de ${t.nombre.toLowerCase()} fue enviada para aprobación.`, 'Solicitud enviada');
+        this.avisarResultado(r, t);
         this.form = this.formVacio();
         this.archivo = null;
         this.conflictos = [];
+        this.cupos = null;
         this.cargarMisSolicitudes();
         this.cargarSaldos();
         this.cambiarPestana('mis-solicitudes');
@@ -283,6 +316,20 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
         this.notification.error(mensajeError(e, 'No se pudo enviar la solicitud'), 'Solicitud no enviada', 7000);
       }
     });
+  }
+
+  private avisarResultado(r: SolicitudResponse | null, t: TipoSolicitud) {
+    if (r?.estado === 'aprobado' && r.aprobacionAutomatica) {
+      this.notification.success(`Su solicitud de ${t.nombre.toLowerCase()} fue aprobada automáticamente.`, 'Solicitud aprobada', 6000);
+    } else if (r?.estado === 'rechazado') {
+      this.notification.error(r.comentarioGestion || 'La solicitud fue rechazada automáticamente.', 'Solicitud rechazada', 9000);
+    } else if (r?.urgente) {
+      this.notification.warning('Su urgencia fue enviada a su supervisor para que la revise.', 'Solicitud enviada', 7000);
+    } else if (r?.motivoEspera) {
+      this.notification.warning(`${r.motivoEspera}. Comuníquese con su supervisor.`, 'Quedó en sala de espera', 9000);
+    } else {
+      this.notification.success(`Su solicitud de ${t.nombre.toLowerCase()} fue enviada para aprobación.`, 'Solicitud enviada');
+    }
   }
 
   // ==================== DETALLE ====================
@@ -328,10 +375,14 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
     }
     this.gestionando = true;
     this.solicitudesService.editar(this.editando.id, this.edicion).subscribe({
-      next: () => {
+      next: (r) => {
         this.gestionando = false;
         this.editando = null;
-        this.notification.success('Solicitud actualizada.');
+        const s = r?.solicitud as SolicitudResponse | undefined;
+        if (s?.estado === 'aprobado' && s.aprobacionAutomatica) this.notification.success('Solicitud actualizada y aprobada automáticamente.');
+        else if (s?.estado === 'rechazado') this.notification.error(s.comentarioGestion || 'La solicitud fue rechazada automáticamente.', 'Solicitud rechazada', 9000);
+        else if (s?.motivoEspera && !s.urgente) this.notification.warning(`${s.motivoEspera}. Comuníquese con su supervisor.`, 'Sigue en sala de espera', 7000);
+        else this.notification.success('Solicitud actualizada.');
         this.cargarMisSolicitudes();
         this.cargarSaldos();
       },
@@ -432,7 +483,7 @@ export class SolicitudesComponent implements OnInit, OnDestroy {
       Hasta: fechaCorta(s.fechaFin),
       Dias: dias(s.diasSolicitados),
       Estado: this.estadoTexto(s.estado),
-      'Gestionado por': s.aprobadoPor || '',
+      'Gestionado por': s.aprobadoPor || (s.aprobacionAutomatica ? 'Automática (sistema)' : ''),
       Comentario: s.comentarioGestion || '',
       Motivo: this.motivoLimpio(s)
     }));
