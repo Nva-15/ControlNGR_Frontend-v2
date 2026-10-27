@@ -110,6 +110,10 @@
                 <th class="min-w-28 px-2 py-3 text-center text-xs font-semibold uppercase tracking-wide"
                     [class]="esHoy(f) ? 'bg-vino-700 text-white' : 'bg-stone-50 text-stone-500'">
                   {{ diasLabels[getDiaSemanaFromFecha(f)] }}<span class="block text-[11px] font-normal normal-case opacity-80">{{ formatFechaCorta(f) }}</span>
+                  @if (feriadoDe(f)) {
+                    <span class="mt-0.5 block truncate text-[10px] font-semibold normal-case" [class.text-teal-700]="!esHoy(f)"
+                          [title]="'Feriado: ' + feriadoDe(f)" data-feriado-cabecera><i class="bi bi-calendar-heart"></i> {{ feriadoDe(f) }}</span>
+                  }
                 </th>
               }
             </tr>
@@ -213,7 +217,7 @@
     <div>
       <label class="label">Tipo de día</label>
       <select class="select" formControlName="tipoDia" (change)="onTipoDiaChange()">
-        @for (t of tiposDia; track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+        @for (t of tiposDiaPara(diaEditando?.fecha); track t.value) { <option [value]="t.value">{{ t.label }}</option> }
       </select>
     </div>
     @if (horarioForm.value.tipoDia === 'normal') {

@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminParametrosBloqueComponent, CampoParametro } from './parametros-bloque';
 
-/** Reglas de marcación: tolerancia, anticipación, salida automática y jornada por turno (qué roles marcan está en Roles y aprobaciones). */
+/** Reglas de marcación: tolerancia, anticipación y salida automática (qué roles marcan está en Roles y aprobaciones). */
 @Component({
   selector: 'app-admin-asistencia',
   standalone: true,
@@ -12,6 +12,8 @@ import { AdminParametrosBloqueComponent, CampoParametro } from './parametros-blo
     <p class="field-help mt-3">
       Qué roles marcan asistencia y cuáles trabajan con horario se configura en
       <a routerLink="/admin/roles" class="font-medium text-vino-700 hover:underline">Roles y aprobaciones</a>.
+      La jornada de cada turno y las funciones están en
+      <a routerLink="/admin/turnos" class="font-medium text-vino-700 hover:underline">Turnos y funciones</a>.
     </p>
   `
 })
@@ -23,13 +25,5 @@ export class AdminAsistenciaComponent {
       ayuda: 'Minutos antes del inicio del turno desde los que se puede marcar la entrada (por ejemplo, 5 → turno 08:00 se marca desde las 07:55). 0 = desde la hora exacta. Solo se aplica a los roles con horario.' },
     { clave: 'SALIDA_AUTOMATICA_HORAS', titulo: 'Salida automática', unidad: 'horas', min: 1, max: 23,
       ayuda: 'Si el colaborador no marca su salida, el sistema la registra sola estas horas después de la entrada (por ejemplo, entrada 17:00 → salida 05:00 del día siguiente). Queda marcada como "automática" en el reporte.' },
-    { clave: 'JORNADA_MANANA_HORAS', titulo: 'Jornada del turno mañana', unidad: 'horas', min: 1, max: 16, paso: 0.25,
-      ayuda: 'Al armar un horario, la salida del turno mañana se calcula sola: entrada + estas horas, con 1 h de refrigerio incluida que empieza 4 h después de la entrada (por ejemplo, 9 → 08:00 a 17:00, refrigerio 12:00 a 13:00). Se puede cambiar en cada horario.' },
-    { clave: 'ENTRADA_MANANA_SUGERIDA', titulo: 'Entrada sugerida del turno mañana',
-      ayuda: 'Hora que se propone al elegir turno mañana al armar un horario (se puede cambiar en cada día).' },
-    { clave: 'ENTRADA_TARDE_SUGERIDA', titulo: 'Entrada sugerida del turno tarde',
-      ayuda: 'Hora que se propone al elegir turno tarde (por ejemplo, 17:00 → salida 01:00).' },
-    { clave: 'JORNADA_TARDE_HORAS', titulo: 'Jornada del turno tarde', unidad: 'horas', min: 1, max: 16, paso: 0.25,
-      ayuda: 'Salida del turno tarde = entrada + estas horas, sin refrigerio (por ejemplo, 8 → 14:00 a 22:00). Se puede cambiar en cada horario.' },
   ];
 }

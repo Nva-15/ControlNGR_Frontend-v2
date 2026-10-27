@@ -25,9 +25,11 @@ export interface DiaEditorTurno {
   horaAlmuerzoInicio?: string;
   horaAlmuerzoFin?: string;
   funciones?: string[];
+  /** Si la fecha es feriado, su nombre: permite "Descanso feriado". */
+  feriado?: string;
 }
 
-type Estado = 'normal' | 'descanso' | 'otro';
+type Estado = 'normal' | 'descanso' | 'feriado' | 'otro';
 type Turno = 'manana' | 'tarde';
 
 interface Fila {
@@ -102,7 +104,9 @@ interface Fila {
                  [class.bg-stone-50]="f.dia.bloqueado">
               <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <input type="checkbox" class="checkbox" [(ngModel)]="f.marcado" [disabled]="!!f.dia.bloqueado" [attr.aria-label]="'Marcar ' + f.dia.etiqueta" data-marcar />
-                <span class="w-20 text-sm font-semibold text-stone-800">{{ f.dia.etiqueta }}</span>
+                <span class="w-20 text-sm font-semibold text-stone-800">{{ f.dia.etiqueta }}
+                  @if (f.dia.feriado) { <span class="block truncate text-[10px] font-semibold text-teal-700" [title]="f.dia.feriado"><i class="bi bi-calendar-heart"></i> {{ f.dia.feriado }}</span> }
+                </span>
 
                 @if (f.dia.bloqueado) {
                   <span class="badge-gray"><i class="bi bi-lock-fill"></i> {{ f.dia.etiquetaTipo }} · por solicitud aprobada</span>
@@ -114,6 +118,12 @@ interface Fila {
                     <button type="button" class="rounded-md px-2.5 py-1 text-xs" data-descansa
                             [class]="f.estado === 'descanso' ? 'bg-stone-600 text-white' : 'text-stone-600 hover:bg-stone-100'"
                             (click)="f.estado = 'descanso'"><i class="bi bi-moon-stars"></i> Descansa</button>
+                    @if (f.dia.feriado) {
+                      <button type="button" class="rounded-md px-2.5 py-1 text-xs" data-feriado
+                              [title]="'No trabaja por el feriado (' + f.dia.feriado + '); no cuenta como su descanso semanal'"
+                              [class]="f.estado === 'feriado' ? 'bg-teal-700 text-white' : 'text-stone-600 hover:bg-stone-100'"
+                              (click)="f.estado = 'feriado'"><i class="bi bi-calendar-heart"></i> Feriado</button>
+                    }
                   </div>
 
                   @if (f.estado === 'normal') {
@@ -137,6 +147,8 @@ interface Fila {
                                 (click)="alternarFuncion(f.funciones, fn.codigo)">{{ fn.codigo }}</button>
                       }
                     </div>
+                  } @else if (f.estado === 'feriado') {
+                    <span class="text-xs text-teal-700">Descansa por el feriado · no cuenta como su descanso semanal</span>
                   } @else if (f.estado === 'otro') {
                     <span class="badge-oro">{{ f.dia.etiquetaTipo }}</span>
                     <span class="text-xs text-stone-500">se mantiene si no lo cambia</span>
@@ -230,7 +242,8 @@ export class EditorTurnoComponent implements OnChanges {
   }
 
   private filaDe(d: DiaEditorTurno): Fila {
-    const estado: Estado = !d.tipo || d.tipo === 'normal' ? 'normal' : d.tipo === 'descanso' ? 'descanso' : 'otro';
+    const estado: Estado = !d.tipo || d.tipo === 'normal' ? 'normal' : d.tipo === 'descanso' ? 'descanso'
+      : d.tipo === 'descanso_feriado' && d.feriado ? 'feriado' : 'otro';
     const turno: Turno = d.turno === 'tarde' ? 'tarde' : 'manana';
     const fila: Fila = {
       dia: d, marcado: !d.bloqueado && this.marcadosIniciales.includes(d.clave), estado, turno,
@@ -268,7 +281,7 @@ export class EditorTurnoComponent implements OnChanges {
     if (this.descansos > this.config.maxDescansos) return false;
     const editables = this.filas.filter(f => !f.dia.bloqueado && f.estado !== 'otro');
     if (!editables.length) return false;
-    return editables.every(f => f.estado === 'descanso'
+    return editables.every(f => f.estado === 'descanso' || f.estado === 'feriado'
       || (!!f.entrada && !!f.salida && f.entrada !== f.salida && (f.turno === 'tarde' || !!f.almInicio === !!f.almFin)));
   }
 
@@ -360,8 +373,8 @@ export class EditorTurnoComponent implements OnChanges {
     if (!this.puedeGuardar) return;
     const dias: DiaTurnoPayload[] = this.filas
       .filter(f => !f.dia.bloqueado && f.estado !== 'otro')
-      .map(f => f.estado === 'descanso'
-        ? { clave: f.dia.clave, tipoDia: 'descanso', turno: null, horaEntrada: null, horaSalida: null,
+      .map(f => f.estado === 'descanso' || f.estado === 'feriado'
+        ? { clave: f.dia.clave, tipoDia: f.estado === 'feriado' ? 'descanso_feriado' : 'descanso', turno: null, horaEntrada: null, horaSalida: null,
             horaAlmuerzoInicio: null, horaAlmuerzoFin: null, funciones: [] }
         : { clave: f.dia.clave, tipoDia: 'normal', turno: f.turno, horaEntrada: f.entrada, horaSalida: f.salida,
             horaAlmuerzoInicio: f.turno === 'manana' && f.almInicio ? f.almInicio : null,

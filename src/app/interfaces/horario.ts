@@ -107,6 +107,7 @@ export interface HorarioSemanalResponse {
   totalDescansos?: number;
   totalVacaciones?: number;
   colaboradoresAgregados?: number; // al copiar: quienes no estaban en la semana origen
+  feriados?: Record<string, string>; // feriados de la semana: fecha → descripción
 }
 
 // Lista resumida de semanas (para selector)

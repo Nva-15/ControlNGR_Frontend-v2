@@ -47,6 +47,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
     { value: 'Falta', label: 'Falta' },
     { value: 'Permiso', label: 'Permiso' },
     { value: 'Descanso', label: 'Descanso' },
+    { value: 'Descanso_feriado', label: 'Descanso feriado' },
     { value: 'Vacaciones', label: 'Vacaciones' },
     { value: 'Compensado', label: 'Compensado' },
     { value: 'Descanso_medico', label: 'Descanso médico' },
