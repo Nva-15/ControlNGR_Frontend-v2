@@ -7,6 +7,8 @@ import { Empleado, EmpleadoResponse } from '../interfaces/empleado';
 import { ApiConfigService } from './api-config.service';
 import { RolPersonal } from '../interfaces/admin';
 
+export interface PerfilDepartamento { departamentoId: number; cargo: string | null; nivel: string | null; rol: string | null; }
+
 @Injectable({
   providedIn: 'root'
 })
@@ -19,6 +21,11 @@ export class EmpleadosService {
 
   departamentos(): Observable<{ id: number; nombre: string }[]> {
     return this.http.get<{ id: number; nombre: string }[]>(`${this.apiUrl}/departamentos`);
+  }
+
+  /** Por departamento, el cargo, nivel y rol más comunes de su personal (se proponen al registrar). */
+  perfilesDepartamento(): Observable<PerfilDepartamento[]> {
+    return this.http.get<PerfilDepartamento[]>(`${this.apiUrl}/perfiles-departamento`);
   }
 
   /** Roles asignables a empleados (codigo, nombre, nivel). */
