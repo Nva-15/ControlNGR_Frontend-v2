@@ -9,6 +9,7 @@ import { AvatarComponent } from '../shared/avatar/avatar.component';
 import { ModalComponent } from '../shared/modal/modal.component';
 import { CamaraFacialComponent } from '../shared/camara-facial/camara-facial.component';
 import { FacialService } from '../../services/facial';
+import { AsistenciaService } from '../../services/asistencia';
 import { EstadoFacial } from '../../interfaces/facial';
 import { fechaCorta, mensajeError } from '../../utils/format';
 import { rolLabel } from '../../utils/roles';
@@ -26,6 +27,9 @@ export class PerfilComponent implements OnInit {
   private api = inject(ApiConfigService);
   private notification = inject(NotificationService);
   private facial = inject(FacialService);
+  private asistencia = inject(AsistenciaService);
+  /** El panel habilitó que cada colaborador vea su propio récord de asistencia. */
+  miRecordHabilitado = false;
 
   perfil: any = null;
   descripcion = '';
@@ -47,6 +51,10 @@ export class PerfilComponent implements OnInit {
   ngOnInit() {
     this.cargar();
     this.cargarEstadoFacial();
+    this.asistencia.miConfiguracion().subscribe({
+      next: c => this.miRecordHabilitado = !!c.miRecordHabilitado && c.marcaAsistencia,
+      error: () => this.miRecordHabilitado = false
+    });
   }
 
   // ==================== RECONOCIMIENTO FACIAL ====================

@@ -3,12 +3,22 @@
     <h1 class="page-title">Reportes de asistencia</h1>
     <p class="page-subtitle">Puntualidad y ausencias según el horario programado.</p>
   </div>
+  @if (vista === 'detalle') {
   <div class="flex gap-2">
     <button class="btn-excel" (click)="exportarExcel()" [disabled]="!reporteFiltrado.length"><i class="bi bi-file-earmark-excel-fill"></i> Excel</button>
     <button class="btn-pdf" (click)="exportarPdf()" [disabled]="!reporteFiltrado.length"><i class="bi bi-file-earmark-pdf-fill"></i> PDF</button>
   </div>
+  }
 </div>
 
+<nav class="tabs mb-5" role="tablist" data-tabs-reportes>
+  <button type="button" role="tab" class="tab" [class.tab-active]="vista === 'detalle'" [attr.aria-selected]="vista === 'detalle'" (click)="vista = 'detalle'"><i class="bi bi-list-ul"></i> Detalle por día</button>
+  <button type="button" role="tab" class="tab" [class.tab-active]="vista === 'dashboard'" [attr.aria-selected]="vista === 'dashboard'" (click)="vista = 'dashboard'" data-tab-dashboard><i class="bi bi-bar-chart-line"></i> Dashboard</button>
+  <button type="button" role="tab" class="tab" [class.tab-active]="vista === 'ficha'" [attr.aria-selected]="vista === 'ficha'" (click)="vista = 'ficha'" data-tab-ficha><i class="bi bi-person-vcard"></i> Ficha del colaborador</button>
+</nav>
+
+
+@if (vista === 'detalle') {
 <div class="card mb-6">
   <div class="card-body flex flex-wrap items-end gap-3">
     <div><label class="label">Desde</label><input type="date" class="input" [max]="fechaHoy" [(ngModel)]="fechaInicio" (change)="validarFechaInicio()" /></div>
@@ -86,3 +96,44 @@
     </div>
   }
 </div>
+}
+
+@if (vista === 'dashboard') {
+  <app-dashboard-asistencia (abrirFicha)="verFicha($event)" />
+}
+
+@if (vista === 'ficha') {
+  <div class="card mb-5">
+    <div class="card-body flex flex-wrap items-end gap-3" data-selector-ficha>
+      <div class="relative min-w-64 flex-1">
+        <label class="label" for="ficha-buscar">Colaborador</label>
+        <input id="ficha-buscar" class="input" placeholder="Escriba un nombre o DNI" autocomplete="off"
+               [(ngModel)]="busquedaFicha" (ngModelChange)="buscarColaborador()" data-ficha-buscar />
+        @if (resultadosFicha.length) {
+          <ul class="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border border-stone-200 bg-superficie shadow-lg">
+            @for (e of resultadosFicha; track e.id) {
+              <li><button type="button" class="block w-full px-3 py-2 text-left text-sm hover:bg-stone-100" (click)="verFicha(e.id)" [attr.data-resultado]="e.id">
+                <b>{{ e.nombre }}</b> <span class="text-xs text-stone-500">{{ e.departamentoNombre || '' }}</span></button></li>
+            }
+          </ul>
+        }
+      </div>
+      <div class="w-48"><label class="label" for="ficha-periodo">Período</label>
+        <select id="ficha-periodo" class="select" [(ngModel)]="fichaPeriodo" (ngModelChange)="cargarFicha()" data-ficha-periodo>
+          <option value="ingreso">Desde su ingreso</option>
+          <option value="anio">Este año</option>
+          <option value="doce">Últimos 12 meses</option>
+          <option value="tres">Últimos 3 meses</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  @if (cargandoFicha) {
+    <div class="flex justify-center py-16"><span class="spinner"></span></div>
+  } @else if (ficha) {
+    <app-ficha-asistencia [datos]="ficha" />
+  } @else {
+    <div class="card"><div class="empty-state"><i class="bi bi-person-vcard text-4xl"></i>
+      <p>Busque un colaborador o haga clic en una fila del Dashboard para ver su ficha.</p></div></div>
+  }
+}

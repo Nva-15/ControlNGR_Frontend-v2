@@ -12,12 +12,14 @@ import { AdminFacialComponent } from './secciones/facial';
 import { AdminAsistenciaComponent } from './secciones/asistencia';
 import { AdminRespaldosComponent } from './secciones/respaldos';
 import { AdminTurnosComponent } from './secciones/turnos';
+import { AdminReportesComponent } from './secciones/reportes';
 import { AdminAprobacionComponent } from './secciones/aprobacion';
 
 const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   saldos: { titulo: 'Saldos y carga inicial', descripcion: 'Días de vacaciones y de compensación que se deben a cada empleado.' },
   facial: { titulo: 'Reconocimiento facial', descripcion: 'Modo de marcación por equipo (cámara o botón), rostros registrados y pruebas sin afectar la asistencia.' },
   asistencia: { titulo: 'Reglas de marcación', descripcion: 'Tolerancia de tardanza, anticipación para marcar la entrada y salida automática.' },
+  reportes: { titulo: 'Reportes de asistencia', descripcion: 'Transparencia: que cada colaborador vea su propio récord de asistencia, y los datos del dashboard.' },
   turnos: { titulo: 'Turnos y funciones', descripcion: 'Funciones que cumple el personal en su turno (LT, SP...), jornada de cada turno y entradas sugeridas al armar horarios.' },
   red: { titulo: 'Segmentos de red', descripcion: 'Redes desde las que se permite marcar asistencia.' },
   feriados: { titulo: 'Feriados', descripcion: 'Feriados nacionales (sector privado). Trabajar un feriado abona días de compensación.' },
@@ -36,7 +38,7 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
     AdminSaldosComponent, AdminRedComponent, AdminFeriadosComponent,
     AdminDepartamentosComponent, AdminRolesComponent, AdminCatalogosComponent,
     AdminFacialComponent, AdminAsistenciaComponent, AdminRespaldosComponent, AdminAprobacionComponent,
-    AdminTurnosComponent
+    AdminTurnosComponent, AdminReportesComponent
   ],
   template: `
     <div class="page-header">
@@ -51,6 +53,7 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
       @case ('facial') { <app-admin-facial /> }
       @case ('asistencia') { <app-admin-asistencia /> }
       @case ('turnos') { <app-admin-turnos /> }
+      @case ('reportes') { <app-admin-reportes /> }
       @case ('red') { <app-admin-red /> }
       @case ('feriados') { <app-admin-feriados /> }
       @case ('departamentos') { <app-admin-departamentos /> }

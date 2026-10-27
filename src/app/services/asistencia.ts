@@ -24,8 +24,8 @@ export class AsistenciaService {
   }
 
   /** Si su rol marca asistencia, si trabaja con horario (o es flexible) y la tolerancia vigente. */
-  miConfiguracion(): Observable<{ marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number; anticipacionMinutos?: number; horasSalidaAutomatica: number }> {
-    return this.http.get<{ marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number; anticipacionMinutos?: number; horasSalidaAutomatica: number }>(`${this.apiUrl}/mi-configuracion`);
+  miConfiguracion(): Observable<{ marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number; anticipacionMinutos?: number; horasSalidaAutomatica: number; miRecordHabilitado?: boolean }> {
+    return this.http.get<{ marcaAsistencia: boolean; conHorario: boolean; toleranciaMinutos: number; anticipacionMinutos?: number; horasSalidaAutomatica: number; miRecordHabilitado?: boolean }>(`${this.apiUrl}/mi-configuracion`);
   }
 
   /** Breve justificacion para el supervisor sobre una marcacion ya registrada. */

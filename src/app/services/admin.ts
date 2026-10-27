@@ -98,6 +98,11 @@ export class AdminService {
   actualizarTipoSolicitud(t: TipoSolicitud): Observable<TipoSolicitud> {
     return this.http.put<TipoSolicitud>(`${this.url}/tipos-solicitud/${t.id}`, t);
   }
+  /** Recalcula en segundo plano el resumen del dashboard (sin fecha: todo el historial). */
+  recalcularResumenAsistencia(desde: string | null): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(`${this.url}/reportes/recalcular`, { desde });
+  }
+
   funcionesTurno(): Observable<FuncionTurno[]> { return this.http.get<FuncionTurno[]>(`${this.url}/funciones-turno`); }
   guardarFuncionTurno(f: Partial<FuncionTurno>): Observable<FuncionTurno> {
     return f.id ? this.http.put<FuncionTurno>(`${this.url}/funciones-turno/${f.id}`, f)

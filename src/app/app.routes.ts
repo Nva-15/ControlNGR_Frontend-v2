@@ -26,6 +26,8 @@ export const routes: Routes = [
         loadComponent: () => import('./components/dashboard/dashboard').then(m => m.DashboardComponent) },
       { path: 'perfil', canActivate: [personalGuard], title: 'Mi perfil · Control NGR',
         loadComponent: () => import('./components/perfil/perfil').then(m => m.PerfilComponent) },
+      { path: 'mi-record', canActivate: [personalGuard], title: 'Mi récord de asistencia · Control NGR',
+        loadComponent: () => import('./components/mi-record/mi-record').then(m => m.MiRecordComponent) },
       { path: 'saldos', canActivate: [personalGuard], title: 'Mis saldos · Control NGR',
         loadComponent: () => import('./components/saldos/saldos').then(m => m.SaldosComponent) },
       { path: 'solicitudes', canActivate: [personalGuard], title: 'Solicitudes · Control NGR',
