@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, shareReplay } from 'rxjs/operators';
 import {
   Horario,
   HorarioResponse,
@@ -11,6 +11,18 @@ import {
   DetalleHorarioDia
 } from '../interfaces/horario';
 import { ApiConfigService } from './api-config.service';
+import { CONFIG_TURNOS_DEFECTO, ConfigTurnos } from '../utils/turnos';
+
+/** Un mismo turno para varios días: claves = fechas (semana) o lunes...domingo (horario base). */
+export interface TurnoSemanaPayload {
+  turno: 'manana' | 'tarde';
+  horaEntrada: string | null;
+  horaSalida: string | null;
+  horaAlmuerzoInicio: string | null;
+  horaAlmuerzoFin: string | null;
+  dias: { [clave: string]: 'normal' | 'descanso' };
+  guardarComoBase?: boolean;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -23,6 +35,31 @@ export class HorariosService {
   }
   private get apiUrlSemanal() {
     return `${this.apiConfig.apiUrl}/horarios-semanales`;
+  }
+
+  private configTurnos$?: Observable<ConfigTurnos>;
+
+  /** Jornada por turno y refrigerio por defecto; si falla, se usan los valores habituales. */
+  configuracionTurnos(): Observable<ConfigTurnos> {
+    this.configTurnos$ ??= this.http.get<ConfigTurnos>(`${this.apiUrl}/configuracion-turnos`).pipe(
+      catchError(() => of(CONFIG_TURNOS_DEFECTO)),
+      shareReplay(1)
+    );
+    return this.configTurnos$;
+  }
+
+  /** Arma la semana de un colaborador en un paso (días laborales con el turno, los demás de descanso). */
+  guardarSemanaEmpleado(semanaId: number, empleadoId: number, payload: TurnoSemanaPayload): Observable<HorarioSemanalResponse> {
+    return this.http.put<HorarioSemanalResponse>(`${this.apiUrlSemanal}/${semanaId}/empleado/${empleadoId}`, payload).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /** Horario base de lunes a domingo del colaborador. */
+  guardarHorarioBase(empleadoId: number, payload: TurnoSemanaPayload): Observable<HorarioResponse[]> {
+    return this.http.put<HorarioResponse[]>(`${this.apiUrl}/empleado/${empleadoId}/base`, payload).pipe(
+      catchError(this.handleError)
+    );
   }
 
   getHorarios(): Observable<HorarioResponse[]> {
