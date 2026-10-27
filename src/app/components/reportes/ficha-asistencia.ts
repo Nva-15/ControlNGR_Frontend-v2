@@ -46,6 +46,26 @@ interface Anio { anio: number; celdas: Celda[]; meses: { x: number; texto: strin
             <p class="text-xs text-stone-500">{{ textoAusencias || 'ninguna' }}</p></div>
         </div>
 
+        <!-- Marcaciones: también sirven para los días sin horario -->
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-5" data-kpis-marcaciones>
+          <div class="card p-4"><p class="stat-label">Días con marcación</p><p class="stat-value mt-1">{{ (datos.kpis.diasMarcados ?? 0) | number }}</p>
+            <p class="text-xs text-stone-500">con entrada registrada</p></div>
+          <div class="card p-4"><p class="stat-label">Entrada promedio</p><p class="stat-value mt-1">{{ datos.kpis.entradaPromedio || '—' }}</p>
+            <p class="text-xs text-stone-500">hora a la que suele llegar</p></div>
+          <div class="card p-4"><p class="stat-label">Salida promedio</p><p class="stat-value mt-1">{{ datos.kpis.salidaPromedio || '—' }}</p>
+            <p class="text-xs text-stone-500">sin las salidas automáticas</p></div>
+          <div class="card p-4"><p class="stat-label">Horas por día</p><p class="stat-value mt-1">{{ minutos(datos.kpis.minutosPorDia ?? null) }}</p>
+            <p class="text-xs text-stone-500">promedio, días con salida</p></div>
+          <div class="card p-4"><p class="stat-label">Salidas automáticas</p><p class="stat-value mt-1">{{ datos.kpis.salidasAutomaticas | number }}</p>
+            <p class="text-xs text-stone-500">no marcó su salida</p></div>
+        </div>
+        @if (datos.kpis.diasSinHorario) {
+          <p class="rounded-lg border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm text-violet-900" data-aviso-sin-horario>
+            <i class="bi bi-info-circle"></i> {{ datos.kpis.diasSinHorario }} día(s) marcó sin horario programado: se muestran como
+            <b>Asistió (sin horario)</b> y no cuentan para puntualidad ni faltas.
+          </p>
+        }
+
         <section class="card p-5">
           <h3 class="card-title">Calendario</h3>
           <p class="mb-3 text-xs text-stone-500">Cada cuadro es un día · pase el mouse para ver el detalle</p>
@@ -145,7 +165,8 @@ export class FichaAsistenciaComponent implements OnChanges {
     { texto: 'Tardanza', ...this.pick('tardanza') },
     { texto: 'Falta', ...this.pick('falta') },
     { texto: 'Vacaciones, licencias y permisos', ...this.pick('vacaciones') },
-    { texto: 'Descanso o feriado', ...this.pick('descanso') }
+    { texto: 'Descanso o feriado', ...this.pick('descanso') },
+    { texto: 'Asistió (sin horario)', ...this.pick('asistio') }
   ];
 
   private pick(e: string) {

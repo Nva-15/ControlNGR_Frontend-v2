@@ -29,6 +29,8 @@ export interface DiaTurnoPayload {
 export interface TurnoSemanaPayload {
   dias: DiaTurnoPayload[];
   guardarComoBase?: boolean;
+  /** Solo horario base: desde qué fecha programa los días. */
+  vigenteDesde?: string;
 }
 
 @Injectable({

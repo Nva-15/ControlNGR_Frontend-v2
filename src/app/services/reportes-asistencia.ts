@@ -16,6 +16,7 @@ export class ReportesAsistenciaService {
     if (f.departamentoId) params = params.set('departamentoId', f.departamentoId);
     if (f.rol) params = params.set('rol', f.rol);
     if (f.turno) params = params.set('turno', f.turno);
+    if (f.funcion) params = params.set('funcion', f.funcion);
     return this.http.get<DashboardAsistencia>(`${this.url}/dashboard`, { params });
   }
 

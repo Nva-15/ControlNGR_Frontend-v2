@@ -86,6 +86,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
     diaInicial: '',
     plantillas: [] as PlantillaTurno[],
     guardarBaseInicial: false,
+    vigenteDesde: null as string | null,
     guardando: false,
     empleado: null as EmpleadoHorarioSemanal | null,
     dia: null as DetalleHorarioDia | null
@@ -610,6 +611,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
           diaInicial: '',
           plantillas: this.turnosDelEquipo(empleado),
           guardarBaseInicial: false,
+          vigenteDesde: base.find(h => h.vigenteDesde)?.vigenteDesde ?? null,
           guardando: false,
           empleado,
           dia: null

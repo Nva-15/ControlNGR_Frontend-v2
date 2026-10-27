@@ -7,12 +7,15 @@ export const COLOR_TARDANZA = '#fab219';
 export const COLOR_FALTA = '#d03b3b';
 export const COLOR_AUSENCIA = '#3987e5';
 export const COLOR_NO_LABORABLE = '#d6d3d1';
+/** Marcó sin horario programado: violeta, distinto de las ausencias (azul) y de los estados. */
+export const COLOR_SIN_HORARIO = '#a78bfa';
+export const COLOR_PENDIENTE = '#a8a29e';
 
 export const ESTADOS_ASISTENCIA: Record<string, EstadoAsistencia> = {
   a_tiempo: { etiqueta: 'A tiempo', icono: 'bi-check-lg', color: COLOR_A_TIEMPO },
   tardanza: { etiqueta: 'Tardanza', icono: 'bi-clock', color: COLOR_TARDANZA },
   falta: { etiqueta: 'Falta', icono: 'bi-x-lg', color: COLOR_FALTA },
-  pendiente: { etiqueta: 'Pendiente', icono: 'bi-hourglass', color: '#f0efec' },
+  pendiente: { etiqueta: 'Por llegar', icono: 'bi-hourglass', color: COLOR_PENDIENTE },
   permiso: { etiqueta: 'Permiso', icono: 'bi-person-check', color: COLOR_AUSENCIA },
   vacaciones: { etiqueta: 'Vacaciones', icono: 'bi-sun', color: COLOR_AUSENCIA },
   descanso_medico: { etiqueta: 'Descanso médico', icono: 'bi-heart-pulse', color: COLOR_AUSENCIA },
@@ -20,7 +23,7 @@ export const ESTADOS_ASISTENCIA: Record<string, EstadoAsistencia> = {
   compensado: { etiqueta: 'Compensado', icono: 'bi-calendar-check', color: COLOR_AUSENCIA },
   descanso: { etiqueta: 'Descanso', icono: 'bi-moon-stars', color: COLOR_NO_LABORABLE },
   descanso_feriado: { etiqueta: 'Descanso feriado', icono: 'bi-calendar-heart', color: COLOR_NO_LABORABLE },
-  asistio: { etiqueta: 'Asistió (sin horario)', icono: 'bi-check2', color: '#86b6ef' }
+  asistio: { etiqueta: 'Asistió (sin horario)', icono: 'bi-check2', color: COLOR_SIN_HORARIO }
 };
 
 export function estadoAsistencia(estado: string): EstadoAsistencia {
@@ -47,6 +50,11 @@ export function llegadaTexto(dif: number | null | undefined): string {
   if (dif === null || dif === undefined) return '—';
   if (dif === 0) return 'puntual';
   return dif < 0 ? `${-dif} min antes` : `${dif} min tarde`;
+}
+
+/** Hora "HH:mm" o "—". */
+export function horaTexto(h: string | null | undefined): string {
+  return h || '—';
 }
 
 /** "2026-10-27" → "27/10/2026". */

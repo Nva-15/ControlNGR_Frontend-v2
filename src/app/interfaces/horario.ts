@@ -23,6 +23,8 @@ export interface FuncionTurno {
 export interface HorarioResponse extends Horario {
   empleadoNombre: string;
   empleadoRol?: string;
+  /** Desde qué fecha programa los días (AAAA-MM-DD). */
+  vigenteDesde?: string | null;
 }
 
 export interface HorarioDia {
