@@ -288,8 +288,10 @@
 
 <!-- Semana del colaborador u horario base: varios días a la vez -->
 <app-editor-turno [abierto]="editor.abierto" [titulo]="editor.titulo" [subtitulo]="editor.subtitulo"
-                  [dias]="editor.dias" [marcadosIniciales]="editor.marcados" [config]="configTurnos" [funciones]="funcionesTurno"
+                  [dias]="editor.dias" [plantillas]="editor.plantillas" [diaInicial]="editor.diaInicial"
+                  [config]="configTurnos" [funciones]="funcionesTurno"
                   [mostrarGuardarBase]="editor.modo === 'semana'" [guardarBaseInicial]="editor.guardarBaseInicial"
+                  [permiteMasOpciones]="editor.modo === 'semana'"
                   [textoGuardar]="editor.modo === 'base' ? 'Guardar horario base' : 'Guardar semana'"
-                  [textoUnDia]="editor.textoUnDia" [guardando]="editor.guardando"
-                  (guardar)="guardarEditor($event)" (cerrar)="cerrarEditor()" (editarUnDia)="editarUnDia()" />
+                  [guardando]="editor.guardando"
+                  (guardar)="guardarEditor($event)" (cerrar)="cerrarEditor()" (editarUnDia)="editarUnDia($event)" />
