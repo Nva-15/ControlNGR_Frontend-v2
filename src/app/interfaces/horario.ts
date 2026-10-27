@@ -8,6 +8,16 @@ export interface Horario {
   horaAlmuerzoFin?: string;
   tipoDia?: string; // normal, descanso, compensado, vacaciones
   turno?: string; // manana, tarde
+  funciones?: string[]; // códigos de funciones de turno (SP, PRE...)
+}
+
+/** Función que cumple la persona en su turno (catálogo del panel admin). */
+export interface FuncionTurno {
+  id: number;
+  codigo: string;
+  nombre: string;
+  activo: boolean;
+  orden: number;
 }
 
 export interface HorarioResponse extends Horario {
@@ -64,6 +74,7 @@ export interface DetalleHorarioDia {
   horaAlmuerzoFin?: string;
   tipoDia?: string;        // normal, descanso, vacaciones, permiso, compensado
   turno?: string;          // manana, tarde
+  funciones?: string[];    // códigos de funciones de turno (SP, PRE...)
   origenTipoDia?: string;  // "manual" | "solicitud_aprobada" | "sin_horario_base"
   solicitudId?: number;    // ID de solicitud si viene de una aprobada
   esHoy?: boolean;         // true si es el día actual

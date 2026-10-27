@@ -25,6 +25,10 @@ export class AdminAsistenciaComponent {
       ayuda: 'Si el colaborador no marca su salida, el sistema la registra sola estas horas después de la entrada (por ejemplo, entrada 17:00 → salida 05:00 del día siguiente). Queda marcada como "automática" en el reporte.' },
     { clave: 'JORNADA_MANANA_HORAS', titulo: 'Jornada del turno mañana', unidad: 'horas', min: 1, max: 16, paso: 0.25,
       ayuda: 'Al armar un horario, la salida del turno mañana se calcula sola: entrada + estas horas, con 1 h de refrigerio incluida que empieza 4 h después de la entrada (por ejemplo, 9 → 08:00 a 17:00, refrigerio 12:00 a 13:00). Se puede cambiar en cada horario.' },
+    { clave: 'ENTRADA_MANANA_SUGERIDA', titulo: 'Entrada sugerida del turno mañana',
+      ayuda: 'Hora que se propone al elegir turno mañana al armar un horario (se puede cambiar en cada día).' },
+    { clave: 'ENTRADA_TARDE_SUGERIDA', titulo: 'Entrada sugerida del turno tarde',
+      ayuda: 'Hora que se propone al elegir turno tarde (por ejemplo, 17:00 → salida 01:00).' },
     { clave: 'JORNADA_TARDE_HORAS', titulo: 'Jornada del turno tarde', unidad: 'horas', min: 1, max: 16, paso: 0.25,
       ayuda: 'Salida del turno tarde = entrada + estas horas, sin refrigerio (por ejemplo, 8 → 14:00 a 22:00). Se puede cambiar en cada horario.' },
   ];
