@@ -133,6 +133,8 @@
                       }
                       @if (!dia) {
                         <span>—</span>
+                      } @else if ((!dia.tipoDia || dia.tipoDia === 'normal') && !dia.horaEntrada && dia.origenTipoDia === 'sin_horario_base') {
+                        <span class="text-oro-700" title="Aún no tiene horario base: se completará al registrarlo, o asigne el turno aquí">Sin horario base</span>
                       } @else if ((!dia.tipoDia || dia.tipoDia === 'normal') && !dia.horaEntrada) {
                         <span class="text-stone-400">Sin turno</span>
                       } @else if (!dia.tipoDia || dia.tipoDia === 'normal') {
@@ -180,7 +182,7 @@
         @for (s of semanasDisponibles; track s.id) { <option [value]="s.id">{{ s.nombre }}</option> }
       </select>
     </div>
-    <p class="field-help">Las solicitudes aprobadas que caigan en esa semana se aplican automáticamente.</p>
+    <p class="field-help">Al copiar se repiten los turnos y descansos de esa semana; las vacaciones, permisos y licencias no. Los colaboradores que no estaban en ella entran con su horario base. Las solicitudes aprobadas que caigan en la nueva semana se aplican automáticamente.</p>
   </form>
   <div footer class="flex gap-2">
     <button class="btn-secondary" (click)="cerrarModalCrear()">Cancelar</button>
