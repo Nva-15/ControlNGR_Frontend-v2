@@ -17,7 +17,7 @@ import { CONFIG_TURNOS_DEFECTO, ConfigTurnos } from '../utils/turnos';
 /** Un día: laboral (turno, horas y funciones) o descanso. Clave = fecha (semana) o lunes...domingo (horario base). */
 export interface DiaTurnoPayload {
   clave: string;
-  tipoDia: 'normal' | 'descanso';
+  tipoDia: 'normal' | 'descanso' | 'descanso_feriado';
   turno: 'manana' | 'tarde' | null;
   horaEntrada: string | null;
   horaSalida: string | null;

@@ -366,7 +366,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   tipoDiaLabel(tipo?: string): string {
     const map: Record<string, string> = {
-      descanso: 'Descanso', compensado: 'Compensado', vacaciones: 'Vacaciones',
+      descanso: 'Descanso', descanso_feriado: 'Descanso feriado', compensado: 'Compensado', vacaciones: 'Vacaciones',
       descanso_medico: 'Descanso médico', licencia: 'Licencia', permiso: 'Permiso'
     };
     return tipo ? (map[tipo] || tipo) : 'Laboral';

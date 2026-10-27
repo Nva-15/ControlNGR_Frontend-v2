@@ -109,6 +109,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   tiposDia = [
     { value: 'normal', label: 'Laboral', clase: 'bg-superficie text-stone-700', icon: 'bi-briefcase' },
     { value: 'descanso', label: 'Descanso', clase: 'bg-stone-200 text-stone-700', icon: 'bi-moon-stars' },
+    { value: 'descanso_feriado', label: 'Descanso feriado', clase: 'bg-teal-100 text-teal-800', icon: 'bi-calendar-heart' },
     { value: 'compensado', label: 'Compensado', clase: 'bg-sky-100 text-sky-800', icon: 'bi-calendar-check' },
     { value: 'vacaciones', label: 'Vacaciones', clase: 'bg-oro-100 text-oro-800', icon: 'bi-sun' },
     { value: 'descanso_medico', label: 'Descanso médico', clase: 'bg-red-100 text-red-800', icon: 'bi-heart-pulse' },
@@ -568,8 +569,11 @@ export class HorariosComponent implements OnInit, OnDestroy {
     for (const f of this.getFechasDeSemana()) {
       const d = empleado.dias[f];
       if (!d) continue; // aún no formaba parte de la semana (ingresó después)
-      dias.push(this.diaEditor(f, `${this.diasLabels[d.diaSemana] || d.diaSemana} ${this.formatFechaCorta(f)}`, d,
-        d.origenTipoDia === 'solicitud_aprobada'));
+      dias.push({
+        ...this.diaEditor(f, `${this.diasLabels[d.diaSemana] || d.diaSemana} ${this.formatFechaCorta(f)}`, d,
+          d.origenTipoDia === 'solicitud_aprobada'),
+        feriado: this.feriadoDe(f) || undefined
+      });
     }
     this.editor = {
       ...this.editor,
@@ -825,6 +829,16 @@ export class HorariosComponent implements OnInit, OnDestroy {
   /** "(SP) (PRE)" para mostrar en la grilla y en el Excel. */
   textoFunciones(dia: DetalleHorarioDia | undefined | null): string {
     return (dia?.funciones || []).map(c => `(${c})`).join(' ');
+  }
+
+  /** Nombre del feriado de esa fecha en la semana (o vacío). */
+  feriadoDe(fecha: string): string {
+    return this.semanaSeleccionada?.feriados?.[fecha] || '';
+  }
+
+  /** Tipos de día del formulario de un día: "Descanso feriado" solo si la fecha es feriado. */
+  tiposDiaPara(fecha: string | undefined): typeof this.tiposDia {
+    return this.tiposDia.filter(t => t.value !== 'descanso_feriado' || (!!fecha && !!this.feriadoDe(fecha)));
   }
 
   /** "Soporte presencial, Preparador de equipos" (al pasar el mouse por la celda). */

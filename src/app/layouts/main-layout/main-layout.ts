@@ -101,6 +101,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
           titulo: 'Asistencia',
           items: [
             { ruta: '/admin/asistencia', texto: 'Reglas de marcación', icono: 'bi-clipboard-check' },
+            { ruta: '/admin/turnos', texto: 'Turnos y funciones', icono: 'bi-clock-history' },
             { ruta: '/admin/facial', texto: 'Reconocimiento facial', icono: 'bi-person-bounding-box' },
             { ruta: '/admin/red', texto: 'Segmentos de red', icono: 'bi-router' },
             { ruta: '/admin/feriados', texto: 'Feriados', icono: 'bi-calendar-heart' },
