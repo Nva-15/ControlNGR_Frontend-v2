@@ -5,7 +5,7 @@ import { rolBadge, rolLabel } from '../../utils/roles';
 import { normalizar, opciones } from '../../utils/filtros';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HorariosService, TurnoSemanaPayload } from '../../services/horarios';
-import { EditorTurnoComponent, DiaEditorTurno } from './editor-turno';
+import { EditorTurnoComponent, DiaEditorTurno, PlantillaTurno } from './editor-turno';
 import { CONFIG_TURNOS_DEFECTO, ConfigTurnos, entradaSugerida, refrigerioSugerido, salidaSugerida } from '../../utils/turnos';
 import { EmpleadosService } from '../../services/empleados';
 import { AuthService } from '../../services/auth';
@@ -83,9 +83,9 @@ export class HorariosComponent implements OnInit, OnDestroy {
     titulo: '',
     subtitulo: '',
     dias: [] as DiaEditorTurno[],
-    marcados: [] as string[],
+    diaInicial: '',
+    plantillas: [] as PlantillaTurno[],
     guardarBaseInicial: false,
-    textoUnDia: '',
     guardando: false,
     empleado: null as EmpleadoHorarioSemanal | null,
     dia: null as DetalleHorarioDia | null
@@ -582,10 +582,9 @@ export class HorariosComponent implements OnInit, OnDestroy {
       titulo: 'Editar semana',
       subtitulo: `${empleado.empleadoNombre} · ${this.semanaSeleccionada.nombre}`,
       dias,
-      marcados: dia.origenTipoDia === 'solicitud_aprobada' ? [] : [dia.fecha],
+      diaInicial: dia.fecha,
+      plantillas: this.turnosDelEquipo(empleado),
       guardarBaseInicial: Object.values(empleado.dias).some(d => d?.origenTipoDia === 'sin_horario_base'),
-      textoUnDia: dia.origenTipoDia === 'solicitud_aprobada' ? ''
-        : `Editar solo el ${this.diasLabels[dia.diaSemana] || dia.diaSemana} ${this.formatFechaCorta(dia.fecha)}`,
       guardando: false,
       empleado,
       dia
@@ -608,9 +607,9 @@ export class HorariosComponent implements OnInit, OnDestroy {
           // Sin horario base: se propone trabajar de lunes a sábado y descansar el domingo
           dias: this.diasSemana.map(ds => this.diaEditor(ds, this.diasLabels[ds],
             porDia.get(ds) ?? { tipoDia: ds === 'domingo' ? 'descanso' : 'normal' }, false)),
-          marcados: [],
+          diaInicial: '',
+          plantillas: this.turnosDelEquipo(empleado),
           guardarBaseInicial: false,
-          textoUnDia: '',
           guardando: false,
           empleado,
           dia: null
@@ -634,10 +633,30 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   /** "Editar solo un día": formulario de un día (permisos, otro horario puntual...). */
-  editarUnDia() {
-    const { empleado, dia } = this.editor;
+  /** "Permiso u otro tipo de día": formulario completo de ese día. */
+  editarUnDia(fecha: string) {
+    const empleado = this.editor.empleado;
+    const dia = empleado?.dias[fecha];
     this.cerrarEditor();
     if (empleado && dia) this.abrirEditorDia(empleado, dia);
+  }
+
+  /** Turnos más usados esta semana por el equipo de la persona (fichas del editor), del más al menos frecuente. */
+  private turnosDelEquipo(empleado: EmpleadoHorarioSemanal): PlantillaTurno[] {
+    const conteo = new Map<string, { n: number; p: PlantillaTurno }>();
+    const equipo = (this.semanaSeleccionada?.empleados || [])
+      .filter(e => e.empleadoDepartamento === empleado.empleadoDepartamento);
+    for (const e of equipo) {
+      for (const d of Object.values(e.dias)) {
+        if (!d || (d.tipoDia || 'normal') !== 'normal' || !d.horaEntrada || !d.horaSalida) continue;
+        const k = `${d.turno}|${d.horaEntrada}|${d.horaSalida}|${[...(d.funciones || [])].sort().join(',')}`;
+        const actual = conteo.get(k);
+        if (actual) actual.n++;
+        else conteo.set(k, { n: 1, p: { turno: d.turno, horaEntrada: d.horaEntrada, horaSalida: d.horaSalida,
+          horaAlmuerzoInicio: d.horaAlmuerzoInicio, horaAlmuerzoFin: d.horaAlmuerzoFin, funciones: d.funciones } });
+      }
+    }
+    return [...conteo.values()].sort((a, b) => b.n - a.n).map(x => x.p);
   }
 
   guardarEditor(payload: TurnoSemanaPayload) {
