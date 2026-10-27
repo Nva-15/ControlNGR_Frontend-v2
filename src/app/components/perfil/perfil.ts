@@ -64,7 +64,11 @@ export class PerfilComponent implements OnInit {
     this.asistencia.miConfiguracion().subscribe({
       next: c => {
         this.miRecordHabilitado = !!c.miRecordHabilitado && c.marcaAsistencia;
-        if (this.miRecordHabilitado && this.route.snapshot.queryParamMap.get('tab') === 'asistencia') this.elegirPestana('asistencia');
+        // Desde el menú "Mi asistencia" (también si ya estaba en el perfil)
+        this.route.queryParamMap.subscribe(q => {
+          const tab = q.get('tab') === 'asistencia' && this.miRecordHabilitado ? 'asistencia' : 'datos';
+          if (tab !== this.pestana) this.elegirPestana(tab);
+        });
       },
       error: () => this.miRecordHabilitado = false
     });

@@ -24,9 +24,11 @@
             <div class="menu-separador mx-2 mb-2 h-px bg-white/10" aria-hidden="true"></div>
           }
           <ul class="space-y-0.5">
-            @for (item of grupo.items; track item.ruta) {
+            @for (item of grupo.items; track item.ruta + (item.query?.['tab'] || '')) {
+              @if (!item.visible || item.visible()) {
               <li>
-                <a [routerLink]="item.ruta" routerLinkActive="menu-activo" ariaCurrentWhenActive="page"
+                <a [routerLink]="item.ruta" [queryParams]="item.query" routerLinkActive="menu-activo" ariaCurrentWhenActive="page"
+                   [routerLinkActiveOptions]="item.query ? activoExacto : activoParcial"
                    class="menu-item flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium text-stone-400"
                    [attr.aria-label]="item.texto"
                    (mouseenter)="mostrarTooltip($event, item.texto)" (focus)="mostrarTooltip($event, item.texto)"
@@ -38,6 +40,7 @@
                   }
                 </a>
               </li>
+              }
             }
           </ul>
         </div>
