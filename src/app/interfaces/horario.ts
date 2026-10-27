@@ -64,7 +64,7 @@ export interface DetalleHorarioDia {
   horaAlmuerzoFin?: string;
   tipoDia?: string;        // normal, descanso, vacaciones, permiso, compensado
   turno?: string;          // manana, tarde
-  origenTipoDia?: string;  // "manual" | "solicitud_aprobada"
+  origenTipoDia?: string;  // "manual" | "solicitud_aprobada" | "sin_horario_base"
   solicitudId?: number;    // ID de solicitud si viene de una aprobada
   esHoy?: boolean;         // true si es el día actual
 }
@@ -95,6 +95,7 @@ export interface HorarioSemanalResponse {
   totalDiasLaborales?: number;
   totalDescansos?: number;
   totalVacaciones?: number;
+  colaboradoresAgregados?: number; // al copiar: quienes no estaban en la semana origen
 }
 
 // Lista resumida de semanas (para selector)

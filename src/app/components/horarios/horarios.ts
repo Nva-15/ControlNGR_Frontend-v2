@@ -439,6 +439,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
     this.horariosService.generarSemana(request).subscribe({
       next: (semana) => {
         this.notification.success(`Semana "${semana.nombre}" creada correctamente`, 'Éxito');
+        this.avisarAgregados(semana);
         this.cerrarModalCrear();
         this.cargarSemanas();
         this.seleccionarSemana(semana.id);
@@ -448,6 +449,18 @@ export class HorariosComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }
     });
+  }
+
+  /** Colaboradores que no estaban en la semana copiada (ingresos nuevos): entraron con su horario base. */
+  private avisarAgregados(semana: HorarioSemanalResponse) {
+    const n = semana.colaboradoresAgregados ?? 0;
+    if (n > 0) {
+      this.notification.info(
+        n === 1
+          ? 'Se agregó 1 colaborador que no estaba en la semana copiada, con su horario base. Revise su turno.'
+          : `Se agregaron ${n} colaboradores que no estaban en la semana copiada, con su horario base. Revise sus turnos.`,
+        'Colaboradores nuevos', 8000);
+    }
   }
 
   copiarSemanaActual() {
@@ -463,6 +476,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: (semana) => {
         this.notification.success(`Semana "${semana.nombre}" copiada correctamente`, 'Éxito');
+        this.avisarAgregados(semana);
         this.cargarSemanas();
         this.seleccionarSemana(semana.id);
       },
