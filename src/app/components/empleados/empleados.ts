@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { EmpleadosService } from '../../services/empleados';
@@ -21,7 +22,7 @@ import { puedeAsignarRol, rolBadge, rolLabel } from '../../utils/roles';
 @Component({
   selector: 'app-empleados',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, ModalComponent, AvatarComponent, CamaraFacialComponent, MenuAccionesComponent, PaginacionComponent],
+  imports: [ReactiveFormsModule, FormsModule, ModalComponent, AvatarComponent, CamaraFacialComponent, MenuAccionesComponent, PaginacionComponent, RouterLink],
   templateUrl: './empleados.html'
 })
 export class EmpleadosComponent implements OnInit {
@@ -158,6 +159,9 @@ export class EmpleadosComponent implements OnInit {
   }
 
   // ==================== PERMISOS ====================
+
+  /** Las jefaturas abren la ficha de asistencia del colaborador (Reportes → Ficha). */
+  get esJefatura(): boolean { return this.auth.isGestion(); }
 
   puedeEditar(e: EmpleadoResponse) { return this.auth.puedeEditarEmpleado({ id: e.id, rol: e.rol }); }
 

@@ -80,6 +80,10 @@
                     <button class="btn-icon accion-editar" title="Editar" aria-label="Editar"
                             data-accion="editar" (click)="editar(e)"><i class="bi bi-pencil-square"></i></button>
                   }
+                  @if (esJefatura) {
+                    <a class="btn-icon" title="Ver asistencia" aria-label="Ver asistencia" data-accion="asistencia"
+                       routerLink="/reportes" [queryParams]="{ ficha: e.id }"><i class="bi bi-bar-chart-line"></i></a>
+                  }
                   @if (puedeAdministrar(e)) {
                     <app-menu-acciones>
                       @if (tieneRostro(e)) {

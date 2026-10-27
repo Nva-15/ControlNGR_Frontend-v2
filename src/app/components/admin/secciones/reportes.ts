@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../services/admin';
 import { NotificationService } from '../../../services/notification.service';
 import { mensajeError } from '../../../utils/format';
+import { ConfigAlerta, TipoAlerta } from '../../../interfaces/reportes-asistencia';
+import { ALERTAS_ASISTENCIA } from '../../../utils/alertas-asistencia';
 
 /**
  * Reportes de asistencia: transparencia ("Mi récord" de cada colaborador, apagado por defecto) y
@@ -46,6 +48,39 @@ import { mensajeError } from '../../../utils/format';
         </div>
       </section>
 
+      <section class="card mt-6" data-config-alertas>
+        <div class="card-header">
+          <h3 class="card-title"><i class="bi bi-exclamation-triangle text-amber-600"></i> Alertas para jefaturas</h3>
+          <p class="text-xs text-stone-500">Aparecen en Reportes → Dashboard y como aviso en el menú de cada jefatura (solo de su equipo).
+            Son indicadores para conversar con la persona, no sanciones; el colaborador no ve alertas sobre sí mismo.</p>
+        </div>
+        <div class="divide-y divide-stone-100">
+          @for (a of alertas; track a.tipo) {
+            <div class="grid items-center gap-3 p-5 md:grid-cols-[auto_1fr_auto]" [attr.data-alerta-config]="a.tipo">
+              <input type="checkbox" class="checkbox" [(ngModel)]="a.activa" [attr.aria-label]="'Activar ' + info(a.tipo).titulo" />
+              <div [class.opacity-50]="!a.activa">
+                <p class="font-medium text-stone-900"><i class="bi" [class]="info(a.tipo).icono + ' ' + info(a.tipo).clase"></i> {{ info(a.tipo).titulo }}</p>
+                <p class="text-xs text-stone-500">{{ info(a.tipo).ayuda }}</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 text-sm" [class.opacity-50]="!a.activa">
+                <input type="number" class="input w-24" min="1" [max]="a.tipo === 'MINUTOS_TARDE' ? 10000 : 100" [(ngModel)]="a.umbral"
+                       [disabled]="!a.activa" [attr.aria-label]="'Umbral de ' + info(a.tipo).titulo" />
+                <span class="text-stone-600">{{ info(a.tipo).unidad }}</span>
+                @if (info(a.tipo).conPeriodo) {
+                  <select class="select w-36" [(ngModel)]="a.periodo" [disabled]="!a.activa" [attr.aria-label]="'Período de ' + info(a.tipo).titulo">
+                    <option value="MES">en el mes</option><option value="SEMANA">en la semana</option>
+                  </select>
+                } @else { <span class="text-stone-600">en el mes</span> }
+              </div>
+            </div>
+          }
+        </div>
+        <div class="flex justify-end border-t border-stone-100 p-4">
+          <button class="btn-primary" [disabled]="guardandoAlertas || !cambioAlertas || !alertasValidas" (click)="guardarAlertas()" data-guardar-alertas>
+            {{ guardandoAlertas ? 'Guardando...' : 'Guardar alertas' }}</button>
+        </div>
+      </section>
+
       <section class="card mt-6" data-recalcular>
         <div class="card-header">
           <h3 class="card-title"><i class="bi bi-arrow-repeat text-vino-700"></i> Datos del dashboard</h3>
@@ -74,8 +109,36 @@ export class AdminReportesComponent implements OnInit {
   recalcularDesde = '';
   recalculando = false;
   private original = { habilitado: false, desde: 'INGRESO' };
+  alertas: ConfigAlerta[] = [];
+  private alertasOriginales = '';
+  guardandoAlertas = false;
+
+  info(tipo: TipoAlerta) { return ALERTAS_ASISTENCIA[tipo]; }
+
+  get cambioAlertas(): boolean { return JSON.stringify(this.alertas) !== this.alertasOriginales; }
+
+  get alertasValidas(): boolean {
+    return this.alertas.every(a => Number.isInteger(Number(a.umbral)) && a.umbral >= 1 && a.umbral <= (a.tipo === 'MINUTOS_TARDE' ? 10000 : 100));
+  }
+
+  guardarAlertas() {
+    this.guardandoAlertas = true;
+    this.admin.guardarAlertasAsistencia(this.alertas.map(a => ({ ...a, umbral: Number(a.umbral) }))).subscribe({
+      next: c => {
+        this.alertas = c;
+        this.alertasOriginales = JSON.stringify(c);
+        this.guardandoAlertas = false;
+        this.notification.success('Alertas guardadas. Se recalcularon las del período en curso.');
+      },
+      error: e => { this.guardandoAlertas = false; this.notification.error(mensajeError(e)); }
+    });
+  }
 
   ngOnInit() {
+    this.admin.alertasAsistencia().subscribe({
+      next: c => { this.alertas = c; this.alertasOriginales = JSON.stringify(c); },
+      error: e => this.notification.error(mensajeError(e))
+    });
     this.admin.parametros().subscribe({
       next: ps => {
         const habilitado = ps.find(p => p.clave === 'MI_RECORD_HABILITADO')?.valor === 'true';

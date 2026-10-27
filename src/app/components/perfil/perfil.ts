@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth';
 import { ApiConfigService } from '../../services/api-config.service';
@@ -10,6 +10,9 @@ import { ModalComponent } from '../shared/modal/modal.component';
 import { CamaraFacialComponent } from '../shared/camara-facial/camara-facial.component';
 import { FacialService } from '../../services/facial';
 import { AsistenciaService } from '../../services/asistencia';
+import { ReportesAsistenciaService } from '../../services/reportes-asistencia';
+import { FichaAsistencia } from '../../interfaces/reportes-asistencia';
+import { FichaAsistenciaComponent } from '../reportes/ficha-asistencia';
 import { EstadoFacial } from '../../interfaces/facial';
 import { fechaCorta, mensajeError } from '../../utils/format';
 import { rolLabel } from '../../utils/roles';
@@ -18,7 +21,7 @@ import { rolLabel } from '../../utils/roles';
 @Component({
   selector: 'app-perfil',
   standalone: true,
-  imports: [FormsModule, RouterLink, AvatarComponent, ModalComponent, CamaraFacialComponent],
+  imports: [FormsModule, RouterLink, AvatarComponent, ModalComponent, CamaraFacialComponent, FichaAsistenciaComponent],
   templateUrl: './perfil.html'
 })
 export class PerfilComponent implements OnInit {
@@ -28,8 +31,15 @@ export class PerfilComponent implements OnInit {
   private notification = inject(NotificationService);
   private facial = inject(FacialService);
   private asistencia = inject(AsistenciaService);
-  /** El panel habilitó que cada colaborador vea su propio récord de asistencia. */
+  private reportes = inject(ReportesAsistenciaService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  /** El panel habilitó que cada colaborador vea su propio récord de asistencia (y la persona marca asistencia). */
   miRecordHabilitado = false;
+  pestana: 'datos' | 'asistencia' = 'datos';
+  record: FichaAsistencia | null = null;
+  cargandoRecord = false;
+  errorRecord = '';
 
   perfil: any = null;
   descripcion = '';
@@ -52,9 +62,26 @@ export class PerfilComponent implements OnInit {
     this.cargar();
     this.cargarEstadoFacial();
     this.asistencia.miConfiguracion().subscribe({
-      next: c => this.miRecordHabilitado = !!c.miRecordHabilitado && c.marcaAsistencia,
+      next: c => {
+        this.miRecordHabilitado = !!c.miRecordHabilitado && c.marcaAsistencia;
+        if (this.miRecordHabilitado && this.route.snapshot.queryParamMap.get('tab') === 'asistencia') this.elegirPestana('asistencia');
+      },
       error: () => this.miRecordHabilitado = false
     });
+  }
+
+  /** "Mi asistencia" se carga la primera vez que se abre la pestaña. */
+  elegirPestana(p: 'datos' | 'asistencia') {
+    this.pestana = p;
+    this.router.navigate([], { queryParams: { tab: p === 'asistencia' ? 'asistencia' : null }, replaceUrl: true });
+    if (p === 'asistencia' && !this.record && !this.cargandoRecord) {
+      this.cargandoRecord = true;
+      this.errorRecord = '';
+      this.reportes.miRecord().subscribe({
+        next: r => { this.record = r; this.cargandoRecord = false; },
+        error: e => { this.errorRecord = mensajeError(e, 'No se pudo cargar su récord'); this.cargandoRecord = false; }
+      });
+    }
   }
 
   // ==================== RECONOCIMIENTO FACIAL ====================

@@ -43,6 +43,12 @@ export class NotificacionesService {
     }
   }
 
+  /** Al ver las alertas de asistencia dejan de contar como nuevas en el menú. */
+  limpiarAlertasAsistencia() {
+    const actual = this.resumenSubject.getValue();
+    if (actual) this.resumenSubject.next({ ...actual, alertasAsistencia: 0 });
+  }
+
   limpiar() {
     this.resumenSubject.next(null);
   }

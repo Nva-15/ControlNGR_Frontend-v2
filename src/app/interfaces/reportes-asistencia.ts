@@ -54,6 +54,29 @@ export interface FiltroDashboard {
   personal?: 'activos' | 'cesados' | 'todos';
 }
 
+export type TipoAlerta = 'FALTAS' | 'FALTAS_SEGUIDAS' | 'TARDANZAS' | 'MINUTOS_TARDE' | 'SALIDAS_AUTOMATICAS';
+
+export interface AlertaAsistencia {
+  tipo: TipoAlerta;
+  periodo: 'MES' | 'SEMANA';
+  empleadoId: number;
+  nombre: string;
+  departamento: string | null;
+  valor: number;
+  umbral: number;
+  detalle: string | null;
+  desde: string;
+  hasta: string;
+  nueva: boolean;
+}
+
+export interface ConfigAlerta {
+  tipo: TipoAlerta;
+  activa: boolean;
+  umbral: number;
+  periodo: 'MES' | 'SEMANA';
+}
+
 export interface DiaFicha {
   fecha: string;
   estado: string;

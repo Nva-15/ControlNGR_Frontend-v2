@@ -6,7 +6,24 @@
   <a routerLink="/cambiar-password" class="btn-secondary"><i class="bi bi-key"></i> Cambiar contraseña</a>
 </div>
 
-@if (!perfil) {
+@if (miRecordHabilitado) {
+  <nav class="tabs mb-5" role="tablist" data-tabs-perfil>
+    <button type="button" role="tab" class="tab" [class.tab-active]="pestana === 'datos'" [attr.aria-selected]="pestana === 'datos'" (click)="elegirPestana('datos')"><i class="bi bi-person"></i> Mis datos</button>
+    <button type="button" role="tab" class="tab" [class.tab-active]="pestana === 'asistencia'" [attr.aria-selected]="pestana === 'asistencia'" (click)="elegirPestana('asistencia')" data-tab-mi-asistencia><i class="bi bi-calendar2-check"></i> Mi asistencia</button>
+  </nav>
+}
+
+@if (pestana === 'asistencia' && miRecordHabilitado) {
+  @if (cargandoRecord) {
+    <div class="flex justify-center py-16"><span class="spinner"></span></div>
+  } @else if (errorRecord) {
+    <div class="card"><div class="empty-state"><i class="bi bi-lock text-4xl"></i><p>{{ errorRecord }}</p></div></div>
+  } @else if (record) {
+    <p class="alert-info mb-5" data-aviso-record><i class="bi bi-info-circle"></i>
+      <span>Su récord de asistencia, frente a su horario programado. Es de solo lectura: si encuentra un error en alguna marcación o en su horario, comuníquese con su jefatura.</span></p>
+    <app-ficha-asistencia [datos]="record" />
+  }
+} @else if (!perfil) {
   <div class="flex justify-center py-16"><span class="spinner"></span></div>
 } @else {
   <div class="grid gap-6 lg:grid-cols-3">
@@ -21,10 +38,6 @@
       <h2 class="mt-4 text-lg font-semibold">{{ perfil.nombre }}</h2>
       <p class="text-stone-500">{{ perfil.cargo }}</p>
       <span class="badge-vino mt-2">{{ rolLabel(perfil.rol) }}</span>
-      @if (miRecordHabilitado) {
-        <a routerLink="/mi-record" class="btn-secondary btn-sm mt-4 flex w-full justify-center" data-mi-record>
-          <i class="bi bi-calendar2-check"></i> Mi récord de asistencia</a>
-      }
 
       <div class="mt-6">
         @if (archivo) {

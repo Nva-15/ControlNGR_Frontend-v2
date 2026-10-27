@@ -445,6 +445,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (r.solicitudesPendientes > 0) {
           this.notification.info(`Hay ${r.solicitudesPendientes} solicitud(es) esperando su aprobación.`, 'Por aprobar');
         }
+        if ((r.alertasAsistencia || 0) > 0) {
+          this.notification.warning(`Hay ${r.alertasAsistencia} alerta(s) de asistencia nueva(s) en su equipo. Revíselas en Reportes de asistencia → Dashboard.`, 'Alertas de asistencia', 7000);
+        }
       }
     });
   }
