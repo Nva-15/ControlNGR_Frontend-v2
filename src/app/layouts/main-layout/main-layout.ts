@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, computed } from '@angular/core';
-import { Router, RouterLink, RouterOutlet, RouterLinkActive, NavigationEnd } from '@angular/router';
+import { Router, RouterLink, RouterOutlet, RouterLinkActive, NavigationEnd, IsActiveMatchOptions } from '@angular/router';
 import { Subscription, filter } from 'rxjs';
 import { AuthService } from '../../services/auth';
 import { NotificacionesService } from '../../services/notificaciones';
@@ -19,6 +19,10 @@ interface ItemMenu {
   texto: string;
   icono: string;
   badge?: () => number;
+  /** Parámetros de la dirección (p. ej. la pestaña del perfil). */
+  query?: Record<string, string>;
+  /** Si se indica, el ítem solo aparece cuando devuelve true (se reevalúa al refrescar el resumen). */
+  visible?: () => boolean;
 }
 
 interface GrupoMenu {
@@ -51,6 +55,9 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
   nombre = computed(() => this.empleado()?.nombre || this.usuario()?.username || '');
 
   grupos: GrupoMenu[] = [];
+  /** "Mi asistencia" (/perfil?tab=asistencia) solo se marca activo en esa pestaña; el resto, por su ruta. */
+  readonly activoExacto: IsActiveMatchOptions = { paths: 'exact', queryParams: 'exact', matrixParams: 'ignored', fragment: 'ignored' };
+  readonly activoParcial: IsActiveMatchOptions = { paths: 'subset', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' };
 
   ngOnInit() {
     this.grupos = this.construirMenu();
@@ -135,6 +142,8 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
           { ruta: '/solicitudes', texto: 'Solicitudes', icono: 'bi-send-check', badge: () => this.badgeSolicitudes() },
           { ruta: '/saldos', texto: 'Mis saldos', icono: 'bi-wallet2' },
           { ruta: '/horarios', texto: 'Horarios', icono: 'bi-calendar-week' },
+          { ruta: '/perfil', query: { tab: 'asistencia' }, texto: 'Mi asistencia', icono: 'bi-calendar2-check',
+            visible: () => !!this.resumen?.miRecordHabilitado },
           { ruta: '/eventos', texto: 'Eventos', icono: 'bi-megaphone', badge: () => this.resumen?.eventosSinResponder || 0 },
           { ruta: '/organigrama', texto: 'Organigrama', icono: 'bi-diagram-3' },
           { ruta: '/herramientas', texto: '+ Herramientas', icono: 'bi-grid-3x3-gap' },
