@@ -1,26 +1,33 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError, shareReplay } from 'rxjs/operators';
+import { catchError, map, shareReplay } from 'rxjs/operators';
 import {
   Horario,
   HorarioResponse,
   HorarioSemanal,
   HorarioSemanalRequest,
   HorarioSemanalResponse,
-  DetalleHorarioDia
+  DetalleHorarioDia,
+  FuncionTurno
 } from '../interfaces/horario';
 import { ApiConfigService } from './api-config.service';
 import { CONFIG_TURNOS_DEFECTO, ConfigTurnos } from '../utils/turnos';
 
-/** Un mismo turno para varios días: claves = fechas (semana) o lunes...domingo (horario base). */
-export interface TurnoSemanaPayload {
-  turno: 'manana' | 'tarde';
+/** Un día: laboral (turno, horas y funciones) o descanso. Clave = fecha (semana) o lunes...domingo (horario base). */
+export interface DiaTurnoPayload {
+  clave: string;
+  tipoDia: 'normal' | 'descanso';
+  turno: 'manana' | 'tarde' | null;
   horaEntrada: string | null;
   horaSalida: string | null;
   horaAlmuerzoInicio: string | null;
   horaAlmuerzoFin: string | null;
-  dias: { [clave: string]: 'normal' | 'descanso' };
+  funciones: string[];
+}
+
+export interface TurnoSemanaPayload {
+  dias: DiaTurnoPayload[];
   guardarComoBase?: boolean;
 }
 
@@ -42,10 +49,16 @@ export class HorariosService {
   /** Jornada por turno y refrigerio por defecto; si falla, se usan los valores habituales. */
   configuracionTurnos(): Observable<ConfigTurnos> {
     this.configTurnos$ ??= this.http.get<ConfigTurnos>(`${this.apiUrl}/configuracion-turnos`).pipe(
+      map(c => ({ ...CONFIG_TURNOS_DEFECTO, ...c })),
       catchError(() => of(CONFIG_TURNOS_DEFECTO)),
       shareReplay(1)
     );
     return this.configTurnos$;
+  }
+
+  /** Catálogo de funciones de turno (incluye las inactivas para mostrar las ya asignadas). */
+  funcionesTurno(): Observable<FuncionTurno[]> {
+    return this.http.get<FuncionTurno[]>(`${this.apiUrl}/funciones-turno`).pipe(catchError(() => of([])));
   }
 
   /** Arma la semana de un colaborador en un paso (días laborales con el turno, los demás de descanso). */

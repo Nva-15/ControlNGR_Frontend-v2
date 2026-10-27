@@ -47,6 +47,7 @@ export interface CampoParametro {
                   </select>
                 }
                 @case ('FECHA') { <input type="date" class="input" [(ngModel)]="valores[c.clave]" [name]="c.clave" /> }
+                @case ('HORA') { <input type="time" class="input" [(ngModel)]="valores[c.clave]" [name]="c.clave" /> }
                 @default {
                   <div class="flex items-center gap-2">
                     <input type="number" class="input" [min]="c.min ?? 0" [max]="c.max ?? null" [step]="c.paso || 1"

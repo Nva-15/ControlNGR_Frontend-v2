@@ -132,7 +132,7 @@
                 @for (f of getFechasDeSemana(); track f) {
                   @let dia = getDiaDeEmpleado(emp, f);
                   <td class="border-t border-stone-100 p-1">
-                    <button type="button" class="relative flex h-14 w-full flex-col items-center justify-center rounded-lg text-xs ring-1 ring-inset ring-stone-200 transition"
+                    <button type="button" class="relative flex h-16 w-full flex-col items-center justify-center rounded-lg text-xs ring-1 ring-inset ring-stone-200 transition"
                             [class]="getTipoDiaClass(dia) + (tienePermiso() && dia ? ' hover:ring-2 hover:ring-vino-300 cursor-pointer' : ' cursor-default')"
                             [class.ring-vino-400]="esHoy(f)"
                             (click)="dia && editarDia(emp, dia)">
@@ -148,6 +148,10 @@
                       } @else if (!dia.tipoDia || dia.tipoDia === 'normal') {
                         <span class="font-semibold tabular-nums">{{ dia.horaEntrada?.substring(0,5) || '--' }}</span>
                         <span class="tabular-nums text-stone-500">{{ dia.horaSalida?.substring(0,5) || '--' }}</span>
+                        @if (dia.funciones?.length) {
+                          <span class="text-[10px] font-semibold leading-tight text-sky-700" data-funciones-celda
+                                [title]="nombresFunciones(dia)">{{ textoFunciones(dia) }}</span>
+                        }
                       } @else {
                         <i class="bi" [class]="getTipoDiaIcon(dia.tipoDia)"></i>
                         <span class="mt-0.5 font-medium">{{ getTipoDiaLabel(dia.tipoDia) }}</span>
@@ -171,8 +175,11 @@
     }
   </div>
   @if (tienePermiso()) {
-    <p class="field-help mt-3"><i class="bi bi-info-circle"></i> Haga clic en una celda para editar el turno.
-      Los días con <i class="bi bi-bookmark-check-fill text-emerald-600"></i> vienen de una solicitud aprobada.</p>
+    <p class="field-help mt-3"><i class="bi bi-info-circle"></i> Haga clic en una celda para editar la semana del colaborador.
+      Los días con <i class="bi bi-bookmark-check-fill text-emerald-600"></i> vienen de una solicitud aprobada.
+      @if (funcionesTurno.length) {
+        Funciones: @for (f of funcionesTurno; track f.codigo) { <b>{{ f.codigo }}</b> {{ f.nombre }}{{ $last ? '.' : ' · ' }} }
+      }</p>
   }
 }
 
@@ -229,6 +236,19 @@
           <div><label class="label">Fin de refrigerio</label><input type="time" class="input" formControlName="horaAlmuerzoFin" /></div>
         }
       </div>
+      @if (funcionesElegibles(funcionesDia).length) {
+        <div>
+          <p class="label">Funciones en este turno</p>
+          <div class="flex flex-wrap gap-1.5">
+            @for (f of funcionesElegibles(funcionesDia); track f.codigo) {
+              <button type="button" class="rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset" [title]="f.nombre"
+                      [attr.data-funcion-dia]="f.codigo"
+                      [class]="funcionesDia.includes(f.codigo) ? 'bg-sky-700 text-white ring-sky-700' : 'text-stone-600 ring-stone-300 hover:bg-stone-100'"
+                      (click)="alternarFuncionDia(f.codigo)">{{ f.codigo }} · {{ f.nombre }}</button>
+            }
+          </div>
+        </div>
+      }
     } @else {
       <p class="alert-info"><i class="bi bi-info-circle"></i> En días que no son laborales el colaborador no puede marcar asistencia.</p>
     }
@@ -264,8 +284,7 @@
 
 <!-- Semana del colaborador u horario base: varios días a la vez -->
 <app-editor-turno [abierto]="editor.abierto" [titulo]="editor.titulo" [subtitulo]="editor.subtitulo"
-                  [dias]="editor.dias" [inicial]="editor.inicial" [config]="configTurnos"
-                  [horariosDistintos]="editor.horariosDistintos"
+                  [dias]="editor.dias" [marcadosIniciales]="editor.marcados" [config]="configTurnos" [funciones]="funcionesTurno"
                   [mostrarGuardarBase]="editor.modo === 'semana'" [guardarBaseInicial]="editor.guardarBaseInicial"
                   [textoGuardar]="editor.modo === 'base' ? 'Guardar horario base' : 'Guardar semana'"
                   [textoUnDia]="editor.textoUnDia" [guardando]="editor.guardando"

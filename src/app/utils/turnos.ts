@@ -4,14 +4,27 @@ export interface ConfigTurnos {
   jornadaTardeHoras: number;
   refrigerioDespuesHoras: number;
   refrigerioMinutos: number;
+  /** Entrada que se propone al elegir cada turno ("08:30", "17:00"). */
+  entradaMananaSugerida: string;
+  entradaTardeSugerida: string;
+  /** Días de descanso permitidos por semana. */
+  maxDescansos: number;
 }
 
 export const CONFIG_TURNOS_DEFECTO: ConfigTurnos = {
   jornadaMananaHoras: 9,
   jornadaTardeHoras: 8,
   refrigerioDespuesHoras: 4,
-  refrigerioMinutos: 60
+  refrigerioMinutos: 60,
+  entradaMananaSugerida: '08:30',
+  entradaTardeSugerida: '17:00',
+  maxDescansos: 1
 };
+
+/** Entrada sugerida del turno. */
+export function entradaSugerida(turno: string, cfg: ConfigTurnos): string {
+  return turno === 'tarde' ? cfg.entradaTardeSugerida : cfg.entradaMananaSugerida;
+}
 
 const DIA = 24 * 60;
 

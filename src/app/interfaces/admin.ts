@@ -3,7 +3,7 @@ import { SaldoResumen } from './saldo';
 export interface Parametro {
   clave: string;
   valor: string;
-  tipoDato: 'TEXTO' | 'NUMERO' | 'BOOLEANO' | 'FECHA';
+  tipoDato: 'TEXTO' | 'NUMERO' | 'BOOLEANO' | 'FECHA' | 'HORA';
   descripcion?: string;
 }
 

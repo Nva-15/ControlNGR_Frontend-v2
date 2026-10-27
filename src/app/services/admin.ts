@@ -1,3 +1,4 @@
+import { FuncionTurno } from '../interfaces/horario';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -96,6 +97,11 @@ export class AdminService {
   tiposSolicitud(): Observable<TipoSolicitud[]> { return this.http.get<TipoSolicitud[]>(`${this.url}/tipos-solicitud`); }
   actualizarTipoSolicitud(t: TipoSolicitud): Observable<TipoSolicitud> {
     return this.http.put<TipoSolicitud>(`${this.url}/tipos-solicitud/${t.id}`, t);
+  }
+  funcionesTurno(): Observable<FuncionTurno[]> { return this.http.get<FuncionTurno[]>(`${this.url}/funciones-turno`); }
+  guardarFuncionTurno(f: Partial<FuncionTurno>): Observable<FuncionTurno> {
+    return f.id ? this.http.put<FuncionTurno>(`${this.url}/funciones-turno/${f.id}`, f)
+                : this.http.post<FuncionTurno>(`${this.url}/funciones-turno`, f);
   }
   motivosLicencia(): Observable<MotivoLicencia[]> { return this.http.get<MotivoLicencia[]>(`${this.url}/motivos-licencia`); }
   guardarMotivo(m: Partial<MotivoLicencia>): Observable<MotivoLicencia> {
