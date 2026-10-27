@@ -105,6 +105,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
             { ruta: '/admin/facial', texto: 'Reconocimiento facial', icono: 'bi-person-bounding-box' },
             { ruta: '/admin/red', texto: 'Segmentos de red', icono: 'bi-router' },
             { ruta: '/admin/feriados', texto: 'Feriados', icono: 'bi-calendar-heart' },
+            { ruta: '/admin/reportes', texto: 'Reportes de asistencia', icono: 'bi-bar-chart-line' },
             { ruta: '/horarios', texto: 'Horarios', icono: 'bi-calendar-week' },
           ]
         },

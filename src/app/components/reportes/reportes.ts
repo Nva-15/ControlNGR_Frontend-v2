@@ -9,12 +9,16 @@ import { NotificationService } from '../../services/notification.service';
 import { ReporteAsistencia } from '../../interfaces/asistencia';
 import { rolBadge, rolLabel } from '../../utils/roles';
 import { normalizar, opciones } from '../../utils/filtros';
-import { hoyIso } from '../../utils/format';
+import { hoyIso, mensajeError } from '../../utils/format';
+import { DashboardAsistenciaComponent } from './dashboard-asistencia';
+import { FichaAsistenciaComponent } from './ficha-asistencia';
+import { ReportesAsistenciaService } from '../../services/reportes-asistencia';
+import { FichaAsistencia } from '../../interfaces/reportes-asistencia';
 
 @Component({
   selector: 'app-reportes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DashboardAsistenciaComponent, FichaAsistenciaComponent],
   templateUrl: './reportes.html'
 })
 export class ReportesComponent implements OnInit, OnDestroy {
@@ -23,6 +27,17 @@ export class ReportesComponent implements OnInit, OnDestroy {
   private empleadosService = inject(EmpleadosService);
   private exportService = inject(ExportService);
   private notification = inject(NotificationService);
+  private reportesAsistencia = inject(ReportesAsistenciaService);
+
+  /** Pestaña: detalle por día (tabla), dashboard del equipo o ficha de un colaborador. */
+  vista: 'detalle' | 'dashboard' | 'ficha' = 'detalle';
+  ficha: FichaAsistencia | null = null;
+  fichaEmpleadoId: number | null = null;
+  fichaPeriodo: 'ingreso' | 'anio' | 'doce' | 'tres' = 'ingreso';
+  cargandoFicha = false;
+  busquedaFicha = '';
+  resultadosFicha: any[] = [];
+  private temporizadorBusqueda: ReturnType<typeof setTimeout> | undefined;
 
   reporteCompleto: ReporteAsistencia[] = [];
   reporteFiltrado: ReporteAsistencia[] = [];
@@ -76,12 +91,48 @@ export class ReportesComponent implements OnInit, OnDestroy {
     this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 60000);
   }
 
+  /** Busca colaboradores por nombre o DNI (con una pausa para no consultar en cada tecla). */
+  buscarColaborador() {
+    clearTimeout(this.temporizadorBusqueda);
+    const q = this.busquedaFicha.trim();
+    if (q.length < 2) { this.resultadosFicha = []; return; }
+    this.temporizadorBusqueda = setTimeout(() => {
+      this.empleadosService.pagina({ q, estado: 'todos', tamano: 8 }).subscribe({
+        next: p => this.resultadosFicha = p.contenido,
+        error: () => this.resultadosFicha = []
+      });
+    }, 300);
+  }
+
+  verFicha(empleadoId: number) {
+    this.vista = 'ficha';
+    this.fichaEmpleadoId = empleadoId;
+    this.resultadosFicha = [];
+    this.busquedaFicha = '';
+    this.cargarFicha();
+  }
+
+  cargarFicha() {
+    if (!this.fichaEmpleadoId) return;
+    const hoy = new Date(hoyIso() + 'T00:00:00');
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const desde = this.fichaPeriodo === 'anio' ? iso(new Date(hoy.getFullYear(), 0, 1))
+      : this.fichaPeriodo === 'doce' ? iso(new Date(hoy.getFullYear() - 1, hoy.getMonth(), hoy.getDate() + 1))
+      : this.fichaPeriodo === 'tres' ? iso(new Date(hoy.getFullYear(), hoy.getMonth() - 3, hoy.getDate() + 1))
+      : undefined;
+    this.cargandoFicha = true;
+    this.reportesAsistencia.ficha(this.fichaEmpleadoId, desde).subscribe({
+      next: f => { this.ficha = f; this.cargandoFicha = false; },
+      error: e => { this.cargandoFicha = false; this.notification.error(mensajeError(e), 'No se pudo cargar la ficha'); }
+    });
+  }
+
   ngOnDestroy(): void {
     if (this.intervaloAutoRefresh) clearInterval(this.intervaloAutoRefresh);
   }
 
   private refrescarDatos(): void {
-    if (this.isLoading || !this.fechaInicio || !this.fechaFin) return;
+    if (this.vista !== 'detalle' || this.isLoading || !this.fechaInicio || !this.fechaFin) return;
     this.asistenciaService.getReporteAsistencia(this.fechaInicio, this.fechaFin).subscribe({
       next: (data) => {
         this.reporteCompleto = this.filtrarPorPermisoDeRol(data);

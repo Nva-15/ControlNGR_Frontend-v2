@@ -21,6 +21,10 @@
       <h2 class="mt-4 text-lg font-semibold">{{ perfil.nombre }}</h2>
       <p class="text-stone-500">{{ perfil.cargo }}</p>
       <span class="badge-vino mt-2">{{ rolLabel(perfil.rol) }}</span>
+      @if (miRecordHabilitado) {
+        <a routerLink="/mi-record" class="btn-secondary btn-sm mt-4 flex w-full justify-center" data-mi-record>
+          <i class="bi bi-calendar2-check"></i> Mi récord de asistencia</a>
+      }
 
       <div class="mt-6">
         @if (archivo) {
