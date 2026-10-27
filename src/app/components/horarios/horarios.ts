@@ -4,7 +4,9 @@ import { ModalComponent } from '../shared/modal/modal.component';
 import { rolBadge, rolLabel } from '../../utils/roles';
 import { normalizar, opciones } from '../../utils/filtros';
 import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { HorariosService } from '../../services/horarios';
+import { HorariosService, TurnoSemanaPayload } from '../../services/horarios';
+import { EditorTurnoComponent, DiaEditorTurno, TurnoInicial } from './editor-turno';
+import { CONFIG_TURNOS_DEFECTO, ConfigTurnos, refrigerioSugerido, salidaSugerida } from '../../utils/turnos';
 import { EmpleadosService } from '../../services/empleados';
 import { AuthService } from '../../services/auth';
 import { NotificationService } from '../../services/notification.service';
@@ -21,7 +23,7 @@ import {
 @Component({
   selector: 'app-horarios',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, ModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, ModalComponent, EditorTurnoComponent],
   templateUrl: './horarios.html'
 })
 export class HorariosComponent implements OnInit, OnDestroy {
@@ -69,6 +71,23 @@ export class HorariosComponent implements OnInit, OnDestroy {
 
   private intervaloAutoRefresh: any;
 
+  // Editor de varios días (semana del colaborador u horario base)
+  configTurnos: ConfigTurnos = CONFIG_TURNOS_DEFECTO;
+  editor = {
+    abierto: false,
+    modo: 'semana' as 'semana' | 'base',
+    titulo: '',
+    subtitulo: '',
+    dias: [] as DiaEditorTurno[],
+    inicial: null as TurnoInicial | null,
+    horariosDistintos: false,
+    guardarBaseInicial: false,
+    textoUnDia: '',
+    guardando: false,
+    empleado: null as EmpleadoHorarioSemanal | null,
+    dia: null as DetalleHorarioDia | null
+  };
+
   diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 
   diasLabels: { [key: string]: string } = {
@@ -110,6 +129,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
       next: r => this.roles = [{ value: '', label: 'Todos los roles' }, ...r.map(x => ({ value: x.codigo, label: x.nombre }))],
       error: () => { /* se mantiene "Todos los roles" */ }
     });
+    this.horariosService.configuracionTurnos().subscribe(c => this.configTurnos = c);
     this.cargarSemanas();
     this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 30000);
   }
@@ -119,7 +139,7 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   private refrescarDatos() {
-    if (this.isLoading || this.mostrarModal || this.mostrarModalCrear) return;
+    if (this.isLoading || this.mostrarModal || this.mostrarModalCrear || this.editor.abierto) return;
     // Refrescar lista de semanas disponibles (detecta nuevas activaciones)
     this.horariosService.getSemanasHorarios().subscribe({
       next: (semanas) => {
@@ -535,7 +555,136 @@ export class HorariosComponent implements OnInit, OnDestroy {
 
   // ========== MODAL EDITAR DIA ==========
 
+  // ==================== EDITOR DE VARIOS DÍAS ====================
+
+  /** Clic en un día: abre la semana completa del colaborador (trabaja/descansa, turno y horas). */
   editarDia(empleado: EmpleadoHorarioSemanal, dia: DetalleHorarioDia) {
+    if (!this.tienePermiso() || !this.semanaSeleccionada) return;
+    const dias: DiaEditorTurno[] = [];
+    const laborales: DetalleHorarioDia[] = [];
+    for (const f of this.getFechasDeSemana()) {
+      const d = empleado.dias[f];
+      if (!d) continue; // aún no formaba parte de la semana (ingresó después)
+      const bloqueado = d.origenTipoDia === 'solicitud_aprobada';
+      const tipo = d.tipoDia || 'normal';
+      dias.push({
+        clave: f,
+        etiqueta: `${this.diasLabels[d.diaSemana] || d.diaSemana} ${this.formatFechaCorta(f)}`,
+        tipo,
+        bloqueado,
+        etiquetaTipo: this.getTipoDiaLabel(tipo)
+      });
+      if (!bloqueado && tipo === 'normal' && d.horaEntrada) laborales.push(d);
+    }
+    const referencia = (dia.tipoDia || 'normal') === 'normal' && dia.horaEntrada ? dia : laborales[0];
+    this.editor = {
+      ...this.editor,
+      abierto: true,
+      modo: 'semana',
+      titulo: 'Editar semana',
+      subtitulo: `${empleado.empleadoNombre} · ${this.semanaSeleccionada.nombre}`,
+      dias,
+      inicial: referencia ? this.turnoDe(referencia) : null,
+      horariosDistintos: new Set(laborales.map(d => `${d.turno}|${d.horaEntrada}|${d.horaSalida}`)).size > 1,
+      guardarBaseInicial: Object.values(empleado.dias).some(d => d?.origenTipoDia === 'sin_horario_base'),
+      textoUnDia: dia.origenTipoDia === 'solicitud_aprobada' ? ''
+        : `Editar solo el ${this.diasLabels[dia.diaSemana] || dia.diaSemana} ${this.formatFechaCorta(dia.fecha)}`,
+      guardando: false,
+      empleado,
+      dia
+    };
+  }
+
+  /** Horario base del colaborador (lunes a domingo): se usa para ingresos nuevos y días sin horario. */
+  editarHorarioBase(empleado: EmpleadoHorarioSemanal) {
+    if (!this.tienePermiso()) return;
+    this.horariosService.getHorariosPorEmpleado(empleado.empleadoId).subscribe({
+      next: base => {
+        const porDia = new Map(base.map(h => [h.diaSemana, h]));
+        const laborales = base.filter(h => (h.tipoDia || 'normal') === 'normal' && h.horaEntrada);
+        this.editor = {
+          ...this.editor,
+          abierto: true,
+          modo: 'base',
+          titulo: 'Horario base',
+          subtitulo: base.length ? empleado.empleadoNombre
+            : `${empleado.empleadoNombre} · aún no tiene horario base`,
+          dias: this.diasSemana.map(ds => {
+            const h = porDia.get(ds);
+            const tipo = h ? (h.tipoDia || 'normal') : (ds === 'domingo' ? 'descanso' : 'normal');
+            return { clave: ds, etiqueta: this.diasLabels[ds], tipo, etiquetaTipo: this.getTipoDiaLabel(tipo) };
+          }),
+          inicial: laborales.length ? this.turnoDe(laborales[0]) : null,
+          horariosDistintos: new Set(laborales.map(h => `${h.turno}|${h.horaEntrada}|${h.horaSalida}`)).size > 1,
+          guardarBaseInicial: false,
+          textoUnDia: '',
+          guardando: false,
+          empleado,
+          dia: null
+        };
+      },
+      error: err => this.notification.error(err || 'No se pudo cargar el horario base', 'Error')
+    });
+  }
+
+  private turnoDe(d: { turno?: string; horaEntrada?: string; horaSalida?: string; horaAlmuerzoInicio?: string; horaAlmuerzoFin?: string }): TurnoInicial {
+    return {
+      turno: d.turno === 'tarde' ? 'tarde' : 'manana',
+      horaEntrada: d.horaEntrada || '',
+      horaSalida: d.horaSalida || '',
+      horaAlmuerzoInicio: d.horaAlmuerzoInicio || '',
+      horaAlmuerzoFin: d.horaAlmuerzoFin || ''
+    };
+  }
+
+  cerrarEditor() {
+    this.editor = { ...this.editor, abierto: false, empleado: null, dia: null };
+  }
+
+  /** "Editar solo un día": formulario de un día (permisos, otro horario puntual...). */
+  editarUnDia() {
+    const { empleado, dia } = this.editor;
+    this.cerrarEditor();
+    if (empleado && dia) this.abrirEditorDia(empleado, dia);
+  }
+
+  guardarEditor(payload: TurnoSemanaPayload) {
+    const empleado = this.editor.empleado;
+    if (!empleado) return;
+    this.editor.guardando = true;
+    if (this.editor.modo === 'base') {
+      this.horariosService.guardarHorarioBase(empleado.empleadoId, payload).subscribe({
+        next: () => {
+          this.notification.success(`Horario base de ${empleado.empleadoNombre} guardado`, 'Éxito');
+          this.cerrarEditor();
+          // Los días que estaban sin horario base se completan: se recarga la semana
+          if (this.semanaSeleccionada) this.seleccionarSemana(this.semanaSeleccionada.id);
+        },
+        error: err => {
+          this.notification.error(err || 'No se pudo guardar el horario base', 'Error');
+          this.editor.guardando = false;
+        }
+      });
+      return;
+    }
+    if (!this.semanaSeleccionada) return;
+    this.horariosService.guardarSemanaEmpleado(this.semanaSeleccionada.id, empleado.empleadoId, payload).subscribe({
+      next: semana => {
+        this.notification.success(payload.guardarComoBase
+          ? 'Semana y horario base guardados' : 'Semana guardada', 'Éxito');
+        this.semanaSeleccionada = semana;
+        this.aplicarFiltros();
+        this.cerrarEditor();
+      },
+      error: err => {
+        this.notification.error(err || 'No se pudo guardar la semana', 'Error');
+        this.editor.guardando = false;
+      }
+    });
+  }
+
+  /** Formulario de un solo día. */
+  abrirEditorDia(empleado: EmpleadoHorarioSemanal, dia: DetalleHorarioDia) {
     if (!this.tienePermiso()) return;
     if (dia.origenTipoDia === 'solicitud_aprobada') {
       this.notification.warning('Este día está asignado por una solicitud aprobada. Para modificarlo, primero debe rechazar la solicitud.', 'Aviso');
@@ -688,26 +837,22 @@ export class HorariosComponent implements OnInit, OnDestroy {
   }
 
   onTurnoChange() {
-    const turno = this.horarioForm.get('turno')?.value;
     const tipoDia = this.horarioForm.get('tipoDia')?.value;
-
     if (tipoDia !== 'normal') return;
+    this.onEntradaChange();
+  }
 
-    if (turno === 'tarde') {
-      this.horarioForm.patchValue({
-        horaEntrada: '14:00',
-        horaSalida: '22:00',
-        horaAlmuerzoInicio: '',
-        horaAlmuerzoFin: ''
-      });
-    } else {
-      this.horarioForm.patchValue({
-        horaEntrada: '08:00',
-        horaSalida: '17:00',
-        horaAlmuerzoInicio: '12:00',
-        horaAlmuerzoFin: '13:00'
-      });
-    }
+  /** Salida = entrada + jornada del turno; refrigerio del turno mañana 4 h después de la entrada (editables). */
+  onEntradaChange() {
+    const turno = this.horarioForm.get('turno')?.value || 'manana';
+    const entrada = this.horarioForm.get('horaEntrada')?.value || (turno === 'tarde' ? '14:00' : '08:00');
+    const refrigerio = refrigerioSugerido(entrada, this.configTurnos);
+    this.horarioForm.patchValue({
+      horaEntrada: entrada,
+      horaSalida: salidaSugerida(entrada, turno, this.configTurnos),
+      horaAlmuerzoInicio: turno === 'tarde' ? '' : refrigerio.inicio,
+      horaAlmuerzoFin: turno === 'tarde' ? '' : refrigerio.fin
+    });
   }
 
   // Calcular los otros días del empleado (para aplicar a múltiples)

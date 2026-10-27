@@ -16,7 +16,7 @@ import { AdminAprobacionComponent } from './secciones/aprobacion';
 const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   saldos: { titulo: 'Saldos y carga inicial', descripcion: 'Días de vacaciones y de compensación que se deben a cada empleado.' },
   facial: { titulo: 'Reconocimiento facial', descripcion: 'Modo de marcación por equipo (cámara o botón), rostros registrados y pruebas sin afectar la asistencia.' },
-  asistencia: { titulo: 'Reglas de marcación', descripcion: 'Tolerancia de tardanza, anticipación para marcar la entrada y salida automática.' },
+  asistencia: { titulo: 'Reglas de marcación', descripcion: 'Tolerancia de tardanza, anticipación para marcar la entrada, salida automática y jornada de cada turno.' },
   red: { titulo: 'Segmentos de red', descripcion: 'Redes desde las que se permite marcar asistencia.' },
   feriados: { titulo: 'Feriados', descripcion: 'Feriados nacionales (sector privado). Trabajar un feriado abona días de compensación.' },
   departamentos: { titulo: 'Departamentos', descripcion: 'Áreas de la organización y sus responsables.' },

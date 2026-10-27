@@ -118,8 +118,16 @@
             @for (emp of empleadosFiltrados; track emp.empleadoId) {
               <tr>
                 <td class="sticky left-0 z-10 border-t border-stone-100 bg-superficie px-4 py-2">
-                  <p class="font-medium text-stone-900">{{ emp.empleadoNombre }}</p>
-                  <span [class]="getRolClass(emp.empleadoRol)">{{ getRolLabel(emp.empleadoRol) }}</span>
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                      <p class="font-medium text-stone-900">{{ emp.empleadoNombre }}</p>
+                      <span [class]="getRolClass(emp.empleadoRol)">{{ getRolLabel(emp.empleadoRol) }}</span>
+                    </div>
+                    @if (tienePermiso()) {
+                      <button type="button" class="btn-icon shrink-0" title="Horario base" aria-label="Horario base"
+                              data-horario-base (click)="editarHorarioBase(emp)"><i class="bi bi-calendar-week"></i></button>
+                    }
+                  </div>
                 </td>
                 @for (f of getFechasDeSemana(); track f) {
                   @let dia = getDiaDeEmpleado(emp, f);
@@ -214,7 +222,7 @@
         </div>
       </div>
       <div class="grid gap-4 sm:grid-cols-2">
-        <div><label class="label">Entrada</label><input type="time" class="input" formControlName="horaEntrada" /></div>
+        <div><label class="label">Entrada</label><input type="time" class="input" formControlName="horaEntrada" (change)="onEntradaChange()" /></div>
         <div><label class="label">Salida</label><input type="time" class="input" formControlName="horaSalida" /></div>
         @if (!esTurnoTarde()) {
           <div><label class="label">Inicio de refrigerio</label><input type="time" class="input" formControlName="horaAlmuerzoInicio" /></div>
@@ -253,3 +261,12 @@
     <button class="btn-primary" (click)="guardarHorario()" [disabled]="isLoading">Guardar</button>
   </div>
 </app-modal>
+
+<!-- Semana del colaborador u horario base: varios días a la vez -->
+<app-editor-turno [abierto]="editor.abierto" [titulo]="editor.titulo" [subtitulo]="editor.subtitulo"
+                  [dias]="editor.dias" [inicial]="editor.inicial" [config]="configTurnos"
+                  [horariosDistintos]="editor.horariosDistintos"
+                  [mostrarGuardarBase]="editor.modo === 'semana'" [guardarBaseInicial]="editor.guardarBaseInicial"
+                  [textoGuardar]="editor.modo === 'base' ? 'Guardar horario base' : 'Guardar semana'"
+                  [textoUnDia]="editor.textoUnDia" [guardando]="editor.guardando"
+                  (guardar)="guardarEditor($event)" (cerrar)="cerrarEditor()" (editarUnDia)="editarUnDia()" />
