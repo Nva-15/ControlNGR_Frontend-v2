@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../shared/modal/modal.component';
 import { DiaTurnoPayload, TurnoSemanaPayload } from '../../services/horarios';
 import { FuncionTurno } from '../../interfaces/horario';
+import { hoyIso } from '../../utils/format';
 import {
   CONFIG_TURNOS_DEFECTO, ConfigTurnos, duracionMinutos, entradaSugerida, formatoHoras, refrigerioSugerido,
   salidaSugerida, textoJornada
@@ -222,6 +223,14 @@ interface Ficha {
           </div>
         }
 
+        @if (mostrarVigencia) {
+          <div class="flex flex-wrap items-center gap-3 rounded-lg border border-stone-200 p-3 text-sm" data-vigencia>
+            <label for="et-vigente" class="font-semibold text-stone-800">Vigente desde</label>
+            <input id="et-vigente" type="date" class="input w-44" [(ngModel)]="vigencia" data-vigente-desde />
+            <span class="flex-1 text-xs text-stone-500">Solo programa los días desde esta fecha: los anteriores no se cuentan como faltas ni tardanzas.</span>
+          </div>
+        }
+
         @if (mostrarGuardarBase) {
           <label class="flex items-start gap-2 rounded-lg border border-stone-200 p-3 text-sm">
             <input type="checkbox" class="checkbox mt-0.5" [(ngModel)]="guardarComoBase" data-guardar-base />
@@ -251,6 +260,9 @@ export class EditorTurnoComponent implements OnChanges {
   @Input() funciones: FuncionTurno[] = [];
   @Input() mostrarGuardarBase = false;
   @Input() guardarBaseInicial = false;
+  /** Horario base: muestra "Vigente desde" (AAAA-MM-DD) y lo envía al guardar. */
+  @Input() mostrarVigencia = false;
+  @Input() vigenteDesde: string | null = null;
   @Input() guardando = false;
   @Input() textoGuardar = 'Guardar semana';
   /** Muestra en el ajuste de un día el enlace al formulario completo (permiso, otro tipo de día). */
@@ -278,6 +290,7 @@ export class EditorTurnoComponent implements OnChanges {
   panel: { fila: Fila | null; ficha: Ficha } | null = null;
   aviso = '';
   guardarComoBase = false;
+  vigencia = '';
   private arrastrando = false;
   private avisoTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -288,6 +301,7 @@ export class EditorTurnoComponent implements OnChanges {
   private iniciar() {
     this.filas = this.dias.map(d => this.filaDe(d));
     this.guardarComoBase = this.guardarBaseInicial;
+    this.vigencia = this.vigenteDesde || hoyIso();
     this.panel = null;
     this.aviso = '';
     this.armarFichas();
@@ -574,6 +588,9 @@ export class EditorTurnoComponent implements OnChanges {
             horaAlmuerzoInicio: f.turno === 'manana' && f.almInicio ? f.almInicio : null,
             horaAlmuerzoFin: f.turno === 'manana' && f.almFin ? f.almFin : null,
             funciones: [...f.funciones] });
-    this.guardar.emit({ dias, guardarComoBase: this.mostrarGuardarBase ? this.guardarComoBase : undefined });
+    this.guardar.emit({
+      dias, guardarComoBase: this.mostrarGuardarBase ? this.guardarComoBase : undefined,
+      vigenteDesde: this.mostrarVigencia && this.vigencia ? this.vigencia : undefined
+    });
   }
 }
