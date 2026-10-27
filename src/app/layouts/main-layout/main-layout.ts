@@ -146,7 +146,7 @@ export class MainLayoutComponent implements OnInit, OnDestroy {
         titulo: 'Gestión',
         items: [
           { ruta: '/empleados', texto: 'Empleados', icono: 'bi-people' },
-          { ruta: '/reportes', texto: 'Reportes de asistencia', icono: 'bi-bar-chart-line' },
+          { ruta: '/reportes', texto: 'Reportes de asistencia', icono: 'bi-bar-chart-line', badge: () => this.resumen?.alertasAsistencia || 0 },
         ]
       });
     }

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiConfigService } from './api-config.service';
-import { DashboardAsistencia, FichaAsistencia, FiltroDashboard } from '../interfaces/reportes-asistencia';
+import { AlertaAsistencia, DashboardAsistencia, FichaAsistencia, FiltroDashboard } from '../interfaces/reportes-asistencia';
 
 /** Dashboard de asistencia, ficha del colaborador y "Mi récord". */
 @Injectable({ providedIn: 'root' })
@@ -25,6 +25,17 @@ export class ReportesAsistenciaService {
     if (desde) params = params.set('desde', desde);
     if (hasta) params = params.set('hasta', hasta);
     return this.http.get<FichaAsistencia>(`${this.url}/ficha/${empleadoId}`, { params });
+  }
+
+  /** Alertas del período en curso (las nuevas vienen marcadas). */
+  alertas(departamentoId?: number | null): Observable<{ alertas: AlertaAsistencia[]; nuevas: number }> {
+    let params = new HttpParams();
+    if (departamentoId) params = params.set('departamentoId', departamentoId);
+    return this.http.get<{ alertas: AlertaAsistencia[]; nuevas: number }>(`${this.url}/alertas`, { params });
+  }
+
+  marcarAlertasVistas(): Observable<void> {
+    return this.http.post<void>(`${this.url}/alertas/vistas`, {});
   }
 
   miRecord(): Observable<FichaAsistencia> {

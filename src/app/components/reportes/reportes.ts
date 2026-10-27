@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AsistenciaService } from '../../services/asistencia';
 import { AuthService } from '../../services/auth';
@@ -28,6 +29,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
   private exportService = inject(ExportService);
   private notification = inject(NotificationService);
   private reportesAsistencia = inject(ReportesAsistenciaService);
+  private route = inject(ActivatedRoute);
 
   /** Pestaña: detalle por día (tabla), dashboard del equipo o ficha de un colaborador. */
   vista: 'detalle' | 'dashboard' | 'ficha' = 'detalle';
@@ -88,6 +90,9 @@ export class ReportesComponent implements OnInit, OnDestroy {
       error: () => { /* se mantiene "Todos los roles" */ }
     });
     this.cargarReporte();
+    // Desde Empleados → "Ver asistencia": abre directamente la ficha del colaborador
+    const ficha = Number(this.route.snapshot.queryParamMap.get('ficha'));
+    if (ficha) this.verFicha(ficha);
     this.intervaloAutoRefresh = setInterval(() => this.refrescarDatos(), 60000);
   }
 

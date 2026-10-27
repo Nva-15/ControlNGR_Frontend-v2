@@ -1,4 +1,5 @@
 import { FuncionTurno } from '../interfaces/horario';
+import { ConfigAlerta } from '../interfaces/reportes-asistencia';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -98,6 +99,11 @@ export class AdminService {
   actualizarTipoSolicitud(t: TipoSolicitud): Observable<TipoSolicitud> {
     return this.http.put<TipoSolicitud>(`${this.url}/tipos-solicitud/${t.id}`, t);
   }
+  alertasAsistencia(): Observable<ConfigAlerta[]> { return this.http.get<ConfigAlerta[]>(`${this.url}/alertas-asistencia`); }
+  guardarAlertasAsistencia(c: ConfigAlerta[]): Observable<ConfigAlerta[]> {
+    return this.http.put<ConfigAlerta[]>(`${this.url}/alertas-asistencia`, c);
+  }
+
   /** Recalcula en segundo plano el resumen del dashboard (sin fecha: todo el historial). */
   recalcularResumenAsistencia(desde: string | null): Observable<{ mensaje: string }> {
     return this.http.post<{ mensaje: string }>(`${this.url}/reportes/recalcular`, { desde });

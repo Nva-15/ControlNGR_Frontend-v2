@@ -5,7 +5,9 @@ import { ReportesAsistenciaService } from '../../services/reportes-asistencia';
 import { EmpleadosService } from '../../services/empleados';
 import { ExportService } from '../../services/export';
 import { NotificationService } from '../../services/notification.service';
-import { ColaboradorAsistencia, DashboardAsistencia, FiltroDashboard } from '../../interfaces/reportes-asistencia';
+import { AlertaAsistencia, ColaboradorAsistencia, DashboardAsistencia, FiltroDashboard } from '../../interfaces/reportes-asistencia';
+import { NotificacionesService } from '../../services/notificaciones';
+import { ALERTAS_ASISTENCIA, mensajeAlerta } from '../../utils/alertas-asistencia';
 import {
   COLOR_A_TIEMPO, COLOR_FALTA, COLOR_TARDANZA, etiquetaMes, fechaCorta, llegadaTexto, minutosTexto
 } from '../../utils/estados-asistencia';
@@ -70,6 +72,35 @@ const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
         <button type="button" class="btn-excel ml-auto" (click)="exportar()" [disabled]="!datos?.colaboradores?.length"><i class="bi bi-file-earmark-excel-fill"></i> Excel</button>
       </div>
     </div>
+
+    @if (alertas.length) {
+      <section class="card mb-5 border-l-4 border-l-amber-500" data-alertas>
+        <div class="card-header flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="card-title"><i class="bi bi-exclamation-triangle text-amber-600"></i> Alertas
+              @if (nuevas) { <span class="badge-red ml-1 align-middle">{{ nuevas }} nueva(s)</span> }</h3>
+            <p class="text-xs text-stone-500">Período en curso · son indicadores para conversar, no sanciones · clic para ver su ficha</p>
+          </div>
+          @if (alertas.length > 6) {
+            <button type="button" class="btn-ghost btn-sm" (click)="verTodasAlertas = !verTodasAlertas">{{ verTodasAlertas ? 'Ver menos' : 'Ver las ' + alertas.length }}</button>
+          }
+        </div>
+        <ul class="divide-y divide-stone-100">
+          @for (a of (verTodasAlertas ? alertas : alertas.slice(0, 6)); track a.tipo + a.empleadoId) {
+            <li>
+              <button type="button" class="flex w-full items-start gap-3 px-5 py-2.5 text-left text-sm hover:bg-stone-50" (click)="abrirFicha.emit(a.empleadoId)"
+                      [attr.data-alerta]="a.tipo">
+                <i class="bi mt-0.5" [class]="infoAlerta(a).icono + ' ' + infoAlerta(a).clase" [attr.aria-label]="infoAlerta(a).titulo"></i>
+                <span class="flex-1"><b class="text-stone-900">{{ a.nombre }}</b>
+                  <span class="text-stone-500"> · {{ a.departamento || 'Sin equipo' }}</span><br>
+                  <span class="text-stone-700">{{ texto(a) }}</span></span>
+                @if (a.nueva) { <span class="badge-red">Nueva</span> }
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+    }
 
     @if (cargando && !datos) {
       <div class="flex justify-center py-16"><span class="spinner"></span></div>
@@ -246,6 +277,13 @@ export class DashboardAsistenciaComponent implements OnInit {
   private empleados = inject(EmpleadosService);
   private exportService = inject(ExportService);
   private notification = inject(NotificationService);
+  private notificaciones = inject(NotificacionesService);
+
+  alertas: AlertaAsistencia[] = [];
+  nuevas = 0;
+  verTodasAlertas = false;
+  private alertasCargadas = false;
+  private departamentoAlertas: number | null = null;
 
   readonly periodos: { valor: Periodo; texto: string }[] = [
     { valor: 'mes', texto: 'Este mes' }, { valor: 'tres', texto: '3 meses' }, { valor: 'anio', texto: 'Este año' },
@@ -307,8 +345,30 @@ export class DashboardAsistenciaComponent implements OnInit {
     this.cargar();
   }
 
+  /** Alertas del período en curso (según el equipo elegido); al verlas dejan de contar como nuevas. */
+  private cargarAlertas() {
+    this.servicio.alertas(this.filtro.departamentoId).subscribe({
+      next: r => {
+        this.alertas = r.alertas;
+        this.nuevas = r.nuevas;
+        if (r.nuevas > 0) {
+          this.servicio.marcarAlertasVistas().subscribe({ next: () => this.notificaciones.limpiarAlertasAsistencia(), error: () => {} });
+        }
+      },
+      error: () => { this.alertas = []; this.nuevas = 0; }
+    });
+  }
+
+  infoAlerta(a: AlertaAsistencia) { return ALERTAS_ASISTENCIA[a.tipo]; }
+  texto(a: AlertaAsistencia) { return mensajeAlerta(a); }
+
   cargar() {
     if (!this.filtro.desde || !this.filtro.hasta || this.filtro.desde > this.filtro.hasta) return;
+    if (this.departamentoAlertas !== this.filtro.departamentoId || !this.alertasCargadas) {
+      this.departamentoAlertas = this.filtro.departamentoId ?? null;
+      this.alertasCargadas = true;
+      this.cargarAlertas();
+    }
     const id = ++this.solicitud;
     this.cargando = true;
     this.servicio.dashboard(this.filtro).subscribe({

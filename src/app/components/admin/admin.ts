@@ -19,7 +19,7 @@ const SECCIONES: Record<string, { titulo: string; descripcion: string }> = {
   saldos: { titulo: 'Saldos y carga inicial', descripcion: 'Días de vacaciones y de compensación que se deben a cada empleado.' },
   facial: { titulo: 'Reconocimiento facial', descripcion: 'Modo de marcación por equipo (cámara o botón), rostros registrados y pruebas sin afectar la asistencia.' },
   asistencia: { titulo: 'Reglas de marcación', descripcion: 'Tolerancia de tardanza, anticipación para marcar la entrada y salida automática.' },
-  reportes: { titulo: 'Reportes de asistencia', descripcion: 'Transparencia: que cada colaborador vea su propio récord de asistencia, y los datos del dashboard.' },
+  reportes: { titulo: 'Reportes de asistencia', descripcion: 'Que cada colaborador vea su propio récord de asistencia, alertas para jefaturas y los datos del dashboard.' },
   turnos: { titulo: 'Turnos y funciones', descripcion: 'Funciones que cumple el personal en su turno (LT, SP...), jornada de cada turno y entradas sugeridas al armar horarios.' },
   red: { titulo: 'Segmentos de red', descripcion: 'Redes desde las que se permite marcar asistencia.' },
   feriados: { titulo: 'Feriados', descripcion: 'Feriados nacionales (sector privado). Trabajar un feriado abona días de compensación.' },
