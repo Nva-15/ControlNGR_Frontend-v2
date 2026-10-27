@@ -123,7 +123,7 @@
 <!-- Formulario -->
 <app-modal [abierto]="formAbierto" [titulo]="editando ? 'Editar empleado' : 'Nuevo empleado'" [subtitulo]="editando?.nombre || ''"
            tamano="xl" [cerrarAlClicFuera]="false" (cerrar)="formAbierto = false">
-  <form [formGroup]="form" class="space-y-6" (ngSubmit)="guardar()">
+  <form [formGroup]="form" class="space-y-6" (ngSubmit)="guardar()" data-form-empleado>
     <div class="flex flex-col items-center gap-4 sm:flex-row">
       @if (fotoPreview) {
         <img [src]="fotoPreview" class="size-20 rounded-full object-cover" alt="Foto" />
@@ -145,24 +145,28 @@
             <select class="select w-24" formControlName="tipoDoc" (change)="cambiarTipoDoc()">
               <option value="DNI">DNI</option><option value="CE">CE</option>
             </select>
-            <input class="input" formControlName="dni" inputmode="numeric" [class.border-red-400]="invalido('dni')" />
+            <input class="input" formControlName="dni" inputmode="numeric" [class.campo-error]="invalido('dni')" />
           </div>
-          @if (invalido('dni')) { <p class="field-error">{{ form.value.tipoDoc === 'CE' ? 'Entre 9 y 12 dígitos' : '8 dígitos' }}</p> }
+          @if (invalido('dni')) { <p class="field-error">{{ error('dni') }}</p> }
         </div>
         <div class="sm:col-span-2">
-          <label class="label">Nombre completo</label>
-          <input class="input" formControlName="nombre" [class.border-red-400]="invalido('nombre')" />
+          <label class="label">Nombre completo <span class="text-red-600">*</span></label>
+          <input class="input" formControlName="nombre" [class.campo-error]="invalido('nombre')" />
+          @if (invalido('nombre')) { <p class="field-error">{{ error('nombre') }}</p> }
         </div>
-        <div><label class="label">Correo</label><input type="email" class="input" formControlName="email" placeholder="usuario@ngr.com.pe" /></div>
+        <div><label class="label">Correo</label><input type="email" class="input" formControlName="email" placeholder="usuario@ngr.com.pe" [class.campo-error]="invalido('email')" />
+          @if (invalido('email')) { <p class="field-error">{{ error('email') }}</p> }</div>
         <div><label class="label">Cumpleaños</label><input type="date" class="input" formControlName="cumpleanos" /></div>
-        <div><label class="label">Fecha de ingreso</label><input type="date" class="input" formControlName="ingreso" /></div>
+        <div><label class="label">Fecha de ingreso <span class="text-red-600">*</span></label><input type="date" class="input" formControlName="ingreso" [class.campo-error]="invalido('ingreso')" data-ingreso />
+          @if (invalido('ingreso')) { <p class="field-error" data-error-ingreso>{{ error('ingreso') }}</p> }</div>
       </div>
     </fieldset>
 
     <fieldset>
       <legend class="mb-3 text-sm font-semibold text-stone-900">Datos laborales</legend>
       <div class="grid gap-4 sm:grid-cols-3">
-        <div><label class="label">Cargo</label><input class="input" formControlName="cargo" [class.border-red-400]="invalido('cargo')" /></div>
+        <div><label class="label">Cargo <span class="text-red-600">*</span></label><input class="input" formControlName="cargo" [class.campo-error]="invalido('cargo')" />
+          @if (invalido('cargo')) { <p class="field-error">{{ error('cargo') }}</p> }</div>
         <div>
           <label class="label">Departamento</label>
           <select class="select" formControlName="departamentoId">
@@ -188,7 +192,7 @@
             @for (r of rolesAsignables; track r.codigo) { <option [value]="r.codigo">{{ r.nombre }}</option> }
           </select>
           @if (editandoPropio) { <p class="field-help">Su rol y estado los cambia su jefatura.</p> }
-          @else if (editando && !gestionaAcceso) { <p class="field-help">Solo gerencia o el administrador cambian roles.</p> }
+          @else if (editando && !puedeCambiarRol) { <p class="field-help">Solo gerencia, el administrador o su supervisor cambian roles.</p> }
         </div>
         @if (gestionaAcceso || editando) {
           <div>
@@ -223,8 +227,10 @@
     <fieldset>
       <legend class="mb-3 text-sm font-semibold text-stone-900">Presentación</legend>
       <div class="grid gap-4 sm:grid-cols-2">
-        <div><label class="label">Sobre el colaborador</label><textarea class="textarea" rows="2" formControlName="descripcion"></textarea></div>
-        <div><label class="label">Pasatiempos</label><textarea class="textarea" rows="2" formControlName="hobby"></textarea></div>
+        <div><label class="label">Sobre el colaborador</label><textarea class="textarea" rows="2" formControlName="descripcion"></textarea>
+          @if (invalido('descripcion')) { <p class="field-error">{{ error('descripcion') }}</p> }</div>
+        <div><label class="label">Pasatiempos</label><textarea class="textarea" rows="2" formControlName="hobby"></textarea>
+          @if (invalido('hobby')) { <p class="field-error">{{ error('hobby') }}</p> }</div>
       </div>
     </fieldset>
   </form>

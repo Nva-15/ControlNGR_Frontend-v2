@@ -210,6 +210,11 @@
   @apply mt-1 text-xs text-red-600;
 }
 
+/* Campo con error: borde y halo rojos bien visibles (también sobre el borde de .input/.select) */
+@utility campo-error {
+  @apply border-red-500! ring-2 ring-red-100;
+}
+
 /* ---------- Insignias ---------- */
 
 @utility badge {

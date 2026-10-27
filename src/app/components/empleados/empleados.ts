@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { EmpleadosService } from '../../services/empleados';
+import { EmpleadosService, PerfilDepartamento } from '../../services/empleados';
 import { AuthService } from '../../services/auth';
 import { ExportService } from '../../services/export';
 import { NotificationService } from '../../services/notification.service';
@@ -49,6 +49,8 @@ export class EmpleadosComponent implements OnInit {
   exportando = false;
   departamentos: { id: number; nombre: string }[] = [];
   roles: { codigo: string; nombre: string; nivel: number }[] = [];
+  /** Cargo, nivel y rol típicos de cada departamento: se proponen al registrar a alguien nuevo. */
+  private perfiles = new Map<number, PerfilDepartamento>();
   cargando = true;
 
   // Filtros
@@ -99,6 +101,11 @@ export class EmpleadosComponent implements OnInit {
     this.cargar();
     this.empService.departamentos().subscribe(d => this.departamentos = d);
     this.empService.roles().subscribe(r => this.roles = r);
+    if (this.puedeCrear) {
+      this.empService.perfilesDepartamento().subscribe({
+        next: p => this.perfiles = new Map(p.map(x => [x.departamentoId, x])), error: () => {}
+      });
+    }
   }
 
   get puedeCrear(): boolean {
@@ -108,6 +115,11 @@ export class EmpleadosComponent implements OnInit {
   /** Cambiar rol, usuario y contraseña (administrador y gerencia). */
   get gestionaAcceso(): boolean {
     return this.auth.puedeGestionarAcceso();
+  }
+
+  /** Cambiar el rol: administrador y gerencia; el supervisor, entre técnico, HD, NOC y BO. */
+  get puedeCambiarRol(): boolean {
+    return this.gestionaAcceso || this.auth.isSupervisor();
   }
 
   /** Roles que el usuario puede asignar (más el rol actual del empleado que se edita). */
@@ -222,9 +234,28 @@ export class EmpleadosComponent implements OnInit {
     this.editando = null;
     this.form = this.crearForm();
     this.vincularEstado(this.form);
+    this.proponerPorDepartamento(this.form);
     this.fotoArchivo = null;
     this.fotoPreview = null;
     this.formAbierto = true;
+  }
+
+  /**
+   * Al registrar: elegir el departamento propone su cargo, nivel y rol más comunes (NOC → "Operador NOC",
+   * nivel NOC, rol NOC). Solo llena lo que aún no se tocó; todo se puede cambiar.
+   */
+  private proponerPorDepartamento(form: FormGroup) {
+    form.get('departamentoId')!.valueChanges.subscribe((id: number | null) => {
+      const p = id ? this.perfiles.get(id) : undefined;
+      if (!p) return;
+      const proponer = (campo: string, valor: string | null, valido = true) => {
+        const c = form.get(campo)!;
+        if (valor && valido && !c.dirty && !c.disabled) c.setValue(valor);
+      };
+      proponer('cargo', p.cargo);
+      proponer('nivel', p.nivel, this.niveles.some(n => n.value === p.nivel));
+      proponer('rol', p.rol, this.rolesAsignables.some(r => r.codigo === p.rol));
+    });
   }
 
   editar(e: EmpleadoResponse) {
@@ -240,10 +271,8 @@ export class EmpleadosComponent implements OnInit {
     this.cambiarTipoDoc();
     this.form.get('dni')!.disable();
     this.form.get('tipoDoc')!.disable();
-    if (!this.gestionaAcceso || this.esPropio(e)) {
-      this.form.get('rol')!.disable();
-      this.form.get('username')!.disable();
-    }
+    if (!this.puedeCambiarRol || this.esPropio(e)) this.form.get('rol')!.disable();
+    if (!this.gestionaAcceso || this.esPropio(e)) this.form.get('username')!.disable();
     if (this.esPropio(e)) {
       // Rol, estado, cargo, área y fecha de ingreso los cambia su jefatura
       ['cargo', 'nivel', 'departamentoId', 'ingreso', 'activo', 'usuarioActivo']
@@ -258,6 +287,26 @@ export class EmpleadosComponent implements OnInit {
   invalido(campo: string): boolean {
     const c = this.form.get(campo);
     return !!c && c.invalid && (c.touched || c.dirty);
+  }
+
+  private readonly NOMBRES_CAMPO: Record<string, string> = {
+    dni: 'Documento', nombre: 'Nombre completo', email: 'Correo', ingreso: 'Fecha de ingreso', cargo: 'Cargo',
+    nivel: 'Nivel', rol: 'Rol', descripcion: 'Sobre el colaborador', hobby: 'Pasatiempos'
+  };
+
+  /** Mensaje del campo con error (se muestra debajo, en rojo). */
+  error(campo: string): string {
+    const e = this.form.get(campo)?.errors;
+    if (!e) return '';
+    if (e['required']) {
+      return campo === 'ingreso' ? 'Indique la fecha de ingreso (define sus vacaciones y su asistencia)'
+        : `Indique ${campo === 'cargo' ? 'el cargo' : campo === 'nombre' ? 'el nombre' : 'este dato'}`;
+    }
+    if (e['email']) return 'Correo no válido (ejemplo: usuario@ngr.com.pe)';
+    if (e['minlength']) return `Mínimo ${e['minlength'].requiredLength} caracteres`;
+    if (e['maxlength']) return `Máximo ${e['maxlength'].requiredLength} caracteres`;
+    if (e['pattern'] && campo === 'dni') return this.form.value.tipoDoc === 'CE' ? 'Entre 9 y 12 dígitos' : '8 dígitos';
+    return 'Revise este dato';
   }
 
   seleccionarFoto(event: Event) {
@@ -278,7 +327,14 @@ export class EmpleadosComponent implements OnInit {
   guardar() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.notification.warning('Revise los campos marcados.');
+      const faltan = Object.keys(this.form.controls).filter(k => this.form.get(k)!.invalid).map(k => this.NOMBRES_CAMPO[k] ?? k);
+      this.notification.warning(`Revise: ${faltan.join(', ')}.`, 'Faltan datos');
+      // Lleva la vista al primer campo con error
+      setTimeout(() => {
+        const campo = document.querySelector<HTMLElement>('[data-form-empleado] [formcontrolname].ng-invalid');
+        campo?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        campo?.focus({ preventScroll: true });
+      });
       return;
     }
     const v = this.form.getRawValue();
